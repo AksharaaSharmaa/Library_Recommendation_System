@@ -79,8 +79,8 @@ To use this application, you'll need a HyperCLOVA X API key from NAVER Cloud:
 <div align="center">
   <table>
     <tr>
-      <td align="center"><img src="https://i.ibb.co/JtYs41f/hyperclova-ui-1.png" width="100%"><br><small>🎨 <i>Stunning gradient interface</i></small></td>
-      <td align="center"><img src="https://i.ibb.co/C6bWkjF/hyperclova-ui-2.png" width="100%"><br><small>💬 <i>Elegant chat experience</i></small></td>
+      <td align="center"><img src="image/hyperclova-screenshot.png" width="100%"><br><small>🎨 <i>Stunning gradient interface</i></small></td>
+      <td align="center"><img src="himage/hyperclova_response-screenshot.png" width="100%"><br><small>💬 <i>Elegant chat experience</i></small></td>
     </tr>
   </table>
 </div>

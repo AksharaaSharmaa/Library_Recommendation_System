@@ -74,16 +74,6 @@ To use this application, you'll need a HyperCLOVA X API key from NAVER Cloud:
 3. Generate an API key from your dashboard
 4. Enter the API key in the application sidebar
 
-## 📱 User Interface
-
-<div align="center">
-  <table>
-    <tr>
-      <td align="center"><img src="image/hyperclova-screenshot.png" width="100%"><br><small>🎨 <i>Stunning gradient interface</i></small></td>
-      <td align="center"><img src="himage/hyperclova_response-screenshot.png" width="100%"><br><small>💬 <i>Elegant chat experience</i></small></td>
-    </tr>
-  </table>
-</div>
 
 The UI features:
 

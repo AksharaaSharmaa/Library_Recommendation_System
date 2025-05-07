@@ -1,4 +1,4 @@
-# HyperCLOVA X Bilingual Chatbot ✨
+<h1 align="center">✨ HyperCLOVA X Bilingual Chatbot ✨</h1>
 
 <div align="center">
   
@@ -15,11 +15,10 @@
 <div align="center">
   <img src="image/hyperclova-screenshot.png" alt="HyperCLOVA X Bilingual Chatbot Screenshot" width="80%">
 </div>
+</div>
 
 ## ✨ Features
 
-<div align="center">
-  
 | 🌈 Feature | 📝 Description |
 |------------|---------------|
 | 🔄 **Bilingual Responses** | Automatic dual-language answers in English and Korean |
@@ -28,8 +27,6 @@
 | 🔑 **Simple API Setup** | Easy configuration with your API key |
 | 🔄 **Chat History** | Persistent conversation tracking |
 | 🧠 **Context Awareness** | AI maintains context throughout the conversation |
-
-</div>
 
 ## 💫 Live Demo
 
@@ -69,7 +66,6 @@ To use this application, you'll need a HyperCLOVA X API key from NAVER Cloud:
 2. Subscribe to the HyperCLOVA X service
 3. Generate an API key from your dashboard
 4. Enter the API key in the application sidebar
-
 
 The UI features:
 
@@ -111,9 +107,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Streamlit Extras](https://github.com/arnaudmiribel/streamlit-extras) for additional components
 
 <div align="center">
-  
   <p>❤️ Made with love for language enthusiasts, Korean learners, and AI explorers</p>
-  
-  <br><br>
-  
 </div>

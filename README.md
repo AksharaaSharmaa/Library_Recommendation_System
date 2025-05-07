@@ -11,12 +11,9 @@
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
   <p>A beautiful bilingual chatbot powered by NAVER's HyperCLOVA X, providing seamless communication in both English and Korean 🇬🇧 🇰🇷</p>
-  
+
 <div align="center">
-  <video width="80%" controls autoplay muted loop>
-    <source src="image/HyperClovaX.mp4" type="video/mp4">
-    Your browser does not support the video tag.
-  </video>
+<img src="image/hyperclova-screenshot.png" alt="HyperCLOVA X Bilingual Chatbot Screenshot" width="80%">
 </div>
 
 ## ✨ Features

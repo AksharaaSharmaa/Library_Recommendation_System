@@ -17,7 +17,7 @@
 </div>
 
 <div align="center">
-  <img src="https://i.ibb.co/5RgF1KQ/hyperclova-screenshot.png" alt="HyperCLOVA X Bilingual Chatbot Screenshot" width="80%">
+  <img src="image/hyperclova-screenshot.png" alt="HyperCLOVA X Bilingual Chatbot Screenshot" width="80%">
 </div>
 
 ## ✨ Features

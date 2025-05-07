@@ -13,7 +13,7 @@
   <p>A beautiful bilingual chatbot powered by NAVER's HyperCLOVA X, providing seamless communication in both English and Korean 🇬🇧 🇰🇷</p>
 
 <div align="center">
-<img src="image/hyperclova-screenshot.png" alt="HyperCLOVA X Bilingual Chatbot Screenshot" width="80%">
+  <img src="image/hyperclova-screenshot.png" alt="HyperCLOVA X Bilingual Chatbot Screenshot" width="80%">
 </div>
 
 ## ✨ Features

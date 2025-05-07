@@ -1,4 +1,6 @@
+<div align="center">
 # ✨ HyperCLOVA X Bilingual Chatbot ✨
+</div>
 
 <div align="center">
   
@@ -133,7 +135,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
   <a href="https://github.com/AksharaaSharma/hyperclova-bilingual-bot/issues">Request Feature</a>
   
   <br><br>
-  
-  <img src="https://i.ibb.co/WVZqrP9/hyperclova-logo.png" width="120">
   
 </div>

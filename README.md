@@ -116,10 +116,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
   
   <p>❤️ Made with love for language enthusiasts, Korean learners, and AI explorers</p>
   
-  <a href="https://github.com/AksharaaSharma/hyperclova-bilingual-bot/issues">Report Bug</a>
-  ·
-  <a href="https://github.com/AksharaaSharma/hyperclova-bilingual-bot/issues">Request Feature</a>
-  
   <br><br>
   
 </div>

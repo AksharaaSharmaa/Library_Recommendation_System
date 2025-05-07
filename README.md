@@ -9,8 +9,8 @@
   ![HyperCLOVA](https://img.shields.io/badge/HyperCLOVA-X-FF61D2?style=for-the-badge)
   
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
-  [![Stars](https://img.shields.io/github/stars/yourusername/hyperclova-bilingual-bot?style=for-the-badge&color=yellow)](https://github.com/yourusername/hyperclova-bilingual-bot/stargazers)
-  [![Forks](https://img.shields.io/github/forks/yourusername/hyperclova-bilingual-bot?style=for-the-badge&color=blue)](https://github.com/yourusername/hyperclova-bilingual-bot/network/members)
+  [![Stars](https://img.shields.io/github/stars/AksharaaSharma/hyperclova-bilingual-bot?style=for-the-badge&color=yellow)](https://github.com/AksharaaSharma/hyperclova-bilingual-bot/stargazers)
+  [![Forks](https://img.shields.io/github/forks/AksharaaSharma/hyperclova-bilingual-bot?style=for-the-badge&color=blue)](https://github.com/AksharaaSharma/hyperclova-bilingual-bot/network/members)
 
   <p>A beautiful bilingual chatbot powered by NAVER's HyperCLOVA X, providing seamless communication in both English and Korean 🇬🇧 🇰🇷</p>
   

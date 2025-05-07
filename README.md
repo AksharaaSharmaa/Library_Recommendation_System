@@ -15,8 +15,12 @@
 </div>
 
 <div align="center">
-  <img src="image/hyperclova-screenshot.png" alt="HyperCLOVA X Bilingual Chatbot Screenshot" width="80%">
+  <video width="80%" controls>
+    <source src="image/HyperClovaX.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
 </div>
+
 
 ## ✨ Features
 

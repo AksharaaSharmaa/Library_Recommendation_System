@@ -1,4 +1,4 @@
-<h1 align="center">✨ HyperCLOVA X Bilingual Chatbot ✨</h1>
+# HyperCLOVA X Bilingual Chatbot ✨
 
 <div align="center">
   

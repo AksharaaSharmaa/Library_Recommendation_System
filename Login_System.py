@@ -25,7 +25,7 @@ def init_connection():
         else:
             # EMBEDDED SECRETS FOR TESTING ONLY - REPLACE WITH YOUR ACTUAL MONGODB ATLAS CONNECTION STRING
             # In production, use st.secrets["mongodb"]["uri"] instead
-            mongodb_uri = "mongodb+srv://sonuakshara:ba8bGgDR3LyllGuQ@Library-Login-Credentials.mongodb.net/<database>?retryWrites=true&w=majority"
+            mongodb_uri = "mongodb+srv://sonuakshara:ba8bGgDR3LyllGuQ@library-login-credentia.xcioxmw.mongodb.net/?retryWrites=true&w=majority&appName=Library-Login-Credentials"
             
             # Create a fake secrets dict for testing
             if "mongodb" not in st.secrets:

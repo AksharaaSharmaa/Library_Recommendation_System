@@ -325,10 +325,7 @@ def main():
     
     # Apply minimal styling
     apply_minimal_css()
-    
-    # Page configuration
-    st.title("Admin Dashboard")
-    
+  
     # Sidebar navigation
     with st.sidebar:
         st.markdown(f"### Welcome, {st.session_state.username}")

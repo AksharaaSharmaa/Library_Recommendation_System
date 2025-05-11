@@ -594,7 +594,7 @@ def render_activity_log():
         st.markdown(log_html, unsafe_allow_html=True)
     
         # Add export option
-        if st.button("Export Activity Log", key="export_log"):
+        if st.button("Export Activity Log", key="export_log_btn"):
             # In a real application, this would save to a file
             st.info("Log export functionality will be implemented in a future update")
     
@@ -741,7 +741,7 @@ def main():
     # Check admin permissions
     if not st.session_state.get('is_admin', False):
         st.error("You don't have permission to access this administration dashboard")
-        if st.button("Return to Homepage"):
+        if st.button("Return to Homepage", key="return_homepage_btn"):
             # Logic to redirect to homepage would go here
             pass
         return
@@ -750,11 +750,16 @@ def main():
     apply_custom_css()
     
     # Page configuration
-    st.title("Admin Dashboard")
+    st.set_page_config(
+        page_title="Admin Dashboard",
+        page_icon="🔐",
+        layout="wide",
+        initial_sidebar_state="expanded"
+    )
     
     # Sidebar navigation
     with st.sidebar:
-        st.image("https://via.placeholder.com/150", width=150)
+        # Removed the image from here
         st.markdown(f"### Welcome, {st.session_state.username}")
         st.markdown("---")
         
@@ -773,7 +778,7 @@ def main():
         if st.button("System Backup", key="backup_btn"):
             st.sidebar.success("Backup initiated successfully!")
         
-        if st.button("Logout", key="logout_btn"):
+        if st.button("Logout", key="sidebar_logout_btn"):  # Changed key name to make it unique
             # Logic for logout would go here
             pass
     
@@ -807,6 +812,4 @@ def main():
     """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
-    # This allows the file to be imported by the login system
-    # The login system will call main() when needed
-    pass
+    main()

@@ -501,12 +501,7 @@ def display_db_status(connected=True):
 # App layout and functionality
 def main():
     # Set page config
-    st.set_page_config(
-        page_title="Book Recommendation Service",
-        page_icon="📚",
-        layout="wide",
-        initial_sidebar_state="collapsed"
-    )
+    st.title("Book Recommendation Service")
     
     # Initialize secrets dict if it doesn't exist (for testing only)
     if not hasattr(st, "secrets"):

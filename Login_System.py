@@ -5,12 +5,31 @@ import os
 import importlib.util
 import sys
 import base64
+import os.path
 
 st.set_page_config(
     page_title="Book Wanderer: Library Recommendation System",
     page_icon="📚",
     layout="wide",
 )
+
+def load_page_based_on_role():
+    """Load different pages based on user role"""
+    if st.session_state.is_admin:
+        # Check if admin_dashboard.py exists
+        if os.path.exists("admin_dashboard.py"):
+            load_app("admin_dashboard.py")
+        else:
+            st.error("Admin dashboard not found. Please make sure admin_dashboard.py exists in the app directory.")
+            st.info("Contact the application administrator for assistance.")
+    else:
+        # Check if ChatBot.py exists
+        if os.path.exists("ChatBot.py"):
+            load_app("ChatBot.py")
+        else:
+            st.error("ChatBot interface not found. Please make sure ChatBot.py exists in the app directory.")
+            st.info("Contact the application administrator for assistance.")
+
 
 # Function to create a hashed password
 def make_hashes(password):
@@ -649,6 +668,12 @@ def main():
         
     if 'is_admin' not in st.session_state:
         st.session_state.is_admin = False
+
+    if st.session_state.logged_in:
+        display_sidebar_user_panel()
+        # Load appropriate page based on user role and hide the login interface
+        load_page_based_on_role()
+        return
         
     
     # Initialize the database connection and get users collection

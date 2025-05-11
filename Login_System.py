@@ -190,7 +190,7 @@ def set_custom_theme():
             border-radius: 0 0 40px 40px;
             box-shadow: 0 12px 30px rgba(42, 31, 26, 0.15);
             text-align: center;
-            margin-bottom: 0;
+            margin-bottom: 2rem;
             position: relative;
             overflow: hidden;
         }}
@@ -231,30 +231,6 @@ def set_custom_theme():
             letter-spacing: 0.04em;
             margin-bottom: 0.5rem !important;
             text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-        }}
-        
-        /* Login Form Section */
-        .login-section {{
-            padding: 0.5rem 0;
-            max-width: 320px;
-            margin: 0 auto;
-            position: relative;
-            background-color: rgba(255, 255, 255, 0.65);
-            padding: 2rem;
-            border-radius: 20px;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            box-shadow: 0 8px 32px rgba(42, 31, 26, 0.1);
-            border: 1px solid rgba(201, 185, 155, 0.2);
-            margin-top: 2rem;
-        }}
-        
-        /* Decorative icon */
-        .decorative-icon {{
-            font-size: 2.5rem;
-            text-align: center;
-            margin-bottom: 1rem;
-            display: block;
         }}
         
         /* Tabs */
@@ -583,11 +559,6 @@ def set_custom_theme():
                 font-size: 1.1rem !important;
             }}
             
-            .login-section {{
-                max-width: 90%;
-                padding: 1.5rem;
-            }}
-            
             .section-heading {{
                 font-size: 2rem !important;
             }}
@@ -711,10 +682,7 @@ def main():
             """)
             return
         
-        # Create a login section
-        st.markdown('<div class="login-section">', unsafe_allow_html=True)
-        
-        # Create tabs for Login and SignUp
+        # Create tabs for Login and SignUp (NO CONTAINER WRAPPING)
         tab1, tab2 = st.tabs(["📝 LOGIN", "✨ SIGN UP"])
         
         with tab1:
@@ -765,8 +733,6 @@ def main():
                         st.info("You can now log in with your new account")
                     else:
                         st.error("Username already exists")
-        
-        st.markdown('</div>', unsafe_allow_html=True)  # Close login-section
         
         # Footer with quote about books
         st.markdown('<div class="auth-footer">"A reader lives a thousand lives before he dies." — George R.R. Martin</div>', unsafe_allow_html=True)

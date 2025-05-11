@@ -234,7 +234,7 @@ def set_custom_theme():
         /* Login Form Section */
         .login-section {{
             padding: 0.5rem 0;
-            max-width: 350px;  /* Reduced from 450px to make it narrower */
+            max-width: 250px;
             margin: 0 auto;
             position: relative;
         }}

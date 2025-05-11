@@ -646,9 +646,7 @@ def main():
                     <div class="user-avatar">{first_letter}</div>
                     <span style="font-weight: 500;">Welcome, <strong>{st.session_state.username}</strong></span>
                 </div>
-                <div>
-                    {f'<span class="admin-badge">Admin Access</span>' if st.session_state.is_admin else ''}
-                </div>
+                {'<span class="admin-badge">Admin Access</span>' if st.session_state.is_admin else ''}
             </div>
             """, unsafe_allow_html=True)
             

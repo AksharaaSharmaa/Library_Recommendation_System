@@ -3,91 +3,90 @@ import requests
 from streamlit_extras.colored_header import colored_header
 import base64
 
-# Custom CSS for the dark theme with pink and blue gradient
+# Custom CSS for the warm earthy theme
 def add_custom_css():
     st.markdown("""
     <style>
     /* Main background and text colors */
     .stApp {
-        background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-        color: white;
+        background: linear-gradient(135deg, #E3D4B9, #D9CBA0, #E3D4B9);
+        color: #4B3D2D;
     }
     
     /* Sidebar styling */
     .css-1d391kg {
-        background: rgba(25, 25, 50, 0.8);
+        background: rgba(75, 61, 45, 0.1);
     }
     
     /* Chat message containers */
     .stChatMessage {
-        background: rgba(25, 25, 50, 0.5);
+        background: rgba(226, 212, 185, 0.4);
         border-radius: 15px;
         margin-bottom: 12px;
         padding: 10px;
-        border-left: 3px solid transparent;
-        border-image: linear-gradient(to bottom, #FF61D2, #FE9090) 1;
+        border-left: none;
+        box-shadow: 0 4px 8px rgba(75, 61, 45, 0.1);
     }
     
     /* User message styling */
     [data-testid="stChatMessageContent"] {
-        background: rgba(30, 30, 60, 0.7) !important;
+        background: rgba(166, 124, 77, 0.1) !important;
         border-radius: 12px !important;
         padding: 10px 15px !important;
-        border: 1px solid rgba(100, 100, 255, 0.2);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        border: none;
+        box-shadow: 0 2px 5px rgba(75, 61, 45, 0.1);
     }
     
     /* Chat input box */
     .stChatInputContainer {
-        background: rgba(40, 40, 70, 0.7) !important;
+        background: rgba(226, 212, 185, 0.6) !important;
         border-radius: 20px !important;
         padding: 5px !important;
-        border: 1px solid rgba(255, 97, 210, 0.3);
+        border: 1px solid rgba(139, 91, 41, 0.2);
     }
     
     /* Chat input field */
     .stChatInput {
-        background: rgba(30, 30, 60, 0.7) !important;
-        color: white !important;
+        background: rgba(255, 255, 255, 0.8) !important;
+        color: #4B3D2D !important;
         border-radius: 18px !important;
     }
     
     /* Button styling */
     .stButton button {
-        background: linear-gradient(90deg, #FF61D2, #6E48AA) !important;
-        color: white !important;
+        background: linear-gradient(90deg, #8B5B29, #A67C4D) !important;
+        color: #E3D4B9 !important;
         border: none !important;
         border-radius: 20px !important;
         padding: 10px 20px !important;
         font-weight: bold !important;
         transition: all 0.3s ease !important;
-        box-shadow: 0 4px 10px rgba(110, 72, 170, 0.3) !important;
+        box-shadow: 0 4px 10px rgba(139, 91, 41, 0.2) !important;
     }
     
     .stButton button:hover {
         transform: translateY(-2px) !important;
-        box-shadow: 0 6px 15px rgba(255, 97, 210, 0.4) !important;
+        box-shadow: 0 6px 15px rgba(139, 91, 41, 0.3) !important;
+        background: linear-gradient(90deg, #A67C4D, #8B5B29) !important;
     }
     
     /* API key input */
     [data-testid="stTextInput"] input {
-        background: rgba(40, 40, 70, 0.7) !important;
-        border: 1px solid rgba(255, 97, 210, 0.3) !important;
+        background: rgba(255, 255, 255, 0.8) !important;
+        border: 1px solid rgba(139, 91, 41, 0.3) !important;
         border-radius: 8px !important;
-        color: white !important;
+        color: #4B3D2D !important;
     }
     
     /* Header styling */
     h1, h2, h3 {
-        background: linear-gradient(90deg, #FF61D2, #6E48AA);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: #8B5B29;
         font-weight: 800 !important;
     }
     
     /* Korean text emphasis */
     .korean-text {
-        color: #FF61D2;
+        color: #8B5B29;
         font-weight: 500;
     }
     
@@ -101,21 +100,48 @@ def add_custom_css():
         padding-top: 1rem !important;
         padding-bottom: 1rem !important;
     }
+
+    /* Divider style */
+    hr {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, #A67C4D, transparent);
+        border: none;
+        margin: 15px 0;
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: rgba(217, 203, 160, 0.3);
+        border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: #A67C4D;
+        border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #8B5B29;
+    }
     </style>
     """, unsafe_allow_html=True)
 
-# Function to create a gradient title
-def gradient_title(title):
+# Function to create a warm title
+def warm_title(title):
     html = f'''
     <div style="text-align: center; margin-bottom: 20px;">
-        <h1 style="background: linear-gradient(90deg, #FF61D2, #6E48AA); 
-                   -webkit-background-clip: text; 
-                   -webkit-text-fill-color: transparent; 
-                   font-size: 3rem;
+        <h1 style="color: #8B5B29; 
+                   font-size: 2.6rem;
                    font-weight: 800;
-                   text-shadow: 0px 4px 8px rgba(0,0,0,0.2);">
+                   text-shadow: 1px 1px 2px rgba(75, 61, 45, 0.2);">
             {title}
         </h1>
+        <div style="height: 3px; width: 100px; margin: 0 auto; background: linear-gradient(90deg, transparent, #A67C4D, transparent);"></div>
     </div>
     '''
     st.markdown(html, unsafe_allow_html=True)
@@ -130,11 +156,11 @@ st.title=("HyperCLOVA X Bilingual Bot")
 col1, col2, col3 = st.columns([1, 3, 1])
 
 with col2:
-    gradient_title("HyperCLOVA X Bilingual Chatbot")
+    warm_title("HyperCLOVA X Bilingual Chatbot")
     
     st.markdown("""
     <div style="text-align: center; margin-bottom: 20px;">
-        <p style="font-size: 1.1rem; color: #d1d1e0; margin-bottom: 20px;">
+        <p style="font-size: 1.1rem; color: #4B3D2D; margin-bottom: 20px;">
             Experience seamless communication in English and Korean
         </p>
     </div>
@@ -153,13 +179,11 @@ if "api_key" not in st.session_state:
 # Sidebar for API key with improved styling
 with st.sidebar:
     st.markdown("""
-    <div style="text-align: center; margin-bottom: 20px;">
-        <h3 style="background: linear-gradient(90deg, #FF61D2, #6E48AA);
-                  -webkit-background-clip: text;
-                  -webkit-text-fill-color: transparent;
-                  font-weight: 700;">
+    <div style="text-align: center; margin-bottom: 20px; padding-top: 20px;">
+        <h3 style="color: #8B5B29; font-weight: 700;">
             API Configuration
         </h3>
+        <div style="height: 2px; width: 80px; margin: 10px auto; background: linear-gradient(90deg, transparent, #A67C4D, transparent);"></div>
     </div>
     """, unsafe_allow_html=True)
     
@@ -169,25 +193,23 @@ with st.sidebar:
     # Fixed settings without sliders
     st.markdown("""
     <div style="text-align: center; margin: 20px 0;">
-        <h4 style="background: linear-gradient(90deg, #FF61D2, #6E48AA);
-                  -webkit-background-clip: text;
-                  -webkit-text-fill-color: transparent;
-                  font-weight: 600;">
+        <h4 style="color: #8B5B29; font-weight: 600;">
             Model Settings
         </h4>
+        <div style="height: 2px; width: 60px; margin: 10px auto; background: linear-gradient(90deg, transparent, #A67C4D, transparent);"></div>
     </div>
     """, unsafe_allow_html=True)
     
     st.markdown("""
-    <div style="background: rgba(40, 40, 70, 0.7); padding: 10px; border-radius: 10px; margin-bottom: 20px;">
-        <p style="margin: 5px 0; color: #b3b3cc;"><span style="color: #FF61D2;">Temperature:</span> 0.7</p>
-        <p style="margin: 5px 0; color: #b3b3cc;"><span style="color: #6E48AA;">Max Tokens:</span> 1024</p>
-        <p style="margin: 5px 0; color: #b3b3cc;"><span style="color: #FF61D2;">Top P:</span> 0.8</p>
+    <div style="background: rgba(226, 212, 185, 0.5); padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 6px rgba(75, 61, 45, 0.1);">
+        <p style="margin: 8px 0; color: #4B3D2D;"><span style="color: #8B5B29; font-weight: 500;">Temperature:</span> 0.7</p>
+        <p style="margin: 8px 0; color: #4B3D2D;"><span style="color: #8B5B29; font-weight: 500;">Max Tokens:</span> 1024</p>
+        <p style="margin: 8px 0; color: #4B3D2D;"><span style="color: #8B5B29; font-weight: 500;">Top P:</span> 0.8</p>
     </div>
     """, unsafe_allow_html=True)
     
-    # Clear chat button with gradient style
-    if st.button("Clear Chat 💫"):
+    # Clear chat button with warm style
+    if st.button("Clear Chat ✨"):
         st.session_state.messages = [
             {"role": "system", "content": "You are a helpful AI assistant. For EVERY response, you must answer in BOTH English and Korean. First provide the complete answer in English, then provide '한국어 답변:' followed by the complete Korean translation of your answer."}
         ]
@@ -195,7 +217,7 @@ with st.sidebar:
     
     st.markdown("""
     <div style="text-align: center; margin-top: 30px; padding: 10px;">
-        <p style="color: #b3b3cc; font-size: 0.8rem;">
+        <p style="color: #4B3D2D; font-size: 0.85rem; font-style: italic;">
             Powered by HyperCLOVA X
         </p>
     </div>
@@ -217,8 +239,8 @@ with chat_container:
                     
                     st.markdown(english_part)
                     st.markdown(f"""
-                    <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 97, 210, 0.3);">
-                        <span style="color: #FF61D2; font-weight: 500;">한국어 답변:</span><br>
+                    <div style="margin-top: 15px; padding-top: 12px; border-top: 1px solid rgba(166, 124, 77, 0.3);">
+                        <span style="color: #8B5B29; font-weight: 500;">한국어 답변:</span><br>
                         {korean_part}
                     </div>
                     """, unsafe_allow_html=True)
@@ -243,8 +265,8 @@ with chat_container:
                 
                 # Custom loading animation
                 st.markdown("""
-                <div style="display: flex; justify-content: center; align-items: center; margin: 10px 0;">
-                    <div style="color: #FF61D2; font-weight: 500;">Thinking</div>
+                <div style="display: flex; justify-content: center; align-items: center; margin: 15px 0;">
+                    <div style="color: #8B5B29; font-weight: 500;">Thinking</div>
                     <div class="loading-dots">
                         <style>
                             .loading-dots {
@@ -253,7 +275,7 @@ with chat_container:
                             }
                             .loading-dots::after {
                                 content: '...';
-                                color: #6E48AA;
+                                color: #A67C4D;
                                 animation: dots 1.5s infinite;
                                 font-weight: bold;
                             }
@@ -301,7 +323,7 @@ with chat_container:
                             english_part = parts[0].strip()
                             korean_part = parts[1].strip() if len(parts) > 1 else ""
                             
-                            formatted_response = f"{english_part}\n\n<div style='margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 97, 210, 0.3);'><span style='color: #FF61D2; font-weight: 500;'>한국어 답변:</span><br>{korean_part}</div>"
+                            formatted_response = f"{english_part}\n\n<div style='margin-top: 15px; padding-top: 12px; border-top: 1px solid rgba(166, 124, 77, 0.3);'><span style='color: #8B5B29; font-weight: 500;'>한국어 답변:</span><br>{korean_part}</div>"
                             message_placeholder.markdown(formatted_response, unsafe_allow_html=True)
                         else:
                             message_placeholder.markdown(assistant_response)

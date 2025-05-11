@@ -500,9 +500,7 @@ def display_db_status(connected=True):
 
 # App layout and functionality
 def main():
-    # Set page config
-    st.title("Book Recommendation Service")
-    
+   
     # Initialize secrets dict if it doesn't exist (for testing only)
     if not hasattr(st, "secrets"):
         st.secrets = type('obj', (object,), {

@@ -197,39 +197,6 @@ def set_custom_theme():
             margin-bottom: 0.5rem !important;
         }}
         
-        /* Sidebar customizations */
-        .css-1d391kg, .css-1a3kr0r {{
-            background: linear-gradient(180deg, {primary_dark} 0%, {primary_medium} 100%);
-            color: {text_light};
-        }}
-        
-        .sidebar-content {{
-            padding: 20px 10px;
-            color: {text_light};
-        }}
-        
-        .sidebar-title {{
-            font-family: 'Cormorant Garamond', serif !important;
-            font-size: 1.8rem;
-            font-weight: 600;
-            margin-bottom: 15px;
-            text-align: center;
-            color: {text_light};
-        }}
-        
-        .sidebar-text {{
-            font-size: 0.95rem;
-            line-height: 1.5;
-            margin-bottom: 20px;
-            color: {text_light};
-        }}
-        
-        .sidebar-gif {{
-            border-radius: 10px;
-            margin: 15px 0;
-            width: 100%;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }}
         
         /* Login Form Section */
         .login-section {{
@@ -541,33 +508,6 @@ def display_db_status(connected=True):
         </div>
         """, unsafe_allow_html=True)
 
-# Function to display sidebar content
-def display_sidebar():
-    with st.sidebar:
-        st.markdown('<div class="sidebar-content">', unsafe_allow_html=True)
-        st.markdown('<h3 class="sidebar-title">Book Wanderer</h3>', unsafe_allow_html=True)
-        
-        # Display GIF from assets folder
-        try:
-            st.markdown('<img src="assets/sidebar.gif" class="sidebar-gif" alt="Book Animation">', unsafe_allow_html=True)
-        except:
-            st.write("📚 Book Animation")  # Fallback if image loading fails
-        
-        st.markdown('''
-        <p class="sidebar-text">
-            Welcome to Book Wanderer, your personal guide to discovering amazing books
-            in both English and Korean. Our library features fiction, non-fiction, classics,
-            and contemporary works.
-        </p>
-        
-        <p class="sidebar-text">
-            Sign up or log in to access book recommendations, track your reading progress,
-            and connect with other book lovers.
-        </p>
-        ''', unsafe_allow_html=True)
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-
 # App layout and functionality
 def main():
    
@@ -591,8 +531,6 @@ def main():
     if 'is_admin' not in st.session_state:
         st.session_state.is_admin = False
         
-    # Show sidebar
-    display_sidebar()
     
     # Initialize the database connection and get users collection
     users_collection = init_db()

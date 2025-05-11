@@ -2,3 +2,4 @@ streamlit
 requests
 streamlit-extras
 pybase64
+pymongo

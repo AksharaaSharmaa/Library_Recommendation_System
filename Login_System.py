@@ -695,12 +695,6 @@ def main():
         # Display header
         display_header()
         
-        # Create a centered container for the login area without much spacing
-        st.markdown('<div class="main-content">', unsafe_allow_html=True)
-        
-        # Decorative book icon (moved up to reduce space)
-        st.markdown('<div class="decorative-icon">📚</div>', unsafe_allow_html=True)
-        
         # Show database connection status (only in development or for admins)
         if os.environ.get('SHOW_DB_STATUS') == 'true' or not db_connected:
             display_db_status(db_connected)
@@ -776,8 +770,6 @@ def main():
         
         # Footer with quote about books
         st.markdown('<div class="auth-footer">"A reader lives a thousand lives before he dies." — George R.R. Martin</div>', unsafe_allow_html=True)
-        
-        st.markdown('</div>', unsafe_allow_html=True)  # Close main-content
 
 if __name__ == "__main__":
     main()

@@ -128,38 +128,45 @@ def load_app(filepath):
 
 # Function to set custom CSS
 def set_custom_theme():
-    # Define warm earthy color theme
-    primary_dark = "#3D3026"      # Darker brown
-    primary_medium = "#8B5B29"    # Medium brown
-    primary_light = "#A67C4D"     # Light brown
-    accent_light = "#E3D4B9"      # Very light beige
-    accent_medium = "#D9CBA0"     # Light beige
-    text_dark = "#3D3026"         # Dark brown for text
-    text_light = "#F7F4EF"        # Light beige for text on dark bg
-    background = "#F9F6F2"        # Soft off-white background
-    card_bg = "#FFFFFF"           # White for cards
-    error = "#A64D35"             # Reddish brown for errors
-    success = "#5D8B29"           # Olive green for success
+    # Define refined color palette with stronger contrast
+    primary_dark = "#2A1F1A"       # Darker brown for better readability
+    primary_medium = "#7D4F23"     # Rich medium brown
+    primary_light = "#A67C4D"      # Light brown
+    accent_light = "#E8DCC7"       # Warm light beige
+    accent_dark = "#C9B99B"        # Darker accent for contrast
+    text_dark = "#1F160F"          # Nearly black text for better readability
+    text_light = "#FBF8F5"         # Bright white for text on dark bg
+    background = "#F9F6F2"         # Soft off-white background
+    card_bg = "#FFFFFF"            # White for cards
+    error = "#A33C29"              # Darkened reddish brown for errors
+    success = "#4B7920"            # Darkened olive green for success
     
     # Custom CSS with enhanced aesthetics
     st.markdown(f"""
     <style>
         /* Main styles */
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Lato:wght@300;400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Lato:wght@300;400;500;700&display=swap');
         
         * {{
             font-family: 'Lato', sans-serif;
+            -webkit-font-smoothing: antialiased;
         }}
         
         h1, h2, h3, h4, h5, h6 {{
             font-family: 'Cormorant Garamond', serif !important;
+            letter-spacing: 0.025em !important;
         }}
         
         /* Body and background */
         .stApp {{
-            background: linear-gradient(135deg, {background} 0%, #FFFFFF 100%);
+            background: linear-gradient(145deg, {background} 0%, #FFFFFF 100%);
             padding: 0;
             max-width: 100%;
+        }}
+        
+        /* Hide Streamlit elements */
+        #MainMenu, footer, header {{
+            visibility: hidden;
         }}
         
         /* Hide full screen button */
@@ -169,8 +176,8 @@ def set_custom_theme():
         
         /* Horizontal band above header */
         .horizontal-band {{
-            background: linear-gradient(135deg, {primary_dark} 0%, {primary_medium} 100%);
-            height: 15px;
+            background: linear-gradient(145deg, {primary_dark} 0%, {primary_medium} 100%);
+            height: 12px;
             width: 100%;
             position: relative;
             z-index: 999;
@@ -178,131 +185,196 @@ def set_custom_theme():
         
         /* Header */
         .app-header {{
-            background: linear-gradient(135deg, {primary_dark} 0%, {primary_medium} 100%);
-            padding: 2rem 1rem;
-            border-radius: 0 0 35px 35px;
-            box-shadow: 0 10px 25px rgba(75, 61, 45, 0.15);
+            background: linear-gradient(145deg, {primary_dark} 0%, {primary_medium} 100%);
+            padding: 2.5rem 1rem;
+            border-radius: 0 0 40px 40px;
+            box-shadow: 0 12px 30px rgba(42, 31, 26, 0.15);
             text-align: center;
-            margin-bottom: 0; /* Removed space after header */
+            margin-bottom: 0;
+            position: relative;
+            overflow: hidden;
+        }}
+        
+        /* Book icon decorations for header */
+        .app-header::before, .app-header::after {{
+            content: "📚";
+            position: absolute;
+            font-size: 4rem;
+            opacity: 0.1;
+            transform: rotate(-10deg);
+        }}
+        
+        .app-header::before {{
+            top: 10px;
+            left: 15px;
+        }}
+        
+        .app-header::after {{
+            bottom: -10px;
+            right: 20px;
+            transform: rotate(15deg);
         }}
         
         .app-header h1 {{
             color: {text_light} !important;
-            font-size: 3.2rem !important;
+            font-size: 3.5rem !important;
             font-weight: 700 !important;
             margin-bottom: 0.25rem !important;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-            letter-spacing: 1.8px;
+            text-shadow: 0 3px 6px rgba(0, 0, 0, 0.25);
+            letter-spacing: 0.05em;
         }}
         
         .app-header p {{
             color: {accent_light} !important;
-            font-size: 1.15rem !important;
+            font-size: 1.25rem !important;
             font-weight: 300 !important;
-            letter-spacing: 0.8px;
+            letter-spacing: 0.04em;
             margin-bottom: 0.5rem !important;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
         }}
-        
         
         /* Login Form Section */
         .login-section {{
             padding: 0.5rem 0;
-            max-width: 250px;
+            max-width: 320px;
             margin: 0 auto;
             position: relative;
+            background-color: rgba(255, 255, 255, 0.65);
+            padding: 2rem;
+            border-radius: 20px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            box-shadow: 0 8px 32px rgba(42, 31, 26, 0.1);
+            border: 1px solid rgba(201, 185, 155, 0.2);
+            margin-top: 2rem;
+        }}
+        
+        /* Decorative icon */
+        .decorative-icon {{
+            font-size: 2.5rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            display: block;
         }}
         
         /* Tabs */
         .stTabs [data-baseweb="tab-list"] {{
             gap: 0 !important;
-            background-color: transparent !important;
-            padding: 0 !important;
+            background-color: rgba(255, 255, 255, 0.5) !important;
+            padding: 0.25rem !important;
             border-radius: 15px !important;
             display: flex !important;
-            margin-bottom: 1.5rem !important;
-            border-bottom: 1px solid {accent_light} !important;
+            margin-bottom: 1.8rem !important;
+            border: 1px solid {accent_light} !important;
+            box-shadow: 0 4px 12px rgba(42, 31, 26, 0.05);
         }}
         
         .stTabs [data-baseweb="tab"] {{
-            height: 3.5rem !important;
+            height: 3.8rem !important;
             white-space: pre-wrap !important;
             background-color: transparent !important;
-            border-radius: 15px 15px 0 0 !important;
+            border-radius: 12px !important;
             color: {primary_medium} !important;
             font-weight: 500 !important;
             font-size: 1.25rem !important;
             flex: 1 !important;
             text-align: center !important;
             font-family: 'Cormorant Garamond', serif !important;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.04em;
+            transition: all 0.3s ease !important;
         }}
         
         .stTabs [aria-selected="true"] {{
-            background: linear-gradient(135deg, {primary_medium} 0%, {primary_dark} 100%) !important;
+            background: linear-gradient(145deg, {primary_medium} 0%, {primary_dark} 100%) !important;
             color: {text_light} !important;
-            box-shadow: 0 4px 15px rgba(75, 61, 45, 0.15) !important;
+            box-shadow: 0 4px 15px rgba(42, 31, 26, 0.2) !important;
             font-weight: 600 !important;
+            transform: translateY(-2px);
         }}
         
         /* Form inputs */
         .stTextInput > div > div > input {{
-            border: 1px solid {accent_light} !important;
+            border: 1px solid {accent_dark} !important;
             border-radius: 12px !important;
-            padding: 1rem !important;
-            background-color: rgba(255, 255, 255, 0.7) !important;
+            padding: 1.2rem 1rem !important;
+            background-color: rgba(255, 255, 255, 0.8) !important;
             font-size: 1rem !important;
             transition: all 0.3s ease !important;
-            box-shadow: 0 2px 8px rgba(75, 61, 45, 0.05) !important;
-            color: {primary_dark} !important;
+            box-shadow: 0 4px 12px rgba(42, 31, 26, 0.05) !important;
+            color: {text_dark} !important;
+            margin-bottom: 0.5rem;
         }}
         
         .stTextInput > div > div > input:focus {{
-            background-color: rgba(255, 255, 255, 0.95) !important;
+            background-color: rgba(255, 255, 255, 1) !important;
             box-shadow: 0 0 0 2px {primary_light} !important;
             border-color: {primary_light} !important;
+            transform: translateY(-2px);
         }}
         
         /* Form labels */
         .stTextInput > label {{
             font-weight: 500 !important;
-            font-size: 1rem !important;
+            font-size: 1.05rem !important;
             color: {primary_dark} !important;
             margin-bottom: 0.5rem !important;
         }}
         
         /* Buttons */
         .stButton > button {{
-            background: linear-gradient(135deg, {primary_medium} 0%, {primary_dark} 100%) !important;
+            background: linear-gradient(145deg, {primary_medium} 0%, {primary_dark} 100%) !important;
             color: {text_light} !important;
             border: none !important;
-            padding: 0.8rem 2.2rem !important;
-            font-size: 1.05rem !important;
+            padding: 0.9rem 2.5rem !important;
+            font-size: 1.15rem !important;
             font-weight: 600 !important;
-            border-radius: 12px !important;
-            transition: all 0.3s ease !important;
-            box-shadow: 0 4px 12px rgba(75, 61, 45, 0.2) !important;
+            border-radius: 14px !important;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+            box-shadow: 0 6px 16px rgba(42, 31, 26, 0.2) !important;
             display: inline-flex !important;
             align-items: center !important;
             justify-content: center !important;
-            min-width: 120px !important;
-            letter-spacing: 1.2px;
+            min-width: 180px !important;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            position: relative;
+            overflow: hidden;
+        }}
+        
+        .stButton > button::after {{
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                          rgba(255,255,255,0) 0%, 
+                          rgba(255,255,255,0.1) 50%, 
+                          rgba(255,255,255,0) 100%);
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
         }}
         
         .stButton > button:hover {{
-            box-shadow: 0 6px 20px rgba(75, 61, 45, 0.35) !important;
-            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(42, 31, 26, 0.3) !important;
+            transform: translateY(-3px);
+        }}
+        
+        .stButton > button:hover::after {{
+            transform: translateX(100%);
         }}
         
         .stButton > button:active {{
-            transform: translateY(0);
-            box-shadow: 0 2px 8px rgba(75, 61, 45, 0.2) !important;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(42, 31, 26, 0.2) !important;
         }}
         
         /* Center button */
         .button-container {{
             display: flex;
             justify-content: center;
-            margin-top: 1.8rem;
+            margin-top: 2rem;
         }}
         
         /* Headings */
@@ -313,11 +385,15 @@ def set_custom_theme():
         
         .section-heading {{
             text-align: center;
-            font-size: 2.25rem !important;
-            margin-bottom: 1.2rem !important;
+            font-size: 2.4rem !important;
+            margin-bottom: 1.5rem !important;
             font-weight: 700 !important;
-            color: {primary_medium} !important;
-            letter-spacing: 1px;
+            color: {primary_dark} !important;
+            letter-spacing: 0.05em;
+            background: linear-gradient(145deg, {primary_medium} 0%, {primary_dark} 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }}
         
         /* Success/Error messages */
@@ -326,9 +402,9 @@ def set_custom_theme():
             color: white !important;
             border: none !important;
             border-radius: 12px !important;
-            padding: 0.8rem 1rem !important;
+            padding: 1rem 1.2rem !important;
             font-weight: 500 !important;
-            box-shadow: 0 4px 12px rgba(93, 139, 41, 0.2) !important;
+            box-shadow: 0 6px 16px rgba(75, 121, 32, 0.25) !important;
         }}
         
         .stError {{
@@ -336,128 +412,190 @@ def set_custom_theme():
             color: white !important;
             border: none !important;
             border-radius: 12px !important;
-            padding: 0.8rem 1rem !important;
+            padding: 1rem 1.2rem !important;
             font-weight: 500 !important;
-            box-shadow: 0 4px 12px rgba(166, 77, 53, 0.2) !important;
+            box-shadow: 0 6px 16px rgba(163, 60, 41, 0.25) !important;
         }}
         
         /* Divider */
         hr {{
-            margin: 1rem 0;
+            margin: 1.5rem 0;
             border-color: {accent_light};
             border-width: 1px;
         }}
         
         /* User info panel in sidebar */
         .sidebar-user-panel {{
-            background: linear-gradient(135deg, rgba(75, 61, 45, 0.05) 0%, rgba(166, 124, 77, 0.05) 100%);
-            padding: 0.9rem 1rem;
-            border-radius: 10px;
-            margin-bottom: 1rem;
-            border: 1px solid rgba(166, 124, 77, 0.1);
-            box-shadow: 0 4px 10px rgba(75, 61, 45, 0.05);
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.8) 0%, rgba(232, 220, 199, 0.6) 100%);
+            padding: 1.2rem 1.4rem;
+            border-radius: 16px;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(166, 124, 77, 0.2);
+            box-shadow: 0 8px 20px rgba(42, 31, 26, 0.08);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }}
         
         .sidebar-user-info {{
             display: flex;
             align-items: center;
-            margin-bottom: 0.7rem;
+            margin-bottom: 0.8rem;
         }}
         
         .user-avatar {{
-            background: linear-gradient(135deg, {primary_medium} 0%, {primary_dark} 100%);
+            background: linear-gradient(145deg, {primary_medium} 0%, {primary_dark} 100%);
             color: {text_light};
-            width: 32px;
-            height: 32px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 600;
-            margin-right: 10px;
+            margin-right: 12px;
             font-family: 'Cormorant Garamond', serif !important;
-            font-size: 1.1rem;
-            box-shadow: 0 2px 5px rgba(75, 61, 45, 0.2);
+            font-size: 1.5rem;
+            box-shadow: 0 4px 10px rgba(42, 31, 26, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.8);
         }}
         
         /* Admin badge styling */
         .admin-badge {{
             display: inline-block;
-            background: linear-gradient(135deg, #8B5B29 0%, #3D3026 100%);
+            background: linear-gradient(145deg, {primary_medium} 0%, {primary_dark} 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             font-weight: 600;
-            font-size: 0.8rem;
-            margin-top: 0.2rem;
+            font-size: 0.85rem;
+            margin-top: 0.4rem;
             margin-bottom: 0.5rem;
-            padding: 2px 8px;
+            padding: 3px 10px;
             border-radius: 8px;
-            border: 1px solid rgba(139, 91, 41, 0.3);
-            background-color: rgba(227, 212, 185, 0.1);
+            border: 1px solid rgba(125, 79, 35, 0.3);
+            background-color: rgba(232, 220, 199, 0.3);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
         }}
         
         /* Sidebar logout button */
         .sidebar-logout-button {{
             width: 100%;
-            margin-top: 0.5rem;
+            margin-top: 0.8rem;
         }}
         
         .sidebar-logout-button button {{
             width: 100% !important;
             min-width: auto !important;
-            padding: 0.6rem 1rem !important;
-            font-size: 0.9rem !important;
+            padding: 0.7rem 1rem !important;
+            font-size: 0.95rem !important;
+            border-radius: 10px !important;
         }}
         
         /* Database connection status */
         .db-status {{
-            padding: 5px 12px;
+            padding: 6px 14px;
             border-radius: 20px;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             font-weight: 500;
             display: inline-flex;
             align-items: center;
-            margin-top: 5px;
+            margin-top: 10px;
+            transition: all 0.3s ease;
         }}
         
         .db-status.connected {{
-            background-color: rgba(93, 139, 41, 0.15);
+            background-color: rgba(75, 121, 32, 0.15);
             color: {success};
-            border: 1px solid rgba(93, 139, 41, 0.3);
+            border: 1px solid rgba(75, 121, 32, 0.3);
         }}
         
         .db-status.disconnected {{
-            background-color: rgba(166, 77, 53, 0.15);
+            background-color: rgba(163, 60, 41, 0.15);
             color: {error};
-            border: 1px solid rgba(166, 77, 53, 0.3);
+            border: 1px solid rgba(163, 60, 41, 0.3);
         }}
         
         .db-status-dot {{
-            width: 8px;
-            height: 8px;
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
             display: inline-block;
-            margin-right: 6px;
+            margin-right: 8px;
+            position: relative;
         }}
         
         .db-status.connected .db-status-dot {{
             background-color: {success};
+            box-shadow: 0 0 0 rgba(75, 121, 32, 0.4);
+            animation: pulse 2s infinite;
         }}
         
         .db-status.disconnected .db-status-dot {{
             background-color: {error};
         }}
         
+        @keyframes pulse {{
+            0% {{
+                box-shadow: 0 0 0 0 rgba(75, 121, 32, 0.4);
+            }}
+            70% {{
+                box-shadow: 0 0 0 10px rgba(75, 121, 32, 0);
+            }}
+            100% {{
+                box-shadow: 0 0 0 0 rgba(75, 121, 32, 0);
+            }}
+        }}
+        
         /* Sidebar general styling */
         .css-1d391kg, .css-163ttbj, section[data-testid="stSidebar"] {{
-            background: linear-gradient(180deg, {background} 0%, #FFFFFF 100%);
+            background: linear-gradient(180deg, rgba(249, 246, 242, 0.95) 0%, rgba(255, 255, 255, 0.95) 100%);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }}
         
         /* Add divider after sidebar user panel */
         .sidebar-divider {{
-            margin: 0.8rem 0;
+            margin: 1.2rem 0;
             border-color: {accent_light};
-            opacity: 0.4;
+            opacity: 0.5;
+            height: 1px;
+        }}
+        
+        /* Auth footer with quote */
+        .auth-footer {{
+            text-align: center;
+            font-style: italic;
+            font-family: 'Cormorant Garamond', serif !important;
+            color: {primary_medium};
+            margin-top: 2.5rem;
+            font-size: 1.2rem;
+            padding: 0.8rem;
+            opacity: 0.8;
+        }}
+        
+        /* Media queries for responsiveness */
+        @media (max-width: 768px) {{
+            .app-header h1 {{
+                font-size: 2.8rem !important;
+            }}
+            
+            .app-header p {{
+                font-size: 1.1rem !important;
+            }}
+            
+            .login-section {{
+                max-width: 90%;
+                padding: 1.5rem;
+            }}
+            
+            .section-heading {{
+                font-size: 2rem !important;
+            }}
+            
+            .stButton > button {{
+                min-width: 150px !important;
+                padding: 0.8rem 2rem !important;
+            }}
         }}
     </style>
     """, unsafe_allow_html=True)
@@ -639,30 +777,7 @@ def main():
         # Footer with quote about books
         st.markdown('<div class="auth-footer">"A reader lives a thousand lives before he dies." — George R.R. Martin</div>', unsafe_allow_html=True)
         
-        st.markdown('</div>', unsafe_allow_html=True)  # Close the main-content div
-    
-    # If logged in, load the main application (without displaying user panel in main content)
-    else:
-        if not db_connected:
-            st.error("Database connection lost. Please refresh the page.")
-            if st.button("Logout", key="error_logout_btn"):
-                st.session_state.logged_in = False
-                st.session_state.username = ''
-                st.session_state.is_admin = False
-                st.rerun()
-            return
-        
-        # Load the appropriate application based on user role
-        try:
-            if st.session_state.is_admin:
-                # For admin users
-                load_app("admin_dashboard.py")
-            else:
-                # For regular users
-                load_app("ChatBot.py")
-        except Exception as e:
-            st.error(f"Error loading application: {e}")
-            st.info("Make sure all required Python files are present in your Streamlit app directory.")
+        st.markdown('</div>', unsafe_allow_html=True)  # Close main-content
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -6,8 +6,6 @@ import importlib.util
 import sys
 import base64
 
-import streamlit as st
-
 st.set_page_config(
     page_title="Book Wanderer: Library Recommendation System",
     page_icon="📚",
@@ -286,7 +284,7 @@ def set_custom_theme():
             display: inline-flex !important;
             align-items: center !important;
             justify-content: center !important;
-            min-width: 160px !important;
+            min-width: 120px !important;
             letter-spacing: 1.2px;
         }}
         
@@ -345,107 +343,70 @@ def set_custom_theme():
         
         /* Divider */
         hr {{
-            margin: 2rem 0;
+            margin: 1rem 0;
             border-color: {accent_light};
             border-width: 1px;
         }}
         
-        /* User info panel */
-        .user-panel {{
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        /* User info panel in sidebar */
+        .sidebar-user-panel {{
             background: linear-gradient(135deg, rgba(75, 61, 45, 0.05) 0%, rgba(166, 124, 77, 0.05) 100%);
-            padding: 0.9rem 1.5rem;
-            border-radius: 15px;
-            margin-bottom: 1.5rem;
+            padding: 0.9rem 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
             border: 1px solid rgba(166, 124, 77, 0.1);
-            box-shadow: 0 4px 15px rgba(75, 61, 45, 0.08);
+            box-shadow: 0 4px 10px rgba(75, 61, 45, 0.05);
         }}
         
-        .user-panel-info {{
+        .sidebar-user-info {{
             display: flex;
             align-items: center;
+            margin-bottom: 0.7rem;
         }}
         
         .user-avatar {{
             background: linear-gradient(135deg, {primary_medium} 0%, {primary_dark} 100%);
             color: {text_light};
-            width: 42px;
-            height: 42px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 600;
-            margin-right: 12px;
+            margin-right: 10px;
             font-family: 'Cormorant Garamond', serif !important;
-            font-size: 1.3rem;
-            box-shadow: 0 3px 8px rgba(75, 61, 45, 0.2);
-        }}
-        
-        /* Logout button */
-        .logout-button {{
-            background: transparent !important;
-            color: {primary_dark} !important;
-            border: 1px solid {accent_medium} !important;
-            padding: 0.5rem 1rem !important;
-            border-radius: 10px !important;
-            font-size: 0.875rem !important;
-            font-weight: 500 !important;
-            transition: all 0.2s ease !important;
-            box-shadow: none !important;
-        }}
-        
-        .logout-button:hover {{
-            background-color: rgba(227, 212, 185, 0.2) !important;
-            border-color: {primary_light} !important;
-        }}
-        
-        /* Decorative elements */
-        .decorative-icon {{
-            margin: 0 auto;
-            display: block;
-            text-align: center;
-            font-size: 2.2rem;
-            color: {primary_light};
-            margin-bottom: 0.5rem;
-            margin-top: -0.5rem; /* Move icon up to reduce space */
-        }}
-        
-        /* Footer for login page */
-        .auth-footer {{
-            text-align: center;
-            margin-top: 2rem;
-            color: {primary_medium};
-            font-size: 0.9rem;
-            opacity: 0.8;
-            max-width: 500px;
-            margin-left: auto;
-            margin-right: auto;
-        }}
-        
-        /* Main content area */
-        .main-content {{
-            display: flex;
-            justify-content: center;
-            align-items: flex-start; /* Changed to flex-start to reduce space */
-            flex-direction: column;
-            width: 100%;
-            padding: 0 20px;
+            font-size: 1.1rem;
+            box-shadow: 0 2px 5px rgba(75, 61, 45, 0.2);
         }}
         
         /* Admin badge styling */
         .admin-badge {{
+            display: inline-block;
             background: linear-gradient(135deg, #8B5B29 0%, #3D3026 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             font-weight: 600;
-            margin-right: 15px;
-            padding: 3px 8px;
+            font-size: 0.8rem;
+            margin-top: 0.2rem;
+            margin-bottom: 0.5rem;
+            padding: 2px 8px;
             border-radius: 8px;
             border: 1px solid rgba(139, 91, 41, 0.3);
             background-color: rgba(227, 212, 185, 0.1);
+        }}
+        
+        /* Sidebar logout button */
+        .sidebar-logout-button {{
+            width: 100%;
+            margin-top: 0.5rem;
+        }}
+        
+        .sidebar-logout-button button {{
+            width: 100% !important;
+            min-width: auto !important;
+            padding: 0.6rem 1rem !important;
+            font-size: 0.9rem !important;
         }}
         
         /* Database connection status */
@@ -486,6 +447,18 @@ def set_custom_theme():
         .db-status.disconnected .db-status-dot {{
             background-color: {error};
         }}
+        
+        /* Sidebar general styling */
+        .css-1d391kg, .css-163ttbj, section[data-testid="stSidebar"] {{
+            background: linear-gradient(180deg, {background} 0%, #FFFFFF 100%);
+        }}
+        
+        /* Add divider after sidebar user panel */
+        .sidebar-divider {{
+            margin: 0.8rem 0;
+            border-color: {accent_light};
+            opacity: 0.4;
+        }}
     </style>
     """, unsafe_allow_html=True)
 
@@ -516,6 +489,35 @@ def display_db_status(connected=True):
         </div>
         """, unsafe_allow_html=True)
 
+# Function to display user info in sidebar
+def display_sidebar_user_panel():
+    with st.sidebar:
+        # Get first letter of username for avatar
+        first_letter = st.session_state.username[0].upper()
+        
+        # Create container for user panel
+        st.markdown(f"""
+        <div class="sidebar-user-panel">
+            <div class="sidebar-user-info">
+                <div class="user-avatar">{first_letter}</div>
+                <span style="font-weight: 500;">Welcome, <strong>{st.session_state.username}</strong></span>
+            </div>
+            {f'<div class="admin-badge">Admin Access</div>' if st.session_state.is_admin else ''}
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Add logout button with full width in sidebar
+        st.markdown('<div class="sidebar-logout-button">', unsafe_allow_html=True)
+        if st.button("Logout", key="sidebar_logout_btn", help="Sign out of your account"):
+            st.session_state.logged_in = False
+            st.session_state.username = ''
+            st.session_state.is_admin = False
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Add divider
+        st.markdown('<hr class="sidebar-divider">', unsafe_allow_html=True)
+
 # App layout and functionality
 def main():
    
@@ -545,6 +547,10 @@ def main():
     
     # Check if database connection was successful
     db_connected = users_collection is not None
+    
+    # If user is logged in, display sidebar user panel
+    if st.session_state.logged_in:
+        display_sidebar_user_panel()
     
     # If user is not logged in, show login/signup interface
     if not st.session_state.logged_in:
@@ -635,7 +641,7 @@ def main():
         
         st.markdown('</div>', unsafe_allow_html=True)  # Close the main-content div
     
-    # If logged in, load the main application (without displaying header)
+    # If logged in, load the main application (without displaying user panel in main content)
     else:
         if not db_connected:
             st.error("Database connection lost. Please refresh the page.")
@@ -645,31 +651,6 @@ def main():
                 st.session_state.is_admin = False
                 st.rerun()
             return
-            
-        # Create a container for the welcome panel
-        col1, col2, col3 = st.columns([1, 3, 1])
-        
-        with col2:
-            # Display user info with avatar and logout button
-            first_letter = st.session_state.username[0].upper()
-            st.markdown(f"""
-            <div class="user-panel">
-                <div class="user-panel-info">
-                    <div class="user-avatar">{first_letter}</div>
-                    <span style="font-weight: 500;">Welcome, <strong>{st.session_state.username}</strong></span>
-                </div>
-                {'<span class="admin-badge">Admin Access</span>' if st.session_state.is_admin else ''}
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # Add logout button
-            col_a, col_b, col_c = st.columns([5, 2, 1])
-            with col_c:
-                if st.button("Logout", key="logout_btn", help="Sign out of your account"):
-                    st.session_state.logged_in = False
-                    st.session_state.username = ''
-                    st.session_state.is_admin = False
-                    st.rerun()
         
         # Load the appropriate application based on user role
         try:

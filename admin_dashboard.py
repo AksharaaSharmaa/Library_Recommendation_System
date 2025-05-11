@@ -600,14 +600,6 @@ def main():
             pass
         return
     
-    # Set page config
-    st.set_page_config(
-        page_title="Admin Dashboard",
-        page_icon="🔐",
-        layout="wide",
-        initial_sidebar_state="expanded"
-    )
-    
     # Apply enhanced styling
     apply_enhanced_css()
     

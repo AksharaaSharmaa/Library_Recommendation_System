@@ -6,6 +6,14 @@ import importlib.util
 import sys
 import base64
 
+import streamlit as st
+
+st.set_page_config(
+    page_title="Book Wanderer: Library Recommendation System",
+    page_icon="📚",
+    layout="wide",
+)
+
 # Function to create a hashed password
 def make_hashes(password):
     return hashlib.sha256(str.encode(password)).hexdigest()

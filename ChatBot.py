@@ -513,7 +513,7 @@ def main():
     col1, col2, col3 = st.columns([1, 3, 1])
     
     with col2:
-        gradient_title("Book Wanderer")
+        gradient_title("Book Wanderer | 책방랑자")
         
         st.markdown("""
         <div style="text-align: center; margin-bottom: 20px;">

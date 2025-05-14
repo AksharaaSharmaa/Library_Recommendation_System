@@ -2,245 +2,7 @@ import streamlit as st
 import requests
 from streamlit_extras.colored_header import colored_header
 import base64
-
-def add_custom_css():
-    st.markdown("""
-    <style>
-        /* Main app background */
-        .stApp {
-            background: linear-gradient(135deg, #f9f2e7, #f0e4d3, #e6d7c3);
-            color: #4a3728;
-        }
-        
-        /* Darker sidebar background */
-        [data-testid="stSidebar"] {
-            background: linear-gradient(135deg, #e6d7c3, #d2b48c, #c9b18c) !important;
-            border-right: 1px solid rgba(139, 90, 43, 0.2);
-        }
-        
-        /* Make all text dark brown */
-        p, div, span, label, h1, h2, h3, h4, h5, h6, li, a, .stMarkdown, .stText {
-            color: #4a3728 !important;
-        }
-        
-        /* Override any white text in elements */
-        .stButton button {
-            background: linear-gradient(90deg, #8b5a2b, #d2b48c);
-            color: #f5e7d3;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 25px;
-            transition: all 0.3s ease;
-        }
-        
-        .stButton button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(139, 90, 43, 0.4);
-        }
-        
-        .stTextInput input, .stNumberInput input, .stSelectbox, .stMultiselect {
-            background-color: rgba(245, 231, 211, 0.7);
-            color: #4a3728;
-            border: 1px solid #a67c52;
-            border-radius: 25px;
-        }
-        
-        .stChat .message.user {
-            background-color: #d2b48c;
-            border-radius: 20px;
-        }
-        
-        .stChat .message.assistant {
-            background-color: #b39b7d;
-            border-radius: 20px;
-        }
-        
-        div[data-testid="stVerticalBlock"] {
-            padding: 0 10px;
-        }
-        
-        .book-title {
-            color: #603913;
-            font-size: 1.2rem;
-            margin-bottom: 10px;
-            font-weight: 600;
-        }
-        
-        .book-info {
-            margin-bottom: 8px;
-            color: #4a3728;
-            line-height: 1.5;
-        }
-        
-        .like-button {
-            background: linear-gradient(90deg, #8b5a2b, #a67c52);
-            color: #f5e7d3;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            transition: all 0.3s ease;
-        }
-        
-        .like-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 3px 10px rgba(139, 90, 43, 0.4);
-        }
-        
-        .chat-container {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            margin-bottom: 30px;
-            padding: 15px;
-        }
-        
-        .chat-message {
-            padding: 15px 20px;
-            border-radius: 20px;
-            max-width: 85%;
-            box-shadow: 0 3px 10px rgba(74, 55, 40, 0.2);
-            line-height: 1.6;
-        }
-        
-        .assistant-message {
-            align-self: flex-start;
-            background: linear-gradient(to right, #b39b7d, #9e8974);
-            border-left: 3px solid #8b5a2b;
-            margin-left: 10px;
-        }
-        
-        .user-message {
-            align-self: flex-end;
-            background: linear-gradient(to right, #c9b18c, #a67c52);
-            border-right: 3px solid #603913;
-            margin-right: 10px;
-        }
-        
-        .korean-text {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid rgba(139, 90, 43, 0.3);
-        }
-        
-        .korean-label {
-            color: #603913;
-            font-weight: 600;
-            display: inline-block;
-            margin-bottom: 5px;
-        }
-        
-        .message-timestamp {
-            font-size: 0.7rem;
-            color: #7d5a41;
-            margin-top: 8px;
-            text-align: right;
-        }
-        
-        .message-avatar {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 5px;
-            font-size: 0.8rem;
-            font-weight: bold;
-        }
-        
-        .user-avatar {
-            background: linear-gradient(135deg, #8b5a2b, #a67c52);
-            color: #f5e7d3;
-            align-self: flex-end;
-            margin-right: 10px;
-        }
-        
-        .assistant-avatar {
-            background: linear-gradient(135deg, #603913, #8b5a2b);
-            color: #f5e7d3;
-            align-self: flex-start;
-            margin-left: 10px;
-        }
-        
-        .message-with-avatar {
-            display: flex;
-            flex-direction: column;
-        }
-        
-        /* Remove container backgrounds */
-        .stHeader, div[data-testid="stDecoration"], div[data-testid="stToolbar"] {
-            background: none !important;
-            border: none !important;
-            box-shadow: none !important;
-        }
-        
-        /* Keep the answer container but make it darker */
-        .stTextArea textarea {
-            background-color: #b39b7d !important;
-            color: #4a3728 !important;
-            border: 1px solid #8b5a2b !important;
-            border-radius: 15px !important;
-        }
-        
-        /* Remove rectangular containers by making them transparent */
-        [data-testid="block-container"], [data-testid="stExpander"] {
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-        }
-        
-        /* Ensure sidebar text is dark brown */
-        [data-testid="stSidebar"] p, 
-        [data-testid="stSidebar"] div, 
-        [data-testid="stSidebar"] span, 
-        [data-testid="stSidebar"] label {
-            color: #4a3728 !important;
-        }
-        
-        /* Override any white text in inputs or special elements */
-        input, textarea, select, .stSelectbox, .stMultiselect {
-            color: #4a3728 !important;
-        }
-        
-        /* Menu items and dropdowns */
-        .stSelectbox ul li, .stMultiselect ul li {
-            color: #4a3728 !important;
-        }
-        
-        /* Gradient divider */
-        .gradient-divider {
-            height: 3px;
-            background: linear-gradient(90deg, transparent, #8b5a2b, #a67c52, transparent);
-            margin: 25px 0;
-            border-radius: 3px;
-        }
-        
-        /* Footer text */
-        footer {
-            color: #4a3728 !important;
-        }
-        
-        /* Code blocks */
-        code, pre {
-            color: #603913 !important;
-        }
-    </style>
-    """, unsafe_allow_html=True)
-
-def gradient_title(title_text):
-    st.markdown(f"""
-    <h1 style="text-align: center; 
-              background: linear-gradient(90deg, #8b5a2b, #a67c52); 
-              -webkit-background-clip: text;
-              -webkit-text-fill-color: transparent;
-              font-weight: 800;
-              font-size: 2.5rem;
-              margin-bottom: 20px;">
-        {title_text}
-    </h1>
-    """, unsafe_allow_html=True)
+from Frontend import add_custom_css, gradient_title
 
 def display_message(message):
     if message["role"] != "system":
@@ -314,6 +76,7 @@ def call_hyperclova_api(messages, api_key):
             result = response.json()
             return result['result']['message']['content']
         else:
+            st.error(f"Error connecting to HyperCLOVA API: {response.status_code}")
             return None
     except Exception as e:
         st.error(f"Error connecting to HyperCLOVA API: {e}")
@@ -395,12 +158,29 @@ def get_book_recommendations(genre, api_key):
     except Exception as e:
         st.error(f"Error connecting to Library API: {e}")
         return []
+    
+def build_book_context(book_info, book_details):
+    """Build a rich context for HyperCLOVA about the book"""
+    context = f"Title: {book_info.get('bookname', 'Unknown')}\n"
+    context += f"Author: {book_info.get('authors', 'Unknown')}\n"
+    context += f"Publisher: {book_info.get('publisher', 'Unknown')}\n"
+    context += f"Publication Year: {book_info.get('publication_year', 'Unknown')}\n"
+    context += f"Genre: {st.session_state.user_genre}\n"
+    
+    # Add details if available
+    if book_details:
+        if 'description' in book_details:
+            context += f"\nDescription: {book_details.get('description', '')}\n"
+        if 'contents' in book_details:
+            context += f"\nContents: {book_details.get('contents', '')}\n"
+        if 'subjects' in book_details:
+            context += f"\nSubjects: {book_details.get('subjects', '')}\n"
+    
+    return context
 
 def display_book_card(book, index):
     """Helper function to display a book card"""
     info = book.get("doc", {})
-    
-    col1, col2 = st.columns([1, 3])
     
     with st.container():
         st.markdown('<div class="book-card">', unsafe_allow_html=True)
@@ -439,6 +219,30 @@ def display_book_card(book, index):
         
         st.markdown('</div>', unsafe_allow_html=True)
 
+def get_book_details(isbn, api_key):
+    """Get detailed information about a specific book using its ISBN"""
+    try:
+        DETAIL_URL = "http://data4library.kr/api/srchDtlList"
+        
+        params = {
+            "authKey": api_key,
+            "isbn13": isbn,
+            "format": "json"
+        }
+        
+        response = requests.get(DETAIL_URL, params=params)
+        
+        if response.status_code == 200:
+            data = response.json()
+            details = data.get("response", {}).get("detail", [])
+            return details[0] if details else None
+        else:
+            st.error(f"Failed to fetch book details. Status code: {response.status_code}")
+            return None
+    except Exception as e:
+        st.error(f"Error connecting to Library API for book details: {e}")
+        return None
+
 def display_detailed_book(book_info):
     """Helper function to display detailed book information"""
     st.markdown('<div class="book-card" style="margin-bottom: 30px;">', unsafe_allow_html=True)
@@ -472,6 +276,46 @@ def display_detailed_book(book_info):
     
     st.markdown('</div>', unsafe_allow_html=True)
 
+def fetch_and_enrich_books_data(books, api_key):
+    """Fetch detailed information for each book and add it to the data"""
+    enriched_books = []
+    for book in books:
+        book_info = book.get("doc", {})
+        book_isbn = book_info.get("isbn13", "")
+        
+        if book_isbn:
+            details = get_book_details(book_isbn, api_key)
+            if details:
+                # Add details to the book info
+                book["details"] = details
+        
+        enriched_books.append(book)
+    
+    return enriched_books
+
+def build_recommendations_context(books_data):
+    """Build a rich context from all recommended books"""
+    context = "Here are summaries of the recommended books:\n\n"
+    
+    for i, book in enumerate(books_data, 1):
+        book_info = book.get("doc", {})
+        book_details = book.get("details", {})
+        
+        context += f"{i}. '{book_info.get('bookname', 'Unknown Title')}' by {book_info.get('authors', 'Unknown Author')}\n"
+        context += f"   Published by {book_info.get('publisher', 'Unknown Publisher')} in {book_info.get('publication_year', 'Unknown Year')}\n"
+        
+        # Add description if available
+        if book_details and 'description' in book_details:
+            # Truncate description if too long
+            description = book_details.get('description', '')
+            if len(description) > 300:
+                description = description[:300] + "..."
+            context += f"   Description: {description}\n"
+        
+        context += "\n"
+    
+    return context
+
 # Main application
 def main():
     # Apply the custom CSS
@@ -487,7 +331,7 @@ def main():
         st.session_state.api_key = ""
         
     if "library_api_key" not in st.session_state:
-        st.session_state.library_api_key = "70b5336f9e785c681d5ff58906e6416124f80f59faa834164d297dcd8db63036"
+        st.session_state.library_api_key = ""
     
     if "app_stage" not in st.session_state:
         st.session_state.app_stage = "welcome"
@@ -503,6 +347,16 @@ def main():
         
     if "showing_books" not in st.session_state:
         st.session_state.showing_books = False
+        
+    if "books_data" not in st.session_state:
+        st.session_state.books_data = []
+        
+    if "enriched_books" not in st.session_state:
+        st.session_state.enriched_books = False
+        
+    # NEW: Add tracking for books we've already shown info for
+    if "shown_book_info" not in st.session_state:
+        st.session_state.shown_book_info = set()
 
     # Setup sidebar
     setup_sidebar()
@@ -513,7 +367,8 @@ def main():
     col1, col2, col3 = st.columns([1, 3, 1])
     
     with col2:
-        gradient_title("Book Wanderer | 책방랑자")
+        gradient_title("Book Wanderer")
+        gradient_title("책방랑자")
         
         st.markdown("""
         <div style="text-align: center; margin-bottom: 20px;">
@@ -542,21 +397,8 @@ def main():
         if st.session_state.app_stage == "welcome":
             # Only add welcome message if it's not already in the chat
             if len(st.session_state.messages) == 1:  # Only system message is present
-                # Make API call to HyperCLOVA for welcome message
-                if st.session_state.api_key:
-                    # Add the welcome message instruction
-                    messages_with_instruction = st.session_state.messages.copy()
-                    messages_with_instruction.append({
-                        "role": "user", 
-                        "content": f"Generate a friendly welcome message for a book recommendation system. Ask the user what genre of books they're interested in. Remember to respond in both English and Korean as instructed."
-                    })
-                    
-                    welcome_message = call_hyperclova_api(messages_with_instruction, st.session_state.api_key)
-                    
-                    if not welcome_message:
-                        welcome_message = "Hi! Welcome to the Book Recommendation System. I can help you find your next great read based on your preferences. What genre of books are you interested in? For example: mystery, romance, science fiction, fantasy, history, biography, etc.\n\n한국어 답변: 안녕하세요! 도서 추천 시스템에 오신 것을 환영합니다. 여러분의 취향에 맞는 다음 좋은 책을 찾는 데 도움을 드릴 수 있습니다. 어떤 장르의 책에 관심이 있으신가요? 예: 미스터리, 로맨스, SF, 판타지, 역사, 전기 등."
-                else:
-                    welcome_message = "Hi! Welcome to the Book Recommendation System. I can help you find your next great read based on your preferences. What genre of books are you interested in? For example: mystery, romance, science fiction, fantasy, history, biography, etc.\n\n한국어 답변: 안녕하세요! 도서 추천 시스템에 오신 것을 환영합니다. 여러분의 취향에 맞는 다음 좋은 책을 찾는 데 도움을 드릴 수 있습니다. 어떤 장르의 책에 관심이 있으신가요? 예: 미스터리, 로맨스, SF, 판타지, 역사, 전기 등."
+                # Add the welcome message
+                welcome_message = "Hi! Welcome to the Book Recommendation System. I can help you find your next great read based on your preferences. What genre of books are you interested in? For example: mystery, romance, science fiction, fantasy, history, biography, etc.\n\n한국어 답변: 안녕하세요! 도서 추천 시스템에 오신 것을 환영합니다. 여러분의 취향에 맞는 다음 좋은 책을 찾는 데 도움을 드릴 수 있습니다. 어떤 장르의 책에 관심이 있으신가요? 예: 미스터리, 로맨스, SF, 판타지, 역사, 전기 등."
                 
                 # Add welcome message to chat history
                 st.session_state.messages.append({"role": "assistant", "content": welcome_message})
@@ -576,22 +418,9 @@ def main():
         
         # Ask for age stage
         elif st.session_state.app_stage == "ask_age":
-            # Generate age question with HyperCLOVA if not already done
-            if len(st.session_state.messages) == 3:  # If we just got the genre and haven't asked age yet
-                if st.session_state.api_key:
-                    # Copy existing messages and add age question instruction
-                    messages_for_age_question = st.session_state.messages.copy()
-                    messages_for_age_question.append({
-                        "role": "system", 
-                        "content": f"The user is interested in {st.session_state.user_genre} books. Now ask for their age range to provide age-appropriate recommendations. Remember to respond in both English and Korean."
-                    })
-                    
-                    age_question = call_hyperclova_api(messages_for_age_question, st.session_state.api_key)
-                    
-                    if not age_question:
-                        age_question = f"Great! I'll find some {st.session_state.user_genre} books for you. To help me recommend age-appropriate books, could you tell me your age range? For example: child (0-12), teen (13-17), young adult (18-25), adult (26+).\n\n한국어 답변: 좋습니다! {st.session_state.user_genre} 장르의 책을 찾아드리겠습니다. 연령에 맞는 책을 추천해 드리기 위해, 연령대를 알려주시겠어요? 예: 어린이(0-12세), 청소년(13-17세), 청년(18-25세), 성인(26세 이상)."
-                else:
-                    age_question = f"Great! I'll find some {st.session_state.user_genre} books for you. To help me recommend age-appropriate books, could you tell me your age range? For example: child (0-12), teen (13-17), young adult (18-25), adult (26+).\n\n한국어 답변: 좋습니다! {st.session_state.user_genre} 장르의 책을 찾아드리겠습니다. 연령에 맞는 책을 추천해 드리기 위해, 연령대를 알려주시겠어요? 예: 어린이(0-12세), 청소년(13-17세), 청년(18-25세), 성인(26세 이상)."
+            # Generate age question if not already done
+            if len(st.session_state.messages) == 3:  # If we just got the genre and haven't asked age yet  
+                age_question = f"Great! I'll find some {st.session_state.user_genre} books for you. To help me recommend age-appropriate books, could you tell me your age range? For example: child (0-12), teen (13-17), young adult (18-25), adult (26+).\n\n한국어 답변: 좋습니다! {st.session_state.user_genre} 장르의 책을 찾아드리겠습니다. 연령에 맞는 책을 추천해 드리기 위해, 연령대를 알려주시겠어요? 예: 어린이(0-12세), 청소년(13-17세), 청년(18-25세), 성인(26세 이상)."
                 
                 st.session_state.messages.append({"role": "assistant", "content": age_question})
                 st.rerun()
@@ -606,11 +435,13 @@ def main():
                     st.session_state.messages.append({"role": "user", "content": f"My age range is {age}."})
                     st.session_state.app_stage = "show_recommendations"
                     st.session_state.showing_books = False
+                    st.session_state.enriched_books = False  # Reset enriched books flag
                     st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
         
         # Book recommendations stage
         elif st.session_state.app_stage == "show_recommendations":
+            # Fetch book recommendations if not already showing
             if not st.session_state.showing_books:
                 # Fetch book recommendations
                 if st.session_state.library_api_key:
@@ -618,68 +449,52 @@ def main():
                     
                     if not books:
                         st.warning("No books found for this genre.")
-                        # Generate HyperCLOVA response for no books found
-                        if st.session_state.api_key:
-                            messages_for_no_books = st.session_state.messages.copy()
-                            messages_for_no_books.append({
-                                "role": "system", 
-                                "content": f"No books were found for the genre '{st.session_state.user_genre}'. Please suggest to the user that they try a different genre. Remember to respond in both English and Korean."
-                            })
-                            
-                            no_books_message = call_hyperclova_api(messages_for_no_books, st.session_state.api_key)
-                            
-                            if not no_books_message:
-                                no_books_message = f"I'm sorry, but I couldn't find any books in the '{st.session_state.user_genre}' genre. Would you like to try another genre? Perhaps something similar or more common?\n\n한국어 답변: 죄송합니다만, '{st.session_state.user_genre}' 장르의 책을 찾을 수 없었습니다. 다른 장르를 시도해 보시겠어요? 아마도 비슷하거나 더 일반적인 장르가 좋을 것 같습니다."
-                            
-                            st.session_state.messages.append({"role": "assistant", "content": no_books_message})
-                            st.session_state.app_stage = "welcome"
-                            st.rerun()
+                        no_books_message = f"I'm sorry, but I couldn't find any books in the '{st.session_state.user_genre}' genre. Would you like to try another genre? Perhaps something similar or more common?\n\n한국어 답변: 죄송합니다만, '{st.session_state.user_genre}' 장르의 책을 찾을 수 없었습니다. 다른 장르를 시도해 보시겠어요? 아마도 비슷하거나 더 일반적인 장르가 좋을 것 같습니다."
+                        
+                        st.session_state.messages.append({"role": "assistant", "content": no_books_message})
+                        st.session_state.app_stage = "welcome"
+                        st.rerun()
                     else:
-                        # Successfully found books, get AI introduction
-                        # Successfully found books, get AI introduction
+                        # Store basic book data first
+                        st.session_state.books_data = books
+                        
+                        # Enrich book data with details if not already done
+                        if not st.session_state.enriched_books:
+                            with st.spinner("Fetching detailed book information..."):
+                                enriched_books = fetch_and_enrich_books_data(books, st.session_state.library_api_key)
+                                st.session_state.books_data = enriched_books
+                                st.session_state.enriched_books = True
+                        
+                        # Successfully found books, add message to chat history
                         if len(st.session_state.messages) == 5:  # Only if we haven't already shown books
-                            # Generate AI introduction for book recommendations
-                            if st.session_state.api_key:
-                                messages_for_recommendation = st.session_state.messages.copy()
-                                messages_for_recommendation.append({
-                                    "role": "system", 
-                                    "content": f"The user is interested in {st.session_state.user_genre} books and is in the age range {st.session_state.user_age}. Tell them you're going to show some recommendations. Keep it brief and friendly. Remember to respond in both English and Korean."
-                                })
-                                
-                                recommendation_intro = call_hyperclova_api(messages_for_recommendation, st.session_state.api_key)
-                                
-                                if not recommendation_intro:
-                                    recommendation_intro = f"Based on your interest in {st.session_state.user_genre} books and your age range ({st.session_state.user_age}), I've found some great recommendations for you. Please take a look at these books and let me know if you'd like more information about any of them!\n\n한국어 답변: {st.session_state.user_genre} 장르에 대한 관심과 귀하의 연령대({st.session_state.user_age})를 바탕으로, 몇 가지 좋은 추천도서를 찾았습니다. 이 책들을 살펴보시고, 더 자세한 정보가 필요하시면 알려주세요!"
-                            else:
-                                recommendation_intro = f"Based on your interest in {st.session_state.user_genre} books and your age range ({st.session_state.user_age}), I've found some great recommendations for you. Please take a look at these books and let me know if you'd like more information about any of them!\n\n한국어 답변: {st.session_state.user_genre} 장르에 대한 관심과 귀하의 연령대({st.session_state.user_age})를 바탕으로, 몇 가지 좋은 추천도서를 찾았습니다. 이 책들을 살펴보시고, 더 자세한 정보가 필요하시면 알려주세요!"
-                            
+                            recommendation_intro = f"Based on your interest in {st.session_state.user_genre} books and your age range ({st.session_state.user_age}), I've found some great recommendations for you. Please take a look at these books and let me know if you'd like more information about any of them!\n\n한국어 답변: {st.session_state.user_genre} 장르에 대한 관심과 귀하의 연령대({st.session_state.user_age})를 바탕으로, 몇 가지 좋은 추천도서를 찾았습니다. 이 책들을 살펴보시고, 더 자세한 정보가 필요하시면 알려주세요!"
                             st.session_state.messages.append({"role": "assistant", "content": recommendation_intro})
                             st.rerun()
-                        
-                        # Display a divider
-                        st.markdown('<div class="gradient-divider"></div>', unsafe_allow_html=True)
-                        
-                        # Display book recommendations
-                        st.markdown("""
-                        <h3 style="text-align: center; 
-                                background: linear-gradient(90deg, #6E48AA, #FF61D2);
-                                -webkit-background-clip: text;
-                                -webkit-text-fill-color: transparent;
-                                font-weight: 700;
-                                margin-bottom: 20px;">
-                            Recommended Books
-                        </h3>
-                        """, unsafe_allow_html=True)
-                        
-                        # Loop through books and display them
-                        for i, book in enumerate(books):
-                            display_book_card(book, i)
-                        
-                        st.session_state.showing_books = True
                 else:
                     st.error("Library API key is required to fetch book recommendations.")
             
-            # Allow user to ask more questions about genres
+            # Display a divider
+            st.markdown('<div class="gradient-divider"></div>', unsafe_allow_html=True)
+            
+            # Display book recommendations
+            st.markdown("""
+            <h3 style="text-align: center; 
+                    background: linear-gradient(90deg, #221409, #3b2314);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    font-weight: 700;
+                    margin-bottom: 20px;">
+                Recommended Books
+            </h3>
+            """, unsafe_allow_html=True)
+            
+            # Loop through books and display them
+            for i, book in enumerate(st.session_state.books_data):
+                display_book_card(book, i)
+            
+            st.session_state.showing_books = True
+            
+            # Allow user to ask more questions about books or genres
             st.markdown('<div class="input-container">', unsafe_allow_html=True)
             more_questions = st.text_input("Ask me anything about these books or try another genre:", key="more_questions")
             
@@ -693,20 +508,47 @@ def main():
                         st.session_state.app_stage = "welcome"
                         st.rerun()
                     else:
-                        # Otherwise generate response using HyperCLOVA
+                        # Otherwise generate response using HyperCLOVA with book context
                         if st.session_state.api_key:
-                            response = call_hyperclova_api(st.session_state.messages, st.session_state.api_key)
+                            # Create enhanced system message with books context
+                            books_context = build_recommendations_context(st.session_state.books_data)
+                            
+                            # Create modified messages with enhanced context
+                            messages_with_context = st.session_state.messages.copy()
+                            
+                            # Update the system message with book context
+                            enhanced_system_message = {
+                                "role": "system", 
+                                "content": f"""You are a helpful AI assistant specializing in book recommendations. 
+                                The user has been recommended books in the {st.session_state.user_genre} genre for age range {st.session_state.user_age}.
+                                
+                                {books_context}
+                                
+                                Try to provide relevant information based on these details. 
+                                For EVERY response, you must answer in BOTH English and Korean.
+                                First provide the complete answer in English, then provide '한국어 답변:' 
+                                followed by the complete Korean translation of your answer."""
+                            }
+                            
+                            # Replace the system message
+                            messages_with_context[0] = enhanced_system_message
+                            
+                            # Call HyperCLOVA with enhanced context
+                            response = call_hyperclova_api(messages_with_context, st.session_state.api_key)
                             
                             if response:
                                 st.session_state.messages.append({"role": "assistant", "content": response})
                             else:
-                                st.session_state.messages.append({
-                                    "role": "assistant", 
-                                    "content": "I'm sorry, I couldn't process your request. Please try again or ask another question.\n\n한국어 답변: 죄송합니다. 요청을 처리할 수 없었습니다. 다시 시도하시거나 다른 질문을 해주세요."
-                                })
-                            st.rerun()
+                                # Fallback response
+                                fallback = f"I can provide information about the {st.session_state.user_genre} books I've recommended. What specific details would you like to know? You can ask about plots, authors, themes, or request similar books.\n\n한국어 답변: 제가 추천한 {st.session_state.user_genre} 장르 책에 대한 정보를 제공해 드릴 수 있습니다. 어떤 구체적인 정보를 알고 싶으신가요? 줄거리, 작가, 주제에 대해 질문하거나 비슷한 책을 요청하실 수 있습니다."
+                                st.session_state.messages.append({"role": "assistant", "content": fallback})
+                        else:
+                            # Default response if no API key
+                            default_response = f"To answer questions about these {st.session_state.user_genre} books, I need access to the HyperCLOVA API. Please enter your API key in the sidebar.\n\n한국어 답변: 이 {st.session_state.user_genre} 책들에 대한 질문에 답하기 위해서는 HyperCLOVA API에 접근해야 합니다. 사이드바에 API 키를 입력해 주세요."
+                            st.session_state.messages.append({"role": "assistant", "content": default_response})
+                        st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
-        
+
         # Discuss selected book
         elif st.session_state.app_stage == "discuss_book":
             if st.session_state.selected_book:
@@ -716,29 +558,50 @@ def main():
                 # Get book information
                 book_info = st.session_state.selected_book
                 book_title = book_info.get('bookname', 'Unknown Title')
+                book_isbn = book_info.get('isbn13', '')
                 
-                # If this is the first time showing this book, get AI description
-                last_message = st.session_state.messages[-1]
-                if last_message["role"] != "assistant" or book_title not in last_message["content"]:
-                    if st.session_state.api_key:
-                        book_author = book_info.get('authors', 'Unknown Author')
-                        book_publisher = book_info.get('publisher', 'Unknown Publisher')
-                        book_year = book_info.get('publication_year', 'Unknown Year')
-                        
-                        book_prompt = f"Tell me about the book '{book_title}' by {book_author}, published by {book_publisher} in {book_year}. Provide a brief description and why someone might enjoy this book. If you don't have specific information about this book, provide general information about this type of book/author/genre. Remember to respond in both English and Korean."
-                        
-                        messages_for_book = st.session_state.messages.copy()
-                        messages_for_book.append({"role": "user", "content": book_prompt})
-                        
-                        book_description = call_hyperclova_api(messages_for_book, st.session_state.api_key)
-                        
-                        if not book_description:
-                            book_description = f"Here's information about '{book_title}' by {book_author}. This book was published by {book_publisher} in {book_year}. While I don't have detailed plot information about this specific book, books of this type often explore themes related to {st.session_state.user_genre}. Based on your interest in this genre, you might enjoy this book for its storytelling, characters, and exploration of relevant themes.\n\n한국어 답변: {book_author}의 '{book_title}'에 대한 정보입니다. 이 책은 {book_year}년에 {book_publisher}에서 출판되었습니다. 이 특정 책에 대한 자세한 줄거리 정보는 없지만, 이런 유형의 책들은 주로 {st.session_state.user_genre}와 관련된 주제를 탐구합니다. 이 장르에 대한 귀하의 관심을 바탕으로, 이 책의 스토리텔링, 캐릭터, 그리고 관련 주제의 탐구로 인해 이 책을 즐기실 수 있을 것입니다."
-                        
-                        # Add this as both a user question and assistant response to the chat history
-                        st.session_state.messages.append({"role": "user", "content": f"Tell me about '{book_title}'"})
-                        st.session_state.messages.append({"role": "assistant", "content": book_description})
-                        st.rerun()
+                # Get detailed book information from Library API if not already retrieved
+                if "book_details" not in st.session_state or st.session_state.book_details.get('isbn13') != book_isbn:
+                    if st.session_state.library_api_key and book_isbn:
+                        book_details = get_book_details(book_isbn, st.session_state.library_api_key)
+                        st.session_state.book_details = book_details if book_details else {}
+                    else:
+                        st.session_state.book_details = {}
+                
+                # CHANGED: Check if we've already shown info about this book using ISBN
+                if book_isbn not in st.session_state.shown_book_info:
+                    # Add the book to the set of books we've already shown info for
+                    st.session_state.shown_book_info.add(book_isbn)
+                    
+                    book_author = book_info.get('authors', 'Unknown Author')
+                    book_publisher = book_info.get('publisher', 'Unknown Publisher')
+                    book_year = book_info.get('publication_year', 'Unknown Year')
+                    
+                    # Create the initial description with detailed information if available
+                    initial_description = f"Here's information about '{book_title}' by {book_author}. This book was published by {book_publisher} in {book_year}."
+                    
+                    # Add detailed description if available from the API
+                    if st.session_state.book_details and 'description' in st.session_state.book_details:
+                        initial_description += f"\n\nDescription: {st.session_state.book_details.get('description')}"
+                    else:
+                        initial_description += f"\n\nWhile I don't have detailed plot information about this specific book, {st.session_state.user_genre} books often explore themes related to this genre."
+                    
+                    initial_description += f"\n\nBased on your interest in {st.session_state.user_genre}, you might enjoy this book for its storytelling, characters, and exploration of relevant themes."
+                    
+                    # Create Korean translation
+                    korean_description = f"{book_author}의 '{book_title}'에 대한 정보입니다. 이 책은 {book_year}년에 {book_publisher}에서 출판되었습니다."
+                    
+                    if st.session_state.book_details and 'description' in st.session_state.book_details:
+                        korean_description += f"\n\n설명: {st.session_state.book_details.get('description')}"
+                    else:
+                        korean_description += f"\n\n이 특정 책에 대한 자세한 줄거리 정보는 없지만, {st.session_state.user_genre} 책들은 주로 이 장르와 관련된 주제를 탐구합니다."
+                    
+                    korean_description += f"\n\n{st.session_state.user_genre}에 대한 귀하의 관심을 바탕으로, 이 책의 스토리텔링, 캐릭터, 그리고 관련 주제의 탐구로 인해 이 책을 즐기실 수 있을 것입니다."
+                    
+                    # Add this as both a user question and assistant response to the chat history
+                    st.session_state.messages.append({"role": "user", "content": f"Tell me about '{book_title}'"})
+                    st.session_state.messages.append({"role": "assistant", "content": f"{initial_description}\n\n한국어 답변: {korean_description}"})
+                    st.rerun()
                 
                 # Allow user to ask questions about the book
                 st.markdown('<div class="input-container">', unsafe_allow_html=True)
@@ -755,32 +618,70 @@ def main():
                             # Add user question to chat
                             st.session_state.messages.append({"role": "user", "content": book_question})
                             
-                            # Get AI response using HyperCLOVA
+                            # Get AI response using HyperCLOVA if API key exists
                             if st.session_state.api_key:
+                                # Build detailed context about the book
+                                book_context = build_book_context(book_info, st.session_state.book_details)
+                                
+                                # Create modified messages with enhanced context
                                 messages_with_context = st.session_state.messages.copy()
-                                messages_with_context.append({
+                                
+                                # Add detailed system message with book information
+                                system_message = {
                                     "role": "system", 
-                                    "content": f"The user is asking about the book '{book_title}'. Try to provide relevant information based on the genre ({st.session_state.user_genre}) and what you know about literature. Remember to respond in both English and Korean."
-                                })
+                                    "content": f"""You are a helpful AI assistant specializing in book recommendations. 
+                                    The user is asking about the book '{book_title}'. Below is detailed information about the book:
+                                    
+                                    {book_context}
+                                    
+                                    Try to provide relevant information based on these details. 
+                                    For EVERY response, you must answer in BOTH English and Korean.
+                                    First provide the complete answer in English, then provide '한국어 답변:' 
+                                    followed by the complete Korean translation of your answer."""
+                                }
                                 
+                                # Replace the system message
+                                messages_with_context[0] = system_message
+                                
+                                # Call HyperCLOVA with enhanced context
                                 book_response = call_hyperclova_api(messages_with_context, st.session_state.api_key)
-                                
                                 if book_response:
                                     st.session_state.messages.append({"role": "assistant", "content": book_response})
                                 else:
-                                    st.session_state.messages.append({
-                                        "role": "assistant", 
-                                        "content": f"I don't have specific details about that aspect of '{book_title}', but books in the {st.session_state.user_genre} genre often explore similar themes. Is there something else about this book or other books you'd like to know about?\n\n한국어 답변: '{book_title}'의 해당 측면에 대한 구체적인 세부 정보는 없지만, {st.session_state.user_genre} 장르의 책들은 종종 비슷한 주제를 탐구합니다. 이 책이나 다른 책에 대해 알고 싶은 다른 내용이 있으신가요?"
-                                    })
-                                st.rerun()
+                                    # Fallback response
+                                    fallback_response = f"I don't have specific details about that aspect of '{book_title}', but books in the {st.session_state.user_genre} genre often explore themes like character development, world-building, and thematic elements relevant to the genre. Is there something else about this book or other books you'd like to know about?\n\n한국어 답변: '{book_title}'의 해당 측면에 대한 구체적인 세부 정보는 없지만, {st.session_state.user_genre} 장르의 책들은 종종 캐릭터 발전, 세계관 구축, 그리고 장르와 관련된 주제적 요소와 같은 주제를 탐구합니다. 이 책이나 다른 책에 대해 알고 싶은 다른 내용이 있으신가요?"
+                                    st.session_state.messages.append({"role": "assistant", "content": fallback_response})
+                            else:
+                                # Default response if no API key
+                                default_response = f"To provide detailed information about '{book_title}', I need access to the HyperCLOVA API. Please enter your API key in the sidebar.\n\n한국어 답변: '{book_title}'에 대한 자세한 정보를 제공하기 위해서는 HyperCLOVA API에 접근해야 합니다. 사이드바에 API 키를 입력해 주세요."
+                                st.session_state.messages.append({"role": "assistant", "content": default_response})
+                            st.rerun()
                 
                 # Button to go back to recommendations
                 if st.button("← Back to All Recommendations", key="back_to_recommendations"):
                     st.session_state.app_stage = "show_recommendations"
-                    st.session_state.showing_books = False
                     st.rerun()
                 
                 st.markdown('</div>', unsafe_allow_html=True)
+                
+                # Also display the book list below the detailed view
+                st.markdown('<div class="gradient-divider"></div>', unsafe_allow_html=True)
+                
+                st.markdown("""
+                <h3 style="text-align: center; 
+                        background: linear-gradient(90deg, #221409, #3b2314);
+                        -webkit-background-clip: text;
+                        -webkit-text-fill-color: transparent;
+                        font-weight: 700;
+                        margin-bottom: 20px;">
+                    Other Recommended Books
+                </h3>
+                """, unsafe_allow_html=True)
+                
+                # Loop through books and display them (excluding the selected book)
+                for i, book in enumerate(st.session_state.books_data):
+                    if book.get("doc", {}).get("isbn13") != st.session_state.selected_book.get("isbn13"):
+                        display_book_card(book, i)
     
     # Footer section
     st.markdown('<div class="app-footer">', unsafe_allow_html=True)

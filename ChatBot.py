@@ -513,7 +513,7 @@ def main():
     col1, col2, col3 = st.columns([1, 3, 1])
     
     with col2:
-        gradient_title("Inkspire: Personalized Book Discovery Engine")
+        gradient_title("Book Wanderer")
         
         st.markdown("""
         <div style="text-align: center; margin-bottom: 20px;">

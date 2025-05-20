@@ -413,11 +413,6 @@ def main():
         """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Add "My Liked Books" button to main area
-    if st.button("My Liked Books", key="main_liked_books_btn"):
-        st.session_state.app_stage = "show_liked_books"
-        st.rerun()
-
     # Chat container - this will display all messages
     chat_container = st.container()
     with chat_container:

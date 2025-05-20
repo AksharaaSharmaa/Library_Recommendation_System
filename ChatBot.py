@@ -117,50 +117,9 @@ def call_hyperclova_api(messages, api_key):
 
 def setup_sidebar():
     with st.sidebar:
-        st.markdown("""
-        <div style="text-align: center; margin-bottom: 20px;">
-            <h3 style="background: linear-gradient(90deg, #3b2314, #221409);
-                      -webkit-background-clip: text;
-                      -webkit-text-fill-color: transparent;
-                      font-weight: 700;">
-                📚 Your Library
-            </h3>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Display liked books with remove functionality
-        liked_books = get_liked_books(st.session_state.username)
-        
-        if liked_books:
-            for book in liked_books:
-                cols = st.columns([4, 1])
-                with cols[0]:
-                    st.markdown(f"""
-                    <div style="padding: 8px 12px; 
-                                background: rgba(227, 212, 185, 0.1);
-                                border-radius: 8px;
-                                margin: 4px 0;">
-                        <div style="font-weight: 500;">{book.get('bookname', 'No Title')}</div>
-                        <div style="font-size: 0.9em; color: #666;">by {book.get('authors', 'Unknown')}</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                with cols[1]:
-                    if st.button("❌", 
-                               key=f"remove_{book.get('isbn13')}",
-                               help="Remove from library",
-                               type="primary"):
-                        unlike_book_for_user(st.session_state.username, book.get('isbn13'))
-                        st.rerun()
-        else:
-            st.markdown("""
-            <div style="text-align: center; padding: 20px; color: #666;">
-                You haven't liked any books yet.<br>
-                Click ❤️ on books to save them here!
-            </div>
-            """, unsafe_allow_html=True)
-
-        st.markdown("---")
-
+        if st.button("My Liked Books"):
+        st.session_state.app_stage = "show_liked_books"
+        st.rerun()
 
         st.markdown("""
         <div style="text-align: center; margin-bottom: 20px;">
@@ -444,18 +403,16 @@ def main():
     if "enriched_books" not in st.session_state:
         st.session_state.enriched_books = False
         
-    # NEW: Add tracking for books we've already shown info for
     if "shown_book_info" not in st.session_state:
         st.session_state.shown_book_info = set()
 
-    # Setup sidebar
+    # Setup sidebar (without liked books display)
     setup_sidebar()
 
     # Main layout - header
     st.markdown('<div class="app-header">', unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1, 3, 1])
-    
     with col2:
         gradient_title("Book Wanderer")
         gradient_title("책방랑자")
@@ -467,8 +424,91 @@ def main():
             </p>
         </div>
         """, unsafe_allow_html=True)
-    
     st.markdown('</div>', unsafe_allow_html=True)
+
+    # Add "My Liked Books" button to main area
+    if st.button("My Liked Books"):
+        st.session_state.app_stage = "show_liked_books"
+        st.rerun()
+
+    # Chat container - this will display all messages
+    chat_container = st.container()
+    
+    with chat_container:
+        # Display chat history
+        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+        for msg in st.session_state.messages:
+            if msg["role"] != "system":
+                display_message(msg)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # Handle app stages
+        if st.session_state.app_stage == "welcome":
+            # Existing welcome and genre input logic here...
+            # (Omitted for brevity; keep your existing code for welcome, ask_age, show_recommendations, discuss_book)
+            pass
+
+        elif st.session_state.app_stage == "ask_age":
+            # Your existing ask_age logic
+            pass
+
+        elif st.session_state.app_stage == "show_recommendations":
+            # Your existing show_recommendations logic
+            pass
+
+        elif st.session_state.app_stage == "discuss_book":
+            # Your existing discuss_book logic
+            pass
+
+        # New stage to show liked books in main area
+        elif st.session_state.app_stage == "show_liked_books":
+            st.markdown("<h3 style='text-align:center;'>Your Liked Books</h3>", unsafe_allow_html=True)
+            liked_books = get_liked_books(st.session_state.username)
+            if not liked_books:
+                st.info("You have not liked any books yet.")
+            else:
+                for book in liked_books:
+                    st.markdown('<div class="book-card" style="margin-bottom: 30px;">', unsafe_allow_html=True)
+                    cols = st.columns([1, 3])
+                    with cols[0]:
+                        image_url = book.get("bookImageURL", "")
+                        if image_url:
+                            st.image(image_url, width=120)
+                        else:
+                            st.markdown(
+                                "<div style='width:100px;height:150px;background:linear-gradient(135deg,#2c3040,#363c4e);display:flex;align-items:center;justify-content:center;border-radius:5px;'><span style='color:#b3b3cc;'>No Image</span></div>",
+                                unsafe_allow_html=True
+                            )
+                    with cols[1]:
+                        st.markdown(f"""
+                            <div style="padding-left: 10px;">
+                                <div class="book-title">{book.get('bookname', 'No Title')}</div>
+                                <div class="book-info"><strong>Author:</strong> {book.get('authors', 'Unknown')}</div>
+                                <div class="book-info"><strong>Publisher:</strong> {book.get('publisher', 'Unknown')}</div>
+                                <div class="book-info"><strong>Year:</strong> {book.get('publication_year', 'Unknown')}</div>
+                            </div>
+                        """, unsafe_allow_html=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
+
+            if st.button("← Back"):
+                st.session_state.app_stage = "welcome"
+                st.rerun()
+
+    # Footer section
+    st.markdown('<div class="app-footer">', unsafe_allow_html=True)
+    st.markdown("""
+    <div style="text-align: center; margin: 10px 0;">
+        <p style="color: #d1d1e0;">
+            This application provides book recommendations based on your preferences using AI assistance.
+            All recommendations are available in both English and Korean.
+        </p>
+        <p style="color: #b3b3cc; font-size: 0.8rem; margin-top: 15px;">
+            Powered by Streamlit • HyperCLOVA X • Korean Library API
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
 
     # Chat container - this will display all messages
     chat_container = st.container()

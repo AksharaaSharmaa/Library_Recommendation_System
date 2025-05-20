@@ -3,6 +3,39 @@ import requests
 from streamlit_extras.colored_header import colored_header
 import base64
 from Frontend import add_custom_css, gradient_title
+from pymongo.errors import DuplicateKeyError
+
+# Add after MongoDB client initialization
+def get_user_library_collection():
+    client = st.session_state.db_client  # Already set in login.py
+    db = client["Login_Credentials"]
+    return db["user_libraries"]
+
+def like_book_for_user(username, book_info):
+    user_library = get_user_library_collection()
+    # Use ISBN as unique book identifier
+    isbn = book_info.get("isbn13")
+    if not isbn:
+        return False
+    # Upsert: Add the book if not already liked
+    user_library.update_one(
+        {"username": username},
+        {"$addToSet": {"liked_books": book_info}},
+        upsert=True
+    )
+    return True
+
+def get_liked_books(username):
+    user_library = get_user_library_collection()
+    doc = user_library.find_one({"username": username})
+    return doc.get("liked_books", []) if doc else []
+
+def unlike_book_for_user(username, isbn):
+    user_library = get_user_library_collection()
+    user_library.update_one(
+        {"username": username},
+        {"$pull": {"liked_books": {"isbn13": isbn}}}
+    )
 
 def display_message(message):
     if message["role"] != "system":
@@ -84,6 +117,51 @@ def call_hyperclova_api(messages, api_key):
 
 def setup_sidebar():
     with st.sidebar:
+        st.markdown("""
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h3 style="background: linear-gradient(90deg, #3b2314, #221409);
+                      -webkit-background-clip: text;
+                      -webkit-text-fill-color: transparent;
+                      font-weight: 700;">
+                📚 Your Library
+            </h3>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Display liked books with remove functionality
+        liked_books = get_liked_books(st.session_state.username)
+        
+        if liked_books:
+            for book in liked_books:
+                cols = st.columns([4, 1])
+                with cols[0]:
+                    st.markdown(f"""
+                    <div style="padding: 8px 12px; 
+                                background: rgba(227, 212, 185, 0.1);
+                                border-radius: 8px;
+                                margin: 4px 0;">
+                        <div style="font-weight: 500;">{book.get('bookname', 'No Title')}</div>
+                        <div style="font-size: 0.9em; color: #666;">by {book.get('authors', 'Unknown')}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with cols[1]:
+                    if st.button("❌", 
+                               key=f"remove_{book.get('isbn13')}",
+                               help="Remove from library",
+                               type="primary"):
+                        unlike_book_for_user(st.session_state.username, book.get('isbn13'))
+                        st.rerun()
+        else:
+            st.markdown("""
+            <div style="text-align: center; padding: 20px; color: #666;">
+                You haven't liked any books yet.<br>
+                Click ❤️ on books to save them here!
+            </div>
+            """, unsafe_allow_html=True)
+
+        st.markdown("---")
+
+
         st.markdown("""
         <div style="text-align: center; margin-bottom: 20px;">
             <h3 style="background: linear-gradient(90deg, #3b2314, #221409);
@@ -179,7 +257,7 @@ def build_book_context(book_info, book_details):
     return context
 
 def display_book_card(book, index):
-    """Helper function to display a book card"""
+    """Helper function to display a book card with like functionality"""
     info = book.get("doc", {})
     
     with st.container():
@@ -188,12 +266,10 @@ def display_book_card(book, index):
         cols = st.columns([1, 3])
         
         with cols[0]:
-            # Display book image if available
             image_url = info.get("bookImageURL", "")
             if image_url:
                 st.image(image_url, width=120)
             else:
-                # Placeholder for missing image
                 st.markdown("""
                 <div style="width: 100px; height: 150px; background: linear-gradient(135deg, #2c3040, #363c4e); 
                             display: flex; align-items: center; justify-content: center; border-radius: 5px;">
@@ -211,13 +287,27 @@ def display_book_card(book, index):
             </div>
             """, unsafe_allow_html=True)
             
-            # Select button for this book
-            if st.button(f"Tell me more about this book", key=f"like_{info.get('isbn13', 'unknown')}_{index}"):
-                st.session_state.selected_book = info
-                st.session_state.app_stage = "discuss_book"
-                st.rerun()
+            # Create columns for buttons
+            btn_col1, btn_col2 = st.columns([3, 1])
+            
+            with btn_col1:
+                if st.button(f"Tell me more about this book", key=f"details_{info.get('isbn13', 'unknown')}_{index}"):
+                    st.session_state.selected_book = info
+                    st.session_state.app_stage = "discuss_book"
+                    st.rerun()
+            
+            with btn_col2:
+                # Like button with heart icon
+                if st.button("❤️", 
+                            key=f"like_{info.get('isbn13', 'unknown')}_{index}",
+                            help="Add to My Library"):
+                    if like_book_for_user(st.session_state.username, info):
+                        st.success("Added to your library!")
+                    else:
+                        st.error("Could not add to library")
         
         st.markdown('</div>', unsafe_allow_html=True)
+
 
 def get_book_details(isbn, api_key):
     """Get detailed information about a specific book using its ISBN"""

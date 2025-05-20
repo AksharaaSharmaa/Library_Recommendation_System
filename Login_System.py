@@ -7,6 +7,12 @@ import sys
 import base64
 import os.path
 
+st.set_page_config(
+    page_title="Book Wanderer: Library Recommendation System",
+    page_icon="📚",
+    layout="wide",
+)
+
 st.markdown("""
     <style>
         .stButton button, .stButton button * {
@@ -14,14 +20,6 @@ st.markdown("""
         }
     </style>
 """, unsafe_allow_html=True)
-
-
-
-st.set_page_config(
-    page_title="Book Wanderer: Library Recommendation System",
-    page_icon="📚",
-    layout="wide",
-)
 
 def load_page_based_on_role():
     """Load different pages based on user role"""

@@ -118,8 +118,8 @@ def call_hyperclova_api(messages, api_key):
 def setup_sidebar():
     with st.sidebar:
         if st.button("My Liked Books"):
-        st.session_state.app_stage = "show_liked_books"
-        st.rerun()
+            st.session_state.app_stage = "show_liked_books"
+            st.rerun()
 
         st.markdown("""
         <div style="text-align: center; margin-bottom: 20px;">

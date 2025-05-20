@@ -19,8 +19,8 @@ def add_custom_css():
             color: #4a3728 !important;
         }
         
-        /* Override any white text in elements */
-        .stButton button {
+        /* Button styling with white text */
+        .stButton button, .like-button {
             background: linear-gradient(90deg, #8b5a2b, #d2b48c);
             color: #fff !important;
             border: none;
@@ -29,11 +29,22 @@ def add_custom_css():
             transition: all 0.3s ease;
         }
         
-        .stButton button:hover {
+        .stButton button:hover, .like-button:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(139, 90, 43, 0.4);
         }
         
+        /* Smaller like button */
+        .like-button {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+        }
+        
+        .like-button:hover {
+            box-shadow: 0 3px 10px rgba(139, 90, 43, 0.4);
+        }
+        
+        /* Input elements */
         .stTextInput input, .stNumberInput input, .stSelectbox, .stMultiselect {
             background-color: rgba(245, 231, 211, 0.7);
             color: #4a3728;
@@ -41,6 +52,7 @@ def add_custom_css():
             border-radius: 25px;
         }
         
+        /* Chat styling */
         .stChat .message.user {
             background-color: #d2b48c;
             border-radius: 20px;
@@ -51,10 +63,12 @@ def add_custom_css():
             border-radius: 20px;
         }
         
+        /* Layout adjustments */
         div[data-testid="stVerticalBlock"] {
             padding: 0 10px;
         }
         
+        /* Book styling */
         .book-title {
             color: #603913;
             font-size: 1.2rem;
@@ -68,22 +82,7 @@ def add_custom_css():
             line-height: 1.5;
         }
         
-        .like-button {
-            background: linear-gradient(90deg, #8b5a2b, #a67c52);
-            color: #fff !important;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            transition: all 0.3s ease;
-        }
-        
-        .like-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 3px 10px rgba(139, 90, 43, 0.4);
-        }
-        
+        /* Chat containers */
         .chat-container {
             display: flex;
             flex-direction: column;
@@ -114,6 +113,7 @@ def add_custom_css():
             margin-right: 10px;
         }
         
+        /* Korean text styling */
         .korean-text {
             margin-top: 15px;
             padding-top: 15px;
@@ -127,6 +127,7 @@ def add_custom_css():
             margin-bottom: 5px;
         }
         
+        /* Message details */
         .message-timestamp {
             font-size: 0.7rem;
             color: #7d5a41;
@@ -134,6 +135,7 @@ def add_custom_css():
             text-align: right;
         }
         
+        /* Avatar styling with WHITE text */
         .message-avatar {
             width: 28px;
             height: 28px;
@@ -144,19 +146,17 @@ def add_custom_css():
             margin-bottom: 5px;
             font-size: 0.8rem;
             font-weight: bold;
-            color: white !important; /* Make avatar text white */
+            color: white !important;
         }
         
         .user-avatar {
             background: linear-gradient(135deg, #8b5a2b, #a67c52);
-            color: white !important; /* Make avatar text white */
             align-self: flex-end;
             margin-right: 10px;
         }
         
         .assistant-avatar {
             background: linear-gradient(135deg, #603913, #8b5a2b);
-            color: white !important; /* Make avatar text white */
             align-self: flex-start;
             margin-left: 10px;
         }
@@ -173,7 +173,7 @@ def add_custom_css():
             box-shadow: none !important;
         }
         
-        /* Keep the answer container but make it darker */
+        /* Text area styling */
         .stTextArea textarea {
             background-color: #b39b7d !important;
             color: #4a3728 !important;
@@ -181,7 +181,7 @@ def add_custom_css():
             border-radius: 15px !important;
         }
         
-        /* Remove rectangular containers by making them transparent */
+        /* Remove rectangular containers */
         [data-testid="block-container"], [data-testid="stExpander"] {
             background: transparent !important;
             border: none !important;
@@ -196,7 +196,7 @@ def add_custom_css():
             color: #4a3728 !important;
         }
         
-        /* Override any white text in inputs or special elements */
+        /* Inputs and special elements */
         input, textarea, select, .stSelectbox, .stMultiselect {
             color: #4a3728 !important;
         }

@@ -8,6 +8,10 @@ def add_custom_css():
             color: #4a3728;
         }
         
+        .stButton button, .stButton button * {
+            color: #fff !important;
+        }
+        
         /* Darker sidebar background */
         [data-testid="stSidebar"] {
             background: linear-gradient(135deg, #e6d7c3, #d2b48c, #c9b18c) !important;

@@ -7,6 +7,7 @@ import sys
 import base64
 import os.path
 
+
 st.set_page_config(
     page_title="Book Wanderer: Library Recommendation System",
     page_icon="📚",
@@ -175,6 +176,11 @@ def set_custom_theme():
             font-family: 'Cormorant Garamond', serif !important;
             letter-spacing: 0.025em !important;
         }}
+        
+        .stButton button, .stButton button * {
+            color: #fff !important;
+        }
+
         
         /* Body and background */
         .stApp {{

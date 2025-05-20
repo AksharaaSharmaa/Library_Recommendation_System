@@ -5,6 +5,16 @@ import base64
 from Frontend import add_custom_css, gradient_title
 from pymongo.errors import DuplicateKeyError
 
+# Override button text color to white
+st.markdown("""
+<style>
+    /* Make all button text white */
+    .stButton button, .stButton button:focus, .stButton button:active {
+        color: white !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # Add after MongoDB client initialization
 def get_user_library_collection():
     client = st.session_state.db_client  # Already set in login.py

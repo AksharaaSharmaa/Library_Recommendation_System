@@ -7,6 +7,15 @@ import sys
 import base64
 import os.path
 
+st.markdown("""
+    <style>
+        .stButton button, .stButton button * {
+            color: #fff !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+
 
 st.set_page_config(
     page_title="Book Wanderer: Library Recommendation System",
@@ -176,11 +185,6 @@ def set_custom_theme():
             font-family: 'Cormorant Garamond', serif !important;
             letter-spacing: 0.025em !important;
         }}
-        
-        .stButton button, .stButton button * {
-            color: #fff !important;
-        }
-
         
         /* Body and background */
         .stApp {{

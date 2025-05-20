@@ -22,7 +22,7 @@ def add_custom_css():
         /* Override any white text in elements */
         .stButton button {
             background: linear-gradient(90deg, #8b5a2b, #d2b48c);
-            color: #f5e7d3;
+            color: #fff;
             border: none;
             padding: 10px 15px;
             border-radius: 25px;
@@ -70,7 +70,7 @@ def add_custom_css():
         
         .like-button {
             background: linear-gradient(90deg, #8b5a2b, #a67c52);
-            color: #f5e7d3;
+            color: #fff;
             border: none;
             padding: 5px 10px;
             border-radius: 20px;

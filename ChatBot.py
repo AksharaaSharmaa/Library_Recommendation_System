@@ -127,19 +127,6 @@ def call_hyperclova_api(messages, api_key):
 
 def setup_sidebar():
     with st.sidebar:
-        # Inject custom CSS to make all sidebar text white
-        st.markdown("""
-        <style>
-        [data-testid="stSidebar"] * {
-            color: white !important;
-        }
-        /* Make all sidebar buttons' text white */
-        .stButton button, .stButton button:focus, .stButton button:active {
-            color: white !important;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-
         if st.button("My Liked Books"):
             st.session_state.app_stage = "show_liked_books"
             st.rerun()
@@ -154,25 +141,25 @@ def setup_sidebar():
             </h3>
         </div>
         """, unsafe_allow_html=True)
-
+        
         # API Keys section
         with st.container():
             st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
-
+            
             # HyperCLOVA API Key
-            hyperclova_api_key = st.text_input("Enter your HyperCLOVA API Key",
-                                               type="password",
-                                               value=st.session_state.api_key)
+            hyperclova_api_key = st.text_input("Enter your HyperCLOVA API Key", 
+                                              type="password", 
+                                              value=st.session_state.api_key)
             st.session_state.api_key = hyperclova_api_key
-
+            
             # Library API Key
-            library_api_key = st.text_input("Enter Library API Key",
-                                            type="password",
+            library_api_key = st.text_input("Enter Library API Key", 
+                                            type="password", 
                                             value=st.session_state.library_api_key)
             st.session_state.library_api_key = library_api_key
-
+            
             st.markdown('</div>', unsafe_allow_html=True)
-
+        
         # Reset button
         if st.button("Start Over 💫"):
             st.session_state.messages = [
@@ -184,7 +171,7 @@ def setup_sidebar():
             st.session_state.selected_book = None
             st.session_state.showing_books = False
             st.rerun()
-
+        
         st.markdown("""
         <div style="text-align: center; margin-top: 30px; padding: 10px;">
             <p style="color: #b3b3cc; font-size: 0.8rem;">
@@ -192,6 +179,7 @@ def setup_sidebar():
             </p>
         </div>
         """, unsafe_allow_html=True)
+
 
 
 def get_book_recommendations(genre, api_key):

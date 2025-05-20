@@ -631,7 +631,7 @@ def main():
             else:
                 for idx, book in enumerate(liked_books):
                     st.markdown('<div class="book-card" style="margin-bottom: 30px;">', unsafe_allow_html=True)
-                    cols = st.columns([1, 3])
+                    cols = st.columns([1, 3, 1])  # Add a third column for the Remove button
                     with cols[0]:
                         image_url = book.get("bookImageURL", "")
                         if image_url:
@@ -650,11 +650,13 @@ def main():
                                 <div class="book-info"><strong>Year:</strong> {book.get('publication_year', 'Unknown')}</div>
                             </div>
                         """, unsafe_allow_html=True)
-                        # Example: Uncomment below if you want a per-book "Remove" button
-                        # if st.button("Remove", key=f"remove_{book.get('isbn13', idx)}"):
-                        #     unlike_book_for_user(st.session_state.username, book.get('isbn13'))
-                        #     st.rerun()
+                    with cols[2]:
+                        if st.button("Remove", key=f"remove_{book.get('isbn13', idx)}"):
+                            unlike_book_for_user(st.session_state.username, book.get('isbn13'))
+                            st.success(f"Removed '{book.get('bookname', 'No Title')}' from your liked books.")
+                            st.rerun()
                     st.markdown('</div>', unsafe_allow_html=True)
+
             if st.button("← Back", key="back_from_liked_books_btn"):
                 st.session_state.app_stage = "welcome"
                 st.rerun()

@@ -387,7 +387,7 @@ def main():
             "role": "system",
             "content": (
                 "You are a friendly AI assistant specializing in book recommendations. "
-                "Start by greeting and asking about favorite books/authors/genres. "
+                "Start by greeting and asking about favorite books/authors/genres/age. "
                 "For EVERY response, answer in BOTH English and Korean. "
                 "First provide complete English answer, then '한국어 답변:' with Korean translation."
             )
@@ -401,6 +401,12 @@ def main():
         st.session_state.app_stage = "init_convo"
     if "user_genre" not in st.session_state:
         st.session_state.user_genre = ""
+    if "user_age_group" not in st.session_state:
+        st.session_state.user_age_group = ""
+    if "user_favorite_book" not in st.session_state:
+        st.session_state.user_favorite_book = ""
+    if "user_favorite_author" not in st.session_state:
+        st.session_state.user_favorite_author = ""
     if "selected_book" not in st.session_state:
         st.session_state.selected_book = None
     if "books_data" not in st.session_state:
@@ -412,7 +418,7 @@ def main():
     if "book_details" not in st.session_state:
         st.session_state.book_details = {}
     if "username" not in st.session_state:
-        st.session_state.username = "guest"  # or set from your login logic
+        st.session_state.username = "guest"
 
     # --- Sidebar ---
     setup_sidebar()
@@ -445,12 +451,11 @@ def main():
         # 1. Initial dynamic HyperCLOVA prompt
         if st.session_state.app_stage == "init_convo":
             if len(st.session_state.messages) == 1 and st.session_state.api_key:
-                # Get the initial prompt from HyperCLOVA
                 initial_message = call_hyperclova_api(st.session_state.messages, st.session_state.api_key)
                 if initial_message:
                     st.session_state.messages.append({"role": "assistant", "content": initial_message})
                 else:
-                    st.session_state.messages.append({"role": "assistant", "content": "Hello! Tell me about your favourite books, author or genre.\n\n한국어 답변: 안녕하세요! 좋아하는 책, 작가 또는 장르에 대해 말씀해 주세요."})
+                    st.session_state.messages.append({"role": "assistant", "content": "Hello! Tell me about your favourite books, author, genre, or age group.\n\n한국어 답변: 안녕하세요! 좋아하는 책, 작가, 장르 또는 연령대에 대해 말씀해 주세요."})
                 st.session_state.app_stage = "awaiting_user_input"
                 st.rerun()
             elif not st.session_state.api_key:
@@ -462,7 +467,7 @@ def main():
         # 2. Awaiting user free-form input
         elif st.session_state.app_stage == "awaiting_user_input":
             st.markdown('<div class="input-container">', unsafe_allow_html=True)
-            user_input = st.text_input("Tell me about your favorite books, authors, or genres:", key="user_open_input")
+            user_input = st.text_input("Tell me about your favorite books, authors, genres, or age group:", key="user_open_input")
             if st.button("Send", key="send_open_input"):
                 if user_input:
                     st.session_state.messages.append({"role": "user", "content": user_input})
@@ -472,32 +477,60 @@ def main():
 
         # 3. Extract keywords and fetch recommendations
         elif st.session_state.app_stage == "process_user_input":
-            # Use HyperCLOVA to extract genre/author
+            # Use HyperCLOVA to extract genre, age group, author, and book title
             extraction_prompt = [
-                {"role": "system", "content": "Extract the main book genre or author mentioned in this user message. Respond ONLY with the genre or author name."},
+                {"role": "system", "content": (
+                    "Extract the following information from the user's message as best as possible. "
+                    "Respond ONLY in JSON with these fields: "
+                    "{'genre': <genre or empty>, 'age_group': <age group like children/teen/adult or empty>, "
+                    "'favorite_book': <book title or empty>, 'favorite_author': <author name or empty>}."
+                )},
                 {"role": "user", "content": st.session_state.messages[-1]["content"]}
             ]
-            extracted = call_hyperclova_api(extraction_prompt, st.session_state.api_key)
-            if extracted:
-                st.session_state.user_genre = extracted.strip()
-                if st.session_state.library_api_key:
-                    books = get_book_recommendations(st.session_state.user_genre, st.session_state.library_api_key)
-                    if books:
-                        st.session_state.books_data = books
-                        st.session_state.enriched_books = False
-                        intro_msg = f"I found these books related to {st.session_state.user_genre}.\n\n한국어 답변: {st.session_state.user_genre} 관련 도서를 찾았습니다."
-                        st.session_state.messages.append({"role": "assistant", "content": intro_msg})
-                        st.session_state.app_stage = "show_recommendations"
-                    else:
-                        error_msg = f"Couldn't find books for '{st.session_state.user_genre}'. Try different keywords?\n\n한국어 답변: '{st.session_state.user_genre}' 관련 도서를 찾을 수 없습니다. 다른 키워드를 시도해 보시겠어요?"
-                        st.session_state.messages.append({"role": "assistant", "content": error_msg})
-                        st.session_state.app_stage = "awaiting_user_input"
+            extracted_json = call_hyperclova_api(extraction_prompt, st.session_state.api_key)
+            import json
+            try:
+                extracted = json.loads(extracted_json)
+            except Exception:
+                extracted = {"genre": "", "age_group": "", "favorite_book": "", "favorite_author": ""}
+
+            st.session_state.user_genre = extracted.get("genre", "")
+            st.session_state.user_age_group = extracted.get("age_group", "")
+            st.session_state.user_favorite_book = extracted.get("favorite_book", "")
+            st.session_state.user_favorite_author = extracted.get("favorite_author", "")
+
+            # Build the query for recommendations
+            query = ""
+            if st.session_state.user_age_group:
+                query += st.session_state.user_age_group + " "
+            if st.session_state.user_genre:
+                query += st.session_state.user_genre + " "
+            if st.session_state.user_favorite_author:
+                query += st.session_state.user_favorite_author + " "
+            if st.session_state.user_favorite_book:
+                query += st.session_state.user_favorite_book
+
+            query = query.strip()
+            if not query:
+                st.session_state.messages.append({"role": "assistant", "content": "Sorry, I couldn't understand your preferences. Please try again.\n\n한국어 답변: 죄송합니다. 선호도를 이해하지 못했습니다. 다시 시도해 주세요."})
+                st.session_state.app_stage = "awaiting_user_input"
+                st.rerun()
+
+            if st.session_state.library_api_key:
+                books = get_book_recommendations(query, st.session_state.library_api_key)
+                if books:
+                    st.session_state.books_data = books
+                    st.session_state.enriched_books = False
+                    intro_msg = f"I found these books related to your preferences: {query}.\n\n한국어 답변: '{query}' 관련 도서를 찾았습니다."
+                    st.session_state.messages.append({"role": "assistant", "content": intro_msg})
+                    st.session_state.app_stage = "show_recommendations"
                 else:
-                    api_error = "Library API key required. Please check sidebar.\n\n한국어 답변: 라이브러리 API 키가 필요합니다. 사이드바를 확인해 주세요."
-                    st.session_state.messages.append({"role": "assistant", "content": api_error})
+                    error_msg = f"Couldn't find books for '{query}'. Try different keywords?\n\n한국어 답변: '{query}' 관련 도서를 찾을 수 없습니다. 다른 키워드를 시도해 보시겠어요?"
+                    st.session_state.messages.append({"role": "assistant", "content": error_msg})
                     st.session_state.app_stage = "awaiting_user_input"
             else:
-                st.session_state.messages.append({"role": "assistant", "content": "Sorry, I couldn't understand your preferences. Please try again.\n\n한국어 답변: 죄송합니다. 선호도를 이해하지 못했습니다. 다시 시도해 주세요."})
+                api_error = "Library API key required. Please check sidebar.\n\n한국어 답변: 라이브러리 API 키가 필요합니다. 사이드바를 확인해 주세요."
+                st.session_state.messages.append({"role": "assistant", "content": api_error})
                 st.session_state.app_stage = "awaiting_user_input"
             st.rerun()
 
@@ -524,12 +557,12 @@ def main():
             for i, book in enumerate(st.session_state.books_data):
                 display_book_card(book, i)
             st.markdown('<div class="input-container">', unsafe_allow_html=True)
-            follow_up = st.text_input("Ask about these books, or tell me another genre/author:", key="follow_up_input")
+            follow_up = st.text_input("Ask about these books, or tell me another genre/author/age group/book:", key="follow_up_input")
             if st.button("Send", key="send_follow_up"):
                 if follow_up:
                     st.session_state.messages.append({"role": "user", "content": follow_up})
-                    # If user wants a new genre/author, restart
-                    if any(word in follow_up.lower() for word in ["different", "another", "other", "new", "change", "genre", "author"]):
+                    # If user wants a new set of preferences, restart
+                    if any(word in follow_up.lower() for word in ["different", "another", "other", "new", "change", "genre", "author", "age", "book"]):
                         st.session_state.app_stage = "awaiting_user_input"
                     else:
                         books_context = build_recommendations_context(st.session_state.books_data)
@@ -683,4 +716,3 @@ def main():
     </div>
     """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
-

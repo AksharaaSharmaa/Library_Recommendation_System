@@ -448,6 +448,7 @@ def main():
         st.markdown('</div>', unsafe_allow_html=True)
 
         # --- APP STAGES ---
+
         # 1. Initial dynamic HyperCLOVA prompt
         if st.session_state.app_stage == "init_convo":
             if len(st.session_state.messages) == 1 and st.session_state.api_key:
@@ -475,7 +476,7 @@ def main():
                     st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 
-        # 3. Extract keywords and fetch recommendations
+        # 3. Extract keywords and fetch recommendations (always via library API)
         elif st.session_state.app_stage == "process_user_input":
             # Use HyperCLOVA to extract genre, age group, author, and book title
             extraction_prompt = [
@@ -500,22 +501,23 @@ def main():
             st.session_state.user_favorite_author = extracted.get("favorite_author", "")
 
             # Build the query for recommendations
-            query = ""
+            query_parts = []
             if st.session_state.user_age_group:
-                query += st.session_state.user_age_group + " "
+                query_parts.append(st.session_state.user_age_group)
             if st.session_state.user_genre:
-                query += st.session_state.user_genre + " "
+                query_parts.append(st.session_state.user_genre)
             if st.session_state.user_favorite_author:
-                query += st.session_state.user_favorite_author + " "
+                query_parts.append(st.session_state.user_favorite_author)
             if st.session_state.user_favorite_book:
-                query += st.session_state.user_favorite_book
+                query_parts.append(st.session_state.user_favorite_book)
+            query = " ".join(query_parts).strip()
 
-            query = query.strip()
             if not query:
                 st.session_state.messages.append({"role": "assistant", "content": "Sorry, I couldn't understand your preferences. Please try again.\n\n한국어 답변: 죄송합니다. 선호도를 이해하지 못했습니다. 다시 시도해 주세요."})
                 st.session_state.app_stage = "awaiting_user_input"
                 st.rerun()
 
+            # Always use library API for recommendations
             if st.session_state.library_api_key:
                 books = get_book_recommendations(query, st.session_state.library_api_key)
                 if books:
@@ -534,7 +536,7 @@ def main():
                 st.session_state.app_stage = "awaiting_user_input"
             st.rerun()
 
-        # 4. Show book recommendations
+        # 4. Show book recommendations and allow repeated requests
         elif st.session_state.app_stage == "show_recommendations":
             if not st.session_state.enriched_books:
                 with st.spinner("Enriching book data..."):
@@ -561,10 +563,11 @@ def main():
             if st.button("Send", key="send_follow_up"):
                 if follow_up:
                     st.session_state.messages.append({"role": "user", "content": follow_up})
-                    # If user wants a new set of preferences, restart
-                    if any(word in follow_up.lower() for word in ["different", "another", "other", "new", "change", "genre", "author", "age", "book"]):
-                        st.session_state.app_stage = "awaiting_user_input"
+                    # If user wants a new set of preferences, restart recommendation flow
+                    if any(word in follow_up.lower() for word in ["different", "another", "other", "new", "change", "genre", "author", "age", "book", "recommend"]):
+                        st.session_state.app_stage = "process_user_input"
                     else:
+                        # Use HyperCLOVA for chat about shown books, but keep recommendations via library API
                         books_context = build_recommendations_context(st.session_state.books_data)
                         enhanced_system_msg = {
                             "role": "system",
@@ -577,7 +580,7 @@ def main():
                     st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 
-        # 5. Book details discussion
+        # 5. Book details discussion (unchanged)
         elif st.session_state.app_stage == "discuss_book":
             if st.session_state.selected_book:
                 display_detailed_book(st.session_state.selected_book)
@@ -672,7 +675,7 @@ def main():
             else:
                 for idx, book in enumerate(liked_books):
                     st.markdown('<div class="book-card" style="margin-bottom: 30px;">', unsafe_allow_html=True)
-                    cols = st.columns([1, 3, 1])  # Add a third column for the Remove button
+                    cols = st.columns([1, 3, 1])
                     with cols[0]:
                         image_url = book.get("bookImageURL", "")
                         if image_url:
@@ -716,3 +719,4 @@ def main():
     </div>
     """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
+

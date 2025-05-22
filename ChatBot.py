@@ -45,14 +45,14 @@ def display_liked_book_card(book, index):
             """, unsafe_allow_html=True)
             btn_col1, btn_col2 = st.columns([3, 1])
             with btn_col1:
-                if st.button(f"Tell me more about this book", key=f"details_liked_{isbn}_{index}"):
+                if st.button(f"Tell me more about this book", key=f"details_liked_{isbn13}_{index}"):
                     st.session_state.selected_book = info
                     st.session_state.app_stage = "discuss_book"
                     st.rerun()
             with btn_col2:
                 # Remove (cross) button
-                if st.button("❌", key=f"remove_{isbn}_{index}", help="Remove from My Library"):
-                    unlike_book_for_user(st.session_state.username, isbn)
+                if st.button("❌", key=f"remove_{isbn13}_{index}", help="Remove from My Library"):
+                    unlike_book_for_user(st.session_state.username, isbn13)
                     st.success("Removed from your library!")
                     st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
@@ -201,7 +201,7 @@ def display_book_card(book, index):
             publisher = info.get('publisher', '출판사 없음')
             year = info.get('publication_year') or info.get('publicationYear', '연도 없음')
             loan_count = info.get('loan_count') or info.get('loanCount', 0)
-            isbn = info.get('isbn13') or info.get('isbn', 'unknown')
+            isbn13 = info.get('isbn13') or info.get('isbn', 'unknown')
 
             st.markdown(f"""
             <div style="padding-left: 10px;">
@@ -221,7 +221,6 @@ def display_book_card(book, index):
                     st.rerun()
             with btn_col2:
                 # Check if this book is already liked
-                # Check if this book is already liked
                 liked_books = get_liked_books(st.session_state.username)
                 already_liked = any((b.get("isbn13") or b.get("isbn")) == isbn13 for b in liked_books)
                 if already_liked:
@@ -231,11 +230,6 @@ def display_book_card(book, index):
                         # Store the book in MongoDB with consistent ISBN field
                         book_data = info.copy()
                         book_data['isbn13'] = isbn13
-                        like_book_for_user(st.session_state.username, book_data)
-
-                        # Store the book in MongoDB with consistent ISBN field
-                        book_data = info.copy()
-                        book_data['isbn13'] = isbn13  # Ensure isbn13 field exists
                         like_book_for_user(st.session_state.username, book_data)
                         st.success("Added to your library!")
                         st.rerun()

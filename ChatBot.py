@@ -5,6 +5,7 @@ import base64
 from Frontend import add_custom_css, gradient_title
 from pymongo.errors import DuplicateKeyError
 
+
 # Override button text color to white
 st.markdown("""
 <style>
@@ -440,7 +441,6 @@ def get_books_by_kdc(kdc_type, kdc_code, auth_key, page_no=1, page_size=10):
 
 # --- Main function ---
 def main():
-    st.set_page_config(page_title="Book Wanderer / 책방랑자", layout="wide")
     setup_sidebar()
 
     # --- Session state initialization ---

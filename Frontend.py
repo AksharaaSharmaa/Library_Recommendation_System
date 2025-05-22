@@ -230,7 +230,7 @@ def add_custom_css():
     </style>
     """, unsafe_allow_html=True)
 
-def gradient_title(title_text):
+def gradient_title():
     import streamlit as st
     st.markdown(f"""
     <h1 style="text-align: center; 

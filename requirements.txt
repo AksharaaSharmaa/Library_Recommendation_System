@@ -9,4 +9,4 @@ faiss-cpu
 transformers
 torch
 PyPDF2
-
+langchain-community

@@ -441,9 +441,11 @@ def get_books_by_kdc(kdc_type, kdc_code, auth_key, page_no=1, page_size=10):
 
 # --- Main function ---
 def main():
-    setup_sidebar()
-
-    # --- Session state initialization ---
+    # --- Initialize all session state variables before use ---
+    if "api_key" not in st.session_state:
+        st.session_state.api_key = ""
+    if "library_api_key" not in st.session_state:
+        st.session_state.library_api_key = ""
     if "messages" not in st.session_state:
         st.session_state.messages = [{
             "role": "system",
@@ -468,6 +470,8 @@ def main():
         st.session_state.selected_book = None
     if "showing_books" not in st.session_state:
         st.session_state.showing_books = False
+
+    setup_sidebar()
 
     st.markdown("<h1 style='text-align:center;'>📚 Book Wanderer / 책방랑자</h1>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:center;'>Discover your next favorite read with AI assistance in English and Korean</div>", unsafe_allow_html=True)

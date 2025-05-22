@@ -383,45 +383,54 @@ import json
 from datetime import datetime
 from difflib import SequenceMatcher
 
-# --- Load KDC and DTL_KDC JSONs ---
+# --- Load JSON files ---
 @st.cache_resource
-def load_kdc_json():
+def load_kdc_jsons():
     with open("kdc.json", encoding="utf-8") as f:
-        kdc_list = json.load(f)
+        kdc_dict = json.load(f)
     with open("dtl_kdc.json", encoding="utf-8") as f:
-        dtl_kdc_list = json.load(f)
-    return kdc_list, dtl_kdc_list
+        dtl_kdc_dict = json.load(f)
+    return kdc_dict, dtl_kdc_dict
 
-kdc_list, dtl_kdc_list = load_kdc_json()
+kdc_dict, dtl_kdc_dict = load_kdc_jsons()
 
-# --- Utility: Find best code from JSON ---
-def find_best_code(user_query, code_list):
-    # Each item in code_list: {"code": "81", "keywords": ["literature", "novel", ...]}
+# --- Sidebar setup ---
+def setup_sidebar():
+    st.sidebar.title("🔑 API Keys")
+    st.sidebar.write("Enter your API keys below:")
+    st.session_state.api_key = st.sidebar.text_input("HyperCLOVA API Key", type="password", value=st.session_state.get("api_key", ""))
+    st.session_state.library_api_key = st.sidebar.text_input("Library API Key", type="password", value=st.session_state.get("library_api_key", ""))
+    st.sidebar.markdown("---")
+    st.sidebar.info("This app recommends books using the Korean Decimal Classification (KDC) system.")
+
+# --- Find best matching code from JSON ---
+def find_best_code(user_query, code_dict):
     best_score = 0
     best_code = None
-    for item in code_list:
-        for kw in item.get("keywords", []):
-            score = SequenceMatcher(None, user_query.lower(), kw.lower()).ratio()
-            if score > best_score:
-                best_score = score
-                best_code = item["code"]
-    return best_code, best_score
+    best_label = ""
+    for code, label in code_dict.items():
+        score = SequenceMatcher(None, user_query, label).ratio()
+        if score > best_score:
+            best_score = score
+            best_code = code
+            best_label = label
+    return best_code, best_label, best_score
 
 def get_kdc_or_dtl_kdc(user_query):
     # Try dtl_kdc first (more specific), then kdc
-    dtl_code, dtl_score = find_best_code(user_query, dtl_kdc_list)
-    kdc_code, kdc_score = find_best_code(user_query, kdc_list)
-    # Use the one with higher similarity
-    if dtl_score >= kdc_score and dtl_score > 0.5:
-        return "dtl_kdc", dtl_code
-    elif kdc_score > 0.5:
-        return "kdc", kdc_code
+    dtl_code, dtl_label, dtl_score = find_best_code(user_query, dtl_kdc_dict)
+    kdc_code, kdc_label, kdc_score = find_best_code(user_query, kdc_dict)
+    # Use the one with higher similarity (threshold 0.4 for Korean short labels)
+    if dtl_score >= kdc_score and dtl_score > 0.4:
+        return "dtl_kdc", dtl_code, dtl_label
+    elif kdc_score > 0.4:
+        return "kdc", kdc_code, kdc_label
     else:
-        return None, None
+        return None, None, None
 
 # --- Query library API for books by KDC code ---
-def get_books_by_kdc(kdc_type, kdc_code, auth_key, page_no=1, page_size=30):
-    url = "http://data4library.kr/api/loanltemSrch"
+def get_books_by_kdc(kdc_type, kdc_code, auth_key, page_no=1, page_size=10):
+    url = "http://data4library.kr/api/loanItemSrch"
     params = {
         "authKey": auth_key,
         "startDt": "2000-01-01",
@@ -440,8 +449,10 @@ def get_books_by_kdc(kdc_type, kdc_code, auth_key, page_no=1, page_size=30):
         return docs
     return []
 
+# --- Main App ---
 def main():
-    # --- UI/Session Setup ---
+    setup_sidebar()
+
     if "messages" not in st.session_state:
         st.session_state.messages = [{
             "role": "system",
@@ -452,22 +463,21 @@ def main():
                 "First provide complete English answer, then '한국어 답변:' with Korean translation."
             )
         }]
-    if "api_key" not in st.session_state:
-        st.session_state.api_key = ""
-    if "library_api_key" not in st.session_state:
-        st.session_state.library_api_key = ""
     if "app_stage" not in st.session_state:
         st.session_state.app_stage = "init_convo"
     if "books_data" not in st.session_state:
         st.session_state.books_data = []
 
-    st.title("Book Wanderer / 책방랑자")
-    st.write("Discover your next favorite read with AI assistance in English and Korean")
+    st.markdown("<h1 style='text-align:center;'>📚 Book Wanderer / 책방랑자</h1>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center;'>Discover your next favorite read with AI assistance in English and Korean</div>", unsafe_allow_html=True)
+    st.markdown("---")
 
+    # Chat history
     for msg in st.session_state.messages:
         if msg["role"] != "system":
-            st.write(f"**{msg['role'].capitalize()}**: {msg['content']}")
+            st.markdown(f"**{msg['role'].capitalize()}:** {msg['content']}")
 
+    # Conversation stages
     if st.session_state.app_stage == "init_convo":
         st.session_state.messages.append({
             "role": "assistant",
@@ -477,7 +487,7 @@ def main():
         st.rerun()
 
     elif st.session_state.app_stage == "awaiting_user_input":
-        user_input = st.text_input("Tell me about your favorite genre, author, or book:", key="user_open_input")
+        user_input = st.text_input("Tell me about your favorite genre, author, or book (in Korean):", key="user_open_input")
         if st.button("Send", key="send_open_input"):
             if user_input:
                 st.session_state.messages.append({"role": "user", "content": user_input})
@@ -486,7 +496,7 @@ def main():
 
     elif st.session_state.app_stage == "process_user_input":
         user_query = st.session_state.messages[-1]["content"]
-        kdc_type, kdc_code = get_kdc_or_dtl_kdc(user_query)
+        kdc_type, kdc_code, kdc_label = get_kdc_or_dtl_kdc(user_query)
         if not kdc_code:
             st.session_state.messages.append({
                 "role": "assistant",
@@ -498,13 +508,14 @@ def main():
             books = get_books_by_kdc(kdc_type, kdc_code, st.session_state.library_api_key)
             if books:
                 st.session_state.books_data = books
-                intro_msg = f"I found these books for {kdc_type.upper()} code '{kdc_code}', sorted by loan count.\n\n한국어 답변: {kdc_type.upper()} 코드 '{kdc_code}'에 해당하는 도서를 대출 건수 내림차순으로 찾았습니다."
+                intro_msg = (f"I found these books for {kdc_type.upper()} code '{kdc_code}' ({kdc_label}), sorted by loan count.\n\n"
+                             f"한국어 답변: {kdc_type.upper()} 코드 '{kdc_code}' ({kdc_label})에 해당하는 도서를 대출 건수 내림차순으로 찾았습니다.")
                 st.session_state.messages.append({"role": "assistant", "content": intro_msg})
                 st.session_state.app_stage = "show_recommendations"
             else:
                 st.session_state.messages.append({
                     "role": "assistant",
-                    "content": f"Sorry, no books found for {kdc_type.upper()} code '{kdc_code}'.\n\n한국어 답변: {kdc_type.upper()} 코드 '{kdc_code}'에 해당하는 도서를 찾을 수 없습니다."
+                    "content": f"Sorry, no books found for {kdc_type.upper()} code '{kdc_code}' ({kdc_label}).\n\n한국어 답변: {kdc_type.upper()} 코드 '{kdc_code}' ({kdc_label})에 해당하는 도서를 찾을 수 없습니다."
                 })
                 st.session_state.app_stage = "awaiting_user_input"
         else:
@@ -518,30 +529,26 @@ def main():
     elif st.session_state.app_stage == "show_recommendations":
         st.subheader("Recommended Books")
         for i, book in enumerate(st.session_state.books_data):
-            st.write(f"{i+1}. {book.get('bookname', 'Unknown Title')} by {book.get('authors', 'Unknown Author')}")
-        follow_up = st.text_input("Ask about these books, or tell me another genre/author:", key="follow_up_input")
+            st.write(f"{i+1}. **{book.get('bookname', 'Unknown Title')}** by {book.get('authors', 'Unknown Author')}")
+        follow_up = st.text_input("Ask about these books, or tell me another genre/author (in Korean):", key="follow_up_input")
         if st.button("Send", key="send_follow_up"):
             if follow_up:
                 st.session_state.messages.append({"role": "user", "content": follow_up})
                 st.session_state.app_stage = "process_user_input"
                 st.rerun()
 
-    # --- Footer ---
-    st.markdown('<div class="app-footer">', unsafe_allow_html=True)
+    # Footer
+    st.markdown("---")
     st.markdown("""
-    <div style="text-align: center; margin: 10px 0;">
-        <p style="color: #d1d1e0;">
-            This application provides book recommendations based on your preferences using AI assistance.
-            All recommendations are available in both English and Korean.
-        </p>
-        <p style="color: #b3b3cc; font-size: 0.8rem; margin-top: 15px;">
-            Powered by Streamlit • HyperCLOVA X • Korean Library API
-        </p>
+    <div style='text-align:center; color: #888; font-size:0.9em;'>
+        This application provides book recommendations based on your preferences using AI assistance.<br>
+        All recommendations are available in both English and Korean.<br>
+        Powered by Streamlit • Korean Library API
     </div>
     """, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
+
 
 

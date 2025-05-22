@@ -10,21 +10,6 @@ import json
 from datetime import datetime
 from difflib import SequenceMatcher
 
-st.markdown("""
-<style>
-/* Style all buttons with dark brown background */
-div.stButton > button {
-    background-color: #4B2E19 !important;  /* Dark brown */
-    color: #fff !important;
-    border: none !important;
-    border-radius: 6px !important;
-    font-size: 1.4em !important;
-    padding: 0.3em 1.2em !important;
-    margin-left: 0.5em;
-}
-</style>
-""", unsafe_allow_html=True)
-
 def display_liked_book_card(book, index):
     """Display a liked book card with a remove (cross) button using MongoDB."""
     info = book if isinstance(book, dict) else book.get("doc", {})
@@ -586,7 +571,7 @@ def main():
     elif st.session_state.app_stage == "show_recommendations":
         st.subheader("📚 Recommended Books")
         for i, book in enumerate(st.session_state.books_data):
-            display_liked_book_card(book, i)
+            display_book_card(book, i)
             
         follow_up = st.text_input("Ask about these books, or tell me another genre/author (in Korean or English):", key="follow_up_input")
         if st.button("Send", key="send_follow_up"):

@@ -4,3 +4,9 @@ streamlit-extras
 pybase64
 pymongo
 plotly
+langchain
+faiss-cpu
+transformers
+torch
+PyPDF2
+

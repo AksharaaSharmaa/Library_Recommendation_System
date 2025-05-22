@@ -578,7 +578,15 @@ def main():
         st.rerun()
 
     elif st.session_state.app_stage == "show_recommendations":
-        st.subheader("📚 Recommended Books")
+        st.markdown(
+            """
+            <h2 style='text-align: center; font-size: 2.2em; font-weight: bold;'>
+                📚 Recommended Books
+            </h2>
+            """,
+            unsafe_allow_html=True
+        )
+
         for i, book in enumerate(st.session_state.books_data):
             display_book_card(book, i)
             

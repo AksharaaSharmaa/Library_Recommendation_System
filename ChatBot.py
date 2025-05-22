@@ -66,16 +66,21 @@ def get_user_library_collection():
 
 def like_book_for_user(username, book_info):
     user_library = get_user_library_collection()
-    # Use ISBN as unique book identifier
     isbn = book_info.get("isbn13")
     if not isbn:
         return False
-    # Upsert: Add the book if not already liked
-    user_library.update_one(
+    # First, try to add to existing document
+    result = user_library.update_one(
         {"username": username},
-        {"$addToSet": {"liked_books": book_info}},
-        upsert=True
+        {"$addToSet": {"liked_books": book_info}}
     )
+    # If no document was modified, create one with an empty array and add the book
+    if result.matched_count == 0:
+        user_library.update_one(
+            {"username": username},
+            {"$set": {"liked_books": [book_info], "username": username}},
+            upsert=True
+        )
     return True
 
 def get_liked_books(username):

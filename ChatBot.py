@@ -215,11 +215,12 @@ def display_book_card(book, index):
 
             btn_col1, btn_col2 = st.columns([3, 1])
             with btn_col1:
-                if st.button(f"Tell me more about this book", key=f"details_{isbn}_{index}"):
+                if st.button(f"Tell me more about this book", key=f"details_{isbn13}_{index}"):
                     st.session_state.selected_book = info
                     st.session_state.app_stage = "discuss_book"
                     st.rerun()
             with btn_col2:
+                # Check if this book is already liked
                 # Check if this book is already liked
                 liked_books = get_liked_books(st.session_state.username)
                 already_liked = any((b.get("isbn13") or b.get("isbn")) == isbn13 for b in liked_books)
@@ -227,6 +228,10 @@ def display_book_card(book, index):
                     st.button("❤️", key=f"liked_{isbn13}_{index}", help="Already in My Library", disabled=True)
                 else:
                     if st.button("❤️", key=f"like_{isbn13}_{index}", help="Add to My Library"):
+                        # Store the book in MongoDB with consistent ISBN field
+                        book_data = info.copy()
+                        book_data['isbn13'] = isbn13
+                        like_book_for_user(st.session_state.username, book_data)
 
                         # Store the book in MongoDB with consistent ISBN field
                         book_data = info.copy()

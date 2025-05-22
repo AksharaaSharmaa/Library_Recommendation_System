@@ -4,6 +4,11 @@ from streamlit_extras.colored_header import colored_header
 import base64
 from Frontend import add_custom_css, gradient_title
 from pymongo.errors import DuplicateKeyError
+import streamlit as st
+import requests
+import json
+from datetime import datetime
+from difflib import SequenceMatcher
 
 
 # Override button text color to white
@@ -126,51 +131,6 @@ def call_hyperclova_api(messages, api_key):
         st.error(f"Error connecting to HyperCLOVA API: {e}")
         return None
 
-def get_book_recommendations(genre, api_key):
-    """Helper function to get book recommendations from library API"""
-    try:
-        BASE_URL = "http://data4library.kr/api/srchBooks"
-        
-        params = {
-            "authKey": api_key,
-            "keyword": genre,
-            "format": "json",
-            "pageNo": 1,
-            "pageSize": 10
-        }
-        
-        response = requests.get(BASE_URL, params=params)
-        
-        if response.status_code == 200:
-            data = response.json()
-            books = data.get("response", {}).get("docs", [])
-            return books
-        else:
-            st.error(f"Failed to fetch data from API. Status code: {response.status_code}")
-            return []
-    except Exception as e:
-        st.error(f"Error connecting to Library API: {e}")
-        return []
-    
-def build_book_context(book_info, book_details):
-    """Build a rich context for HyperCLOVA about the book"""
-    context = f"Title: {book_info.get('bookname', 'Unknown')}\n"
-    context += f"Author: {book_info.get('authors', 'Unknown')}\n"
-    context += f"Publisher: {book_info.get('publisher', 'Unknown')}\n"
-    context += f"Publication Year: {book_info.get('publication_year', 'Unknown')}\n"
-    context += f"Genre: {st.session_state.user_genre}\n"
-    
-    # Add details if available
-    if book_details:
-        if 'description' in book_details:
-            context += f"\nDescription: {book_details.get('description', '')}\n"
-        if 'contents' in book_details:
-            context += f"\nContents: {book_details.get('contents', '')}\n"
-        if 'subjects' in book_details:
-            context += f"\nSubjects: {book_details.get('subjects', '')}\n"
-    
-    return context
-
 def display_book_card(book, index):
     """Helper function to display a book card with like functionality"""
     info = book.get("doc", {})
@@ -247,85 +207,6 @@ def get_book_details(isbn, api_key):
     except Exception as e:
         st.error(f"Error connecting to Library API for book details: {e}")
         return None
-
-def display_detailed_book(book_info):
-    """Helper function to display detailed book information"""
-    st.markdown('<div class="book-card" style="margin-bottom: 30px;">', unsafe_allow_html=True)
-    
-    cols = st.columns([1, 3])
-    
-    with cols[0]:
-        # Display book image if available
-        image_url = book_info.get("bookImageURL", "")
-        if image_url:
-            st.image(image_url, width=150)
-        else:
-            # Placeholder for missing image
-            st.markdown("""
-            <div style="width: 140px; height: 200px; background: linear-gradient(135deg, #2c3040, #363c4e); 
-                        display: flex; align-items: center; justify-content: center; border-radius: 8px;">
-                <span style="color: #b3b3cc;">No Image Available</span>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    with cols[1]:
-        st.markdown(f"""
-        <div style="padding-left: 15px;">
-            <div class="book-title" style="font-size: 1.5rem;">{book_info.get('bookname', '제목 없음')}</div>
-            <div class="book-info"><strong>Author:</strong> {book_info.get('authors', '저자 없음')}</div>
-            <div class="book-info"><strong>Publisher:</strong> {book_info.get('publisher', '출판사 없음')}</div>
-            <div class="book-info"><strong>Year:</strong> {book_info.get('publication_year', '연도 없음')}</div>
-            <div class="book-info"><strong>ISBN:</strong> {book_info.get('isbn13', 'N/A')}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
-
-def fetch_and_enrich_books_data(books, api_key):
-    """Fetch detailed information for each book and add it to the data"""
-    enriched_books = []
-    for book in books:
-        book_info = book.get("doc", {})
-        book_isbn = book_info.get("isbn13", "")
-        
-        if book_isbn:
-            details = get_book_details(book_isbn, api_key)
-            if details:
-                # Add details to the book info
-                book["details"] = details
-        
-        enriched_books.append(book)
-    
-    return enriched_books
-
-def build_recommendations_context(books_data):
-    """Build a rich context from all recommended books"""
-    context = "Here are summaries of the recommended books:\n\n"
-    
-    for i, book in enumerate(books_data, 1):
-        book_info = book.get("doc", {})
-        book_details = book.get("details", {})
-        
-        context += f"{i}. '{book_info.get('bookname', 'Unknown Title')}' by {book_info.get('authors', 'Unknown Author')}\n"
-        context += f"   Published by {book_info.get('publisher', 'Unknown Publisher')} in {book_info.get('publication_year', 'Unknown Year')}\n"
-        
-        # Add description if available
-        if book_details and 'description' in book_details:
-            # Truncate description if too long
-            description = book_details.get('description', '')
-            if len(description) > 300:
-                description = description[:300] + "..."
-            context += f"   Description: {description}\n"
-        
-        context += "\n"
-    
-    return context
-
-import streamlit as st
-import requests
-import json
-from datetime import datetime
-from difflib import SequenceMatcher
 
 # --- Load JSON files ---
 @st.cache_resource
@@ -690,7 +571,7 @@ def main():
     # --- Chat history ---
     for msg in st.session_state.messages:
         if msg["role"] != "system":
-            st.markdown(f"**{msg['role'].capitalize()}:** {msg['content']}")
+            display_message(msg)
 
     # --- App stages ---
     if st.session_state.app_stage == "welcome":

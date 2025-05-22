@@ -33,7 +33,7 @@ def display_liked_book_card(book, index):
             publisher = info.get('publisher', '출판사 없음')
             year = info.get('publication_year') or info.get('publicationYear', '연도 없음')
             loan_count = info.get('loan_count') or info.get('loanCount', 0)
-            isbn = info.get('isbn13') or info.get('isbn', 'unknown')
+            isbn13 = info.get('isbn13') or info.get('isbn', 'unknown')
             st.markdown(f"""
             <div style="padding-left: 10px;">
                 <div style="font-size: 1.2em; font-weight: bold; color: #333; margin-bottom: 8px;">{title}</div>
@@ -222,13 +222,16 @@ def display_book_card(book, index):
             with btn_col2:
                 # Check if this book is already liked
                 liked_books = get_liked_books(st.session_state.username)
-                already_liked = any((b.get("isbn13") or b.get("isbn")) == isbn for b in liked_books)
+                already_liked = any((b.get("isbn13") or b.get("isbn")) == isbn13 for b in liked_books)
                 if already_liked:
-                    st.button("❤️", key=f"liked_{isbn}_{index}", help="Already in My Library", disabled=True)
+                    st.button("❤️", key=f"liked_{isbn13}_{index}", help="Already in My Library", disabled=True)
                 else:
-                    if st.button("❤️", key=f"like_{isbn}_{index}", help="Add to My Library"):
-                        # Store the book in MongoDB
-                        like_book_for_user(st.session_state.username, info)
+                    if st.button("❤️", key=f"like_{isbn13}_{index}", help="Add to My Library"):
+
+                        # Store the book in MongoDB with consistent ISBN field
+                        book_data = info.copy()
+                        book_data['isbn13'] = isbn13  # Ensure isbn13 field exists
+                        like_book_for_user(st.session_state.username, book_data)
                         st.success("Added to your library!")
                         st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
@@ -401,7 +404,7 @@ def get_books_by_kdc(kdc_type, kdc_code, auth_key, page_no=1, page_size=10):
                         "authors": book_data.get("authors", book_data.get("author", "Unknown Author")),
                         "publisher": book_data.get("publisher", "Unknown Publisher"),
                         "publication_year": book_data.get("publication_year", book_data.get("publicationYear", "Unknown Year")),
-                        "isbn": book_data.get("isbn13", book_data.get("isbn", "")),
+                        "isbn13": book_data.get("isbn13", book_data.get("isbn", "")),  # ← Change "isbn" to "isbn13"
                         "loan_count": int(book_data.get("loan_count", book_data.get("loanCount", 0))),
                         "bookImageURL": book_data.get("bookImageURL", "")
                     }

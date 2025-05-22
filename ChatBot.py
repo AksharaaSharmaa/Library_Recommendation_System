@@ -126,63 +126,6 @@ def call_hyperclova_api(messages, api_key):
         st.error(f"Error connecting to HyperCLOVA API: {e}")
         return None
 
-def setup_sidebar():
-    with st.sidebar:
-        if st.button("My Liked Books"):
-            st.session_state.app_stage = "show_liked_books"
-            st.rerun()
-
-        st.markdown("""
-        <div style="text-align: center; margin-bottom: 20px;">
-            <h3 style="background: linear-gradient(90deg, #3b2314, #221409);
-                      -webkit-background-clip: text;
-                      -webkit-text-fill-color: transparent;
-                      font-weight: 700;">
-                API Configuration
-            </h3>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # API Keys section
-        with st.container():
-            st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
-            
-            # HyperCLOVA API Key
-            hyperclova_api_key = st.text_input("Enter your HyperCLOVA API Key", 
-                                              type="password", 
-                                              value=st.session_state.api_key)
-            st.session_state.api_key = hyperclova_api_key
-            
-            # Library API Key
-            library_api_key = st.text_input("Enter Library API Key", 
-                                            type="password", 
-                                            value=st.session_state.library_api_key)
-            st.session_state.library_api_key = library_api_key
-            
-            st.markdown('</div>', unsafe_allow_html=True)
-        
-        # Reset button
-        if st.button("Start Over 💫"):
-            st.session_state.messages = [
-                {"role": "system", "content": "You are a helpful AI assistant specializing in book recommendations. For EVERY response, you must answer in BOTH English and Korean. First provide the complete answer in English, then provide '한국어 답변:' followed by the complete Korean translation of your answer."}
-            ]
-            st.session_state.app_stage = "welcome"
-            st.session_state.user_genre = ""
-            st.session_state.user_age = ""
-            st.session_state.selected_book = None
-            st.session_state.showing_books = False
-            st.rerun()
-        
-        st.markdown("""
-        <div style="text-align: center; margin-top: 30px; padding: 10px;">
-            <p style="color: #b3b3cc; font-size: 0.8rem;">
-                Powered by HyperCLOVA X & Korean Library API
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-
-
-
 def get_book_recommendations(genre, api_key):
     """Helper function to get book recommendations from library API"""
     try:
@@ -433,14 +376,70 @@ def get_books_by_kdc(kdc_type, kdc_code, auth_key, page_no=1, page_size=10):
     r = requests.get(url, params=params)
     if r.status_code == 200:
         docs = r.json().get("response", {}).get("docs", [])
-        if isinstance(docs, dict):  # only one book
-            docs = [docs]
+        # docs is a list of dicts, each dict has keys like 'bookname', 'authors', etc.
         docs = sorted(docs, key=lambda x: int(x.get("loan_count", 0)), reverse=True)
         return docs
     return []
 
+# --- Sidebar (as provided) ---
+def setup_sidebar():
+    with st.sidebar:
+        if st.button("My Liked Books"):
+            st.session_state.app_stage = "show_liked_books"
+            st.rerun()
+
+        st.markdown("""
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h3 style="background: linear-gradient(90deg, #3b2314, #221409);
+                      -webkit-background-clip: text;
+                      -webkit-text-fill-color: transparent;
+                      font-weight: 700;">
+                API Configuration
+            </h3>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # API Keys section
+        with st.container():
+            st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
+            
+            # HyperCLOVA API Key
+            hyperclova_api_key = st.text_input("Enter your HyperCLOVA API Key", 
+                                              type="password", 
+                                              value=st.session_state.api_key)
+            st.session_state.api_key = hyperclova_api_key
+            
+            # Library API Key
+            library_api_key = st.text_input("Enter Library API Key", 
+                                            type="password", 
+                                            value=st.session_state.library_api_key)
+            st.session_state.library_api_key = library_api_key
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Reset button
+        if st.button("Start Over 💫"):
+            st.session_state.messages = [
+                {"role": "system", "content": "You are a helpful AI assistant specializing in book recommendations. For EVERY response, you must answer in BOTH English and Korean. First provide the complete answer in English, then provide '한국어 답변:' followed by the complete Korean translation of your answer."}
+            ]
+            st.session_state.app_stage = "welcome"
+            st.session_state.user_genre = ""
+            st.session_state.user_age = ""
+            st.session_state.selected_book = None
+            st.session_state.showing_books = False
+            st.rerun()
+        
+        st.markdown("""
+        <div style="text-align: center; margin-top: 30px; padding: 10px;">
+            <p style="color: #b3b3cc; font-size: 0.8rem;">
+                Powered by HyperCLOVA X & Korean Library API
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
 # --- Main function ---
 def main():
+    st.set_page_config(page_title="Book Wanderer / 책방랑자", layout="wide")
     # --- Initialize all session state variables before use ---
     if "api_key" not in st.session_state:
         st.session_state.api_key = ""
@@ -534,9 +533,16 @@ def main():
     elif st.session_state.app_stage == "show_recommendations":
         st.subheader("Recommended Books")
         for i, book in enumerate(st.session_state.books_data):
-            st.write(f"{i+1}. **{book.get('bookname', 'Unknown Title')}** by {book.get('authors', 'Unknown Author')}")
+            # The book dict may be nested under a 'doc' key, or be flat; handle both
+            if isinstance(book, dict):
+                bookname = book.get('bookname') or book.get('bookName') or "Unknown Title"
+                authors = book.get('authors') or book.get('author') or "Unknown Author"
+            else:
+                bookname = "Unknown Title"
+                authors = "Unknown Author"
+            st.write(f"{i+1}. **{bookname}** by {authors}")
             # Like button for each book
-            if st.button(f"❤️ Like {i+1}", key=f"like_{i}"):
+            if st.button(f"❤️", key=f"like"):
                 st.session_state.liked_books.append(book)
                 st.success("Book added to your liked list!")
         follow_up = st.text_input("Ask about these books, or tell me another genre/author (in Korean):", key="follow_up_input")
@@ -550,7 +556,13 @@ def main():
         st.subheader("My Liked Books")
         if st.session_state.liked_books:
             for i, book in enumerate(st.session_state.liked_books):
-                st.write(f"{i+1}. **{book.get('bookname', 'Unknown Title')}** by {book.get('authors', 'Unknown Author')}")
+                if isinstance(book, dict):
+                    bookname = book.get('bookname') or book.get('bookName') or "Unknown Title"
+                    authors = book.get('authors') or book.get('author') or "Unknown Author"
+                else:
+                    bookname = "Unknown Title"
+                    authors = "Unknown Author"
+                st.write(f"{i+1}. **{bookname}** by {authors}")
         else:
             st.info("You have not liked any books yet.")
         if st.button("Back to Recommendations"):

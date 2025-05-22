@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 from streamlit_extras.colored_header import colored_header
 import base64
-from Frontend import add_custom_css, gradient_title
+from Frontend import add_custom_css
 from pymongo.errors import DuplicateKeyError
 import streamlit as st
 import requests
@@ -11,7 +11,6 @@ from datetime import datetime
 from difflib import SequenceMatcher
 
 add_custom_css()
-gradient_title()
 
 def display_liked_book_card(book, index):
     """Display a liked book card with a remove (cross) button using MongoDB."""

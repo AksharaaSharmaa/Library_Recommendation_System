@@ -541,7 +541,7 @@ def main():
                 authors = "Unknown Author"
             st.write(f"{i+1}. **{bookname}** by {authors}")
             # Like button for each book
-            if st.button(f"❤️", key=f"like"):
+            if st.button(f"❤️", key=f"like_{i}"):
                 st.session_state.liked_books.append(book)
                 st.success("Book added to your liked list!")
         follow_up = st.text_input("Ask about these books, or tell me another genre/author (in Korean):", key="follow_up_input")

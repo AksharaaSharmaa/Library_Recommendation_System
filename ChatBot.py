@@ -10,17 +10,6 @@ import json
 from datetime import datetime
 from difflib import SequenceMatcher
 
-
-# Override button text color to white
-st.markdown("""
-<style>
-    /* Make all button text white */
-    .stButton button, .stButton button:focus, .stButton button:active {
-        color: white !important;
-    }
-</style>
-""", unsafe_allow_html=True)
-
 def display_liked_book_card(book, index):
     """Display a liked book card with a remove (cross) button using MongoDB."""
     info = book if isinstance(book, dict) else book.get("doc", {})

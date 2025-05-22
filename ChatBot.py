@@ -239,30 +239,6 @@ def display_book_card(book, index):
                         st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
-def get_book_details(isbn, api_key):
-    """Get detailed information about a specific book using its ISBN"""
-    try:
-        DETAIL_URL = "http://data4library.kr/api/srchDtlList"
-        
-        params = {
-            "authKey": api_key,
-            "isbn13": isbn,
-            "format": "json"
-        }
-        
-        response = requests.get(DETAIL_URL, params=params)
-        
-        if response.status_code == 200:
-            data = response.json()
-            details = data.get("response", {}).get("detail", [])
-            return details[0] if details else None
-        else:
-            st.error(f"Failed to fetch book details. Status code: {response.status_code}")
-            return None
-    except Exception as e:
-        st.error(f"Error connecting to Library API for book details: {e}")
-        return None
-
 # --- Load JSON files ---
 @st.cache_resource
 def load_kdc_jsons():

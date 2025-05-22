@@ -439,7 +439,6 @@ def setup_sidebar():
 
 # --- Main function ---
 def main():
-    st.set_page_config(page_title="Book Wanderer / 책방랑자", layout="wide")
     # --- Initialize all session state variables before use ---
     if "api_key" not in st.session_state:
         st.session_state.api_key = ""

@@ -9,6 +9,7 @@ import requests
 import json
 from datetime import datetime
 from difflib import SequenceMatcher
+from streamlit_extras.add_vertical_space import add_vertical_space
 
 add_custom_css()
 
@@ -578,6 +579,7 @@ def main():
         st.rerun()
 
     elif st.session_state.app_stage == "show_recommendations":
+    add_vertical_space(2)
         st.markdown(
             """
             <h2 style='text-align: center; font-size: 2.2em; font-weight: bold;'>

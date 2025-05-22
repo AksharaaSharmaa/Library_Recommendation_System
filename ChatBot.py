@@ -432,7 +432,7 @@ def get_books_by_kdc(kdc_type, kdc_code, auth_key, page_no=1, page_size=10):
     params[kdc_type] = kdc_code
     r = requests.get(url, params=params)
     if r.status_code == 200:
-        docs = r.json().get("response", {}).get("docs", {}).get("doc", [])
+        docs = r.json().get("response", {}).get("docs", [])
         if isinstance(docs, dict):  # only one book
             docs = [docs]
         docs = sorted(docs, key=lambda x: int(x.get("loan_count", 0)), reverse=True)

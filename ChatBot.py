@@ -600,7 +600,16 @@ def main():
                 st.rerun()
 
     elif st.session_state.app_stage == "show_liked_books":
-        st.subheader("❤️ My Liked Books")
+        add_vertical_space(2)  # Adds two lines of vertical space above
+
+        st.markdown(
+            """
+            <h2 style='text-align: center; font-size: 2.2em; font-weight: bold; margin-bottom: 0.5em;'>
+                 ❤️ My Liked Books
+            </h2>
+            """,
+            unsafe_allow_html=True
+        )
         liked_books = get_liked_books(st.session_state.username)
         if liked_books:
             for i, book in enumerate(liked_books):

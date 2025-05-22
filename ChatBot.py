@@ -377,13 +377,86 @@ def build_recommendations_context(books_data):
     
     return context
 
-def main():
-    # Apply the custom CSS
-    add_custom_css()
+import streamlit as st
+import requests
+from datetime import datetime
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.vectorstores import FAISS
+from langchain.docstore.document import Document
+from PyPDF2 import PdfReader
 
-    # --- Session State Initialization ---
+# --- PDF Extraction and Chunking ---
+@st.cache_resource
+def build_pdf_vectorstore(pdf_path="Codes.pdf"):
+    # 1. Extract text from PDF
+    reader = PdfReader(pdf_path)
+    full_text = ""
+    for page in reader.pages:
+        full_text += page.extract_text() + "\n"
+    # 2. Chunk text (keep chunks small for retrieval accuracy)
+    splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    chunks = splitter.split_text(full_text)
+    documents = [Document(page_content=chunk) for chunk in chunks]
+    # 3. Embed and store in FAISS
+    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    vectorstore = FAISS.from_documents(documents, embeddings)
+    return vectorstore
+
+pdf_vectorstore = build_pdf_vectorstore()
+
+# --- Utility: Retrieve best chunk and extract KDC code ---
+def extract_kdc_code_from_chunk(chunk):
+    # Look for KDC/dtl_kdc code patterns in the chunk
+    import re
+    # Match lines like: "dtl_kdc", "kdc", or "코드값" in tables
+    kdc_matches = re.findall(r'(?:kdc|dtl_kdc|코드값)\s*[:=]?\s*([0-9]{1,3}(?:\.[0-9]+)?)', chunk, flags=re.IGNORECASE)
+    if kdc_matches:
+        return kdc_matches[0]
+    # Also try to match lines like "813.7", "81", etc.
+    fallback = re.findall(r'\b([0-9]{1,3}(?:\.[0-9]+)?)\b', chunk)
+    if fallback:
+        return fallback[0]
+    return None
+
+def get_relevant_kdc_code(user_query):
+    # Retrieve top relevant chunk from the PDF vectorstore
+    docs = pdf_vectorstore.similarity_search(user_query, k=2)
+    for doc in docs:
+        code = extract_kdc_code_from_chunk(doc.page_content)
+        if code:
+            return code
+    return None
+
+# --- Query library API for books by KDC code ---
+def get_books_by_kdc(kdc_code, auth_key, page_no=1, page_size=30):
+    url = "http://data4library.kr/api/loanltemSrch"
+    params = {
+        "authKey": auth_key,
+        "startDt": "2000-01-01",
+        "endDt": datetime.now().strftime("%Y-%m-%d"),
+        "format": "json",
+        "pageNo": page_no,
+        "pageSize": page_size
+    }
+    # Use kdc or dtl_kdc depending on code length (API docs: dtl_kdc for subcategories)
+    if len(kdc_code) <= 2:
+        params["kdc"] = kdc_code
+    else:
+        params["dtl_kdc"] = kdc_code
+    r = requests.get(url, params=params)
+    if r.status_code == 200:
+        docs = r.json().get("response", {}).get("docs", {}).get("doc", [])
+        if isinstance(docs, dict):  # only one book
+            docs = [docs]
+        docs = sorted(docs, key=lambda x: int(x.get("loan_count", 0)), reverse=True)
+        return docs
+    return []
+
+def main():
+    add_custom_css()
     if "messages" not in st.session_state:
-        system_prompt = {
+        st.session_state.messages = [{
             "role": "system",
             "content": (
                 "You are a friendly AI assistant specializing in book recommendations. "
@@ -391,39 +464,17 @@ def main():
                 "For EVERY response, answer in BOTH English and Korean. "
                 "First provide complete English answer, then '한국어 답변:' with Korean translation."
             )
-        }
-        st.session_state.messages = [system_prompt]
+        }]
     if "api_key" not in st.session_state:
         st.session_state.api_key = ""
     if "library_api_key" not in st.session_state:
         st.session_state.library_api_key = ""
     if "app_stage" not in st.session_state:
         st.session_state.app_stage = "init_convo"
-    if "user_genre" not in st.session_state:
-        st.session_state.user_genre = ""
-    if "user_age_group" not in st.session_state:
-        st.session_state.user_age_group = ""
-    if "user_favorite_book" not in st.session_state:
-        st.session_state.user_favorite_book = ""
-    if "user_favorite_author" not in st.session_state:
-        st.session_state.user_favorite_author = ""
-    if "selected_book" not in st.session_state:
-        st.session_state.selected_book = None
     if "books_data" not in st.session_state:
         st.session_state.books_data = []
-    if "enriched_books" not in st.session_state:
-        st.session_state.enriched_books = False
-    if "shown_book_info" not in st.session_state:
-        st.session_state.shown_book_info = set()
-    if "book_details" not in st.session_state:
-        st.session_state.book_details = {}
-    if "username" not in st.session_state:
-        st.session_state.username = "guest"
 
-    # --- Sidebar ---
     setup_sidebar()
-
-    # --- Header ---
     st.markdown('<div class="app-header">', unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1, 3, 1])
     with col2:
@@ -438,7 +489,6 @@ def main():
         """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # --- Chat Container ---
     chat_container = st.container()
     with chat_container:
         st.markdown('<div class="chat-container">', unsafe_allow_html=True)
@@ -447,9 +497,6 @@ def main():
                 display_message(msg)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # --- APP STAGES ---
-
-        # 1. Initial dynamic HyperCLOVA prompt
         if st.session_state.app_stage == "init_convo":
             if len(st.session_state.messages) == 1 and st.session_state.api_key:
                 initial_message = call_hyperclova_api(st.session_state.messages, st.session_state.api_key)
@@ -465,10 +512,9 @@ def main():
                 st.session_state.app_stage = "awaiting_user_input"
                 st.rerun()
 
-        # 2. Awaiting user free-form input
         elif st.session_state.app_stage == "awaiting_user_input":
             st.markdown('<div class="input-container">', unsafe_allow_html=True)
-            user_input = st.text_input("Tell me about your favorite books, authors, genres, or age group:", key="user_open_input")
+            user_input = st.text_input("Tell me about your favorite genre, author, or book:", key="user_open_input")
             if st.button("Send", key="send_open_input"):
                 if user_input:
                     st.session_state.messages.append({"role": "user", "content": user_input})
@@ -476,75 +522,40 @@ def main():
                     st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 
-        # 3. Extract keywords and fetch recommendations (always via library API)
         elif st.session_state.app_stage == "process_user_input":
-            # Use HyperCLOVA to extract genre, age group, author, and book title
-            extraction_prompt = [
-                {"role": "system", "content": (
-                    "Extract the following information from the user's message as best as possible. "
-                    "Respond ONLY in JSON with these fields: "
-                    "{'genre': <genre or empty>, 'age_group': <age group like children/teen/adult or empty>, "
-                    "'favorite_book': <book title or empty>, 'favorite_author': <author name or empty>}."
-                )},
-                {"role": "user", "content": st.session_state.messages[-1]["content"]}
-            ]
-            extracted_json = call_hyperclova_api(extraction_prompt, st.session_state.api_key)
-            import json
-            try:
-                extracted = json.loads(extracted_json)
-            except Exception:
-                extracted = {"genre": "", "age_group": "", "favorite_book": "", "favorite_author": ""}
-
-            st.session_state.user_genre = extracted.get("genre", "")
-            st.session_state.user_age_group = extracted.get("age_group", "")
-            st.session_state.user_favorite_book = extracted.get("favorite_book", "")
-            st.session_state.user_favorite_author = extracted.get("favorite_author", "")
-
-            # Build the query for recommendations
-            query_parts = []
-            if st.session_state.user_age_group:
-                query_parts.append(st.session_state.user_age_group)
-            if st.session_state.user_genre:
-                query_parts.append(st.session_state.user_genre)
-            if st.session_state.user_favorite_author:
-                query_parts.append(st.session_state.user_favorite_author)
-            if st.session_state.user_favorite_book:
-                query_parts.append(st.session_state.user_favorite_book)
-            query = " ".join(query_parts).strip()
-
-            if not query:
-                st.session_state.messages.append({"role": "assistant", "content": "Sorry, I couldn't understand your preferences. Please try again.\n\n한국어 답변: 죄송합니다. 선호도를 이해하지 못했습니다. 다시 시도해 주세요."})
+            user_query = st.session_state.messages[-1]["content"]
+            # Use HyperCLOVA to extract intent (simulate or call API as needed)
+            # Use RAG (vector search) to find KDC code from documentation
+            kdc_code = get_relevant_kdc_code(user_query)
+            if not kdc_code:
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": "Sorry, I could not find a matching KDC code for your query. Please try a different genre or keyword.\n\n한국어 답변: 죄송합니다. 입력하신 내용과 일치하는 KDC 코드를 찾지 못했습니다. 다른 장르나 키워드로 시도해 주세요."
+                })
                 st.session_state.app_stage = "awaiting_user_input"
                 st.rerun()
-
-            # Always use library API for recommendations
             if st.session_state.library_api_key:
-                books = get_book_recommendations(query, st.session_state.library_api_key)
+                books = get_books_by_kdc(kdc_code, st.session_state.library_api_key)
                 if books:
                     st.session_state.books_data = books
-                    st.session_state.enriched_books = False
-                    intro_msg = f"I found these books related to your preferences: {query}.\n\n한국어 답변: '{query}' 관련 도서를 찾았습니다."
+                    intro_msg = f"I found these books for KDC code '{kdc_code}', sorted by loan count.\n\n한국어 답변: KDC 코드 '{kdc_code}'에 해당하는 도서를 대출 건수 내림차순으로 찾았습니다."
                     st.session_state.messages.append({"role": "assistant", "content": intro_msg})
                     st.session_state.app_stage = "show_recommendations"
                 else:
-                    error_msg = f"Couldn't find books for '{query}'. Try different keywords?\n\n한국어 답변: '{query}' 관련 도서를 찾을 수 없습니다. 다른 키워드를 시도해 보시겠어요?"
-                    st.session_state.messages.append({"role": "assistant", "content": error_msg})
+                    st.session_state.messages.append({
+                        "role": "assistant",
+                        "content": f"Sorry, no books found for KDC code '{kdc_code}'.\n\n한국어 답변: KDC 코드 '{kdc_code}'에 해당하는 도서를 찾을 수 없습니다."
+                    })
                     st.session_state.app_stage = "awaiting_user_input"
             else:
-                api_error = "Library API key required. Please check sidebar.\n\n한국어 답변: 라이브러리 API 키가 필요합니다. 사이드바를 확인해 주세요."
-                st.session_state.messages.append({"role": "assistant", "content": api_error})
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": "Library API key required. Please check sidebar.\n\n한국어 답변: 라이브러리 API 키가 필요합니다. 사이드바를 확인해 주세요."
+                })
                 st.session_state.app_stage = "awaiting_user_input"
             st.rerun()
 
-        # 4. Show book recommendations and allow repeated requests
         elif st.session_state.app_stage == "show_recommendations":
-            if not st.session_state.enriched_books:
-                with st.spinner("Enriching book data..."):
-                    st.session_state.books_data = fetch_and_enrich_books_data(
-                        st.session_state.books_data, 
-                        st.session_state.library_api_key
-                    )
-                    st.session_state.enriched_books = True
             st.markdown('<div class="gradient-divider"></div>', unsafe_allow_html=True)
             st.markdown("""
             <h3 style="text-align: center; 
@@ -559,151 +570,13 @@ def main():
             for i, book in enumerate(st.session_state.books_data):
                 display_book_card(book, i)
             st.markdown('<div class="input-container">', unsafe_allow_html=True)
-            follow_up = st.text_input("Ask about these books, or tell me another genre/author/age group/book:", key="follow_up_input")
+            follow_up = st.text_input("Ask about these books, or tell me another genre/author:", key="follow_up_input")
             if st.button("Send", key="send_follow_up"):
                 if follow_up:
                     st.session_state.messages.append({"role": "user", "content": follow_up})
-                    # If user wants a new set of preferences, restart recommendation flow
-                    if any(word in follow_up.lower() for word in ["different", "another", "other", "new", "change", "genre", "author", "age", "book", "recommend"]):
-                        st.session_state.app_stage = "process_user_input"
-                    else:
-                        # Use HyperCLOVA for chat about shown books, but keep recommendations via library API
-                        books_context = build_recommendations_context(st.session_state.books_data)
-                        enhanced_system_msg = {
-                            "role": "system",
-                            "content": f"{st.session_state.messages[0]['content']}\n\n{books_context}"
-                        }
-                        messages_with_context = [enhanced_system_msg] + st.session_state.messages[1:]
-                        response = call_hyperclova_api(messages_with_context, st.session_state.api_key)
-                        if response:
-                            st.session_state.messages.append({"role": "assistant", "content": response})
+                    st.session_state.app_stage = "process_user_input"
                     st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
-
-        # 5. Book details discussion (unchanged)
-        elif st.session_state.app_stage == "discuss_book":
-            if st.session_state.selected_book:
-                display_detailed_book(st.session_state.selected_book)
-                book_info = st.session_state.selected_book
-                book_title = book_info.get('bookname', 'Unknown Title')
-                book_isbn = book_info.get('isbn13', '')
-                # Fetch details if not already
-                if "book_details" not in st.session_state or st.session_state.book_details.get('isbn13') != book_isbn:
-                    if st.session_state.library_api_key and book_isbn:
-                        book_details = get_book_details(book_isbn, st.session_state.library_api_key)
-                        st.session_state.book_details = book_details if book_details else {}
-                    else:
-                        st.session_state.book_details = {}
-                if book_isbn not in st.session_state.shown_book_info:
-                    st.session_state.shown_book_info.add(book_isbn)
-                    book_author = book_info.get('authors', 'Unknown Author')
-                    book_publisher = book_info.get('publisher', 'Unknown Publisher')
-                    book_year = book_info.get('publication_year', 'Unknown Year')
-                    initial_description = f"Here's information about '{book_title}' by {book_author}. This book was published by {book_publisher} in {book_year}."
-                    if st.session_state.book_details and 'description' in st.session_state.book_details:
-                        initial_description += f"\n\nDescription: {st.session_state.book_details.get('description')}"
-                    else:
-                        initial_description += f"\n\nWhile I don't have detailed plot information about this specific book, {st.session_state.user_genre} books often explore themes related to this genre."
-                    initial_description += f"\n\nBased on your interest in {st.session_state.user_genre}, you might enjoy this book for its storytelling, characters, and exploration of relevant themes."
-                    korean_description = f"{book_author}의 '{book_title}'에 대한 정보입니다. 이 책은 {book_year}년에 {book_publisher}에서 출판되었습니다."
-                    if st.session_state.book_details and 'description' in st.session_state.book_details:
-                        korean_description += f"\n\n설명: {st.session_state.book_details.get('description')}"
-                    else:
-                        korean_description += f"\n\n이 특정 책에 대한 자세한 줄거리 정보는 없지만, {st.session_state.user_genre} 책들은 주로 이 장르와 관련된 주제를 탐구합니다."
-                    korean_description += f"\n\n{st.session_state.user_genre}에 대한 귀하의 관심을 바탕으로, 이 책의 스토리텔링, 캐릭터, 그리고 관련 주제의 탐구로 인해 이 책을 즐기실 수 있을 것입니다."
-                    st.session_state.messages.append({"role": "user", "content": f"Tell me about '{book_title}'"})
-                    st.session_state.messages.append({"role": "assistant", "content": f"{initial_description}\n\n한국어 답변: {korean_description}"})
-                    st.rerun()
-                st.markdown('<div class="input-container">', unsafe_allow_html=True)
-                book_question = st.text_input("Ask specific questions about this book or go back to recommendations:", key="book_question")
-                if st.button("Send", key="send_book_question_btn"):
-                    if book_question:
-                        if "back" in book_question.lower() or "recommendations" in book_question.lower():
-                            st.session_state.app_stage = "show_recommendations"
-                            st.rerun()
-                        else:
-                            st.session_state.messages.append({"role": "user", "content": book_question})
-                            if st.session_state.api_key:
-                                book_context = build_book_context(book_info, st.session_state.book_details)
-                                messages_with_context = st.session_state.messages.copy()
-                                system_message = {
-                                    "role": "system", 
-                                    "content": f"""You are a helpful AI assistant specializing in book recommendations. 
-                                    The user is asking about the book '{book_title}'. Below is detailed information about the book:
-                                    {book_context}
-                                    Try to provide relevant information based on these details. 
-                                    For EVERY response, you must answer in BOTH English and Korean.
-                                    First provide the complete answer in English, then provide '한국어 답변:' 
-                                    followed by the complete Korean translation of your answer."""
-                                }
-                                messages_with_context[0] = system_message
-                                book_response = call_hyperclova_api(messages_with_context, st.session_state.api_key)
-                                if book_response:
-                                    st.session_state.messages.append({"role": "assistant", "content": book_response})
-                                else:
-                                    fallback_response = f"I don't have specific details about that aspect of '{book_title}', but books in the {st.session_state.user_genre} genre often explore themes like character development, world-building, and thematic elements relevant to the genre. Is there something else about this book or other books you'd like to know about?\n\n한국어 답변: '{book_title}'의 해당 측면에 대한 구체적인 세부 정보는 없지만, {st.session_state.user_genre} 장르의 책들은 종종 캐릭터 발전, 세계관 구축, 그리고 장르와 관련된 주제적 요소와 같은 주제를 탐구합니다. 이 책이나 다른 책에 대해 알고 싶은 다른 내용이 있으신가요?"
-                                    st.session_state.messages.append({"role": "assistant", "content": fallback_response})
-                            else:
-                                default_response = f"To provide detailed information about '{book_title}', I need access to the HyperCLOVA API. Please enter your API key in the sidebar.\n\n한국어 답변: '{book_title}'에 대한 자세한 정보를 제공하기 위해서는 HyperCLOVA API에 접근해야 합니다. 사이드바에 API 키를 입력해 주세요."
-                                st.session_state.messages.append({"role": "assistant", "content": default_response})
-                            st.rerun()
-                if st.button("← Back to All Recommendations", key="back_to_recommendations_btn"):
-                    st.session_state.app_stage = "show_recommendations"
-                    st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
-                st.markdown('<div class="gradient-divider"></div>', unsafe_allow_html=True)
-                st.markdown("""
-                <h3 style="text-align: center; 
-                        background: linear-gradient(90deg, #221409, #3b2314);
-                        -webkit-background-clip: text;
-                        -webkit-text-fill-color: transparent;
-                        font-weight: 700;
-                        margin-bottom: 20px;">
-                    Other Recommended Books
-                </h3>
-                """, unsafe_allow_html=True)
-                for i, book in enumerate(st.session_state.books_data):
-                    if book.get("doc", {}).get("isbn13") != st.session_state.selected_book.get("isbn13"):
-                        display_book_card(book, i)
-
-        # 6. Liked books library
-        elif st.session_state.app_stage == "show_liked_books":
-            st.markdown("<h3 style='text-align:center;'>Your Liked Books</h3>", unsafe_allow_html=True)
-            liked_books = get_liked_books(st.session_state.username)
-            if not liked_books:
-                st.info("You have not liked any books yet.")
-            else:
-                for idx, book in enumerate(liked_books):
-                    st.markdown('<div class="book-card" style="margin-bottom: 30px;">', unsafe_allow_html=True)
-                    cols = st.columns([1, 3, 1])
-                    with cols[0]:
-                        image_url = book.get("bookImageURL", "")
-                        if image_url:
-                            st.image(image_url, width=120)
-                        else:
-                            st.markdown(
-                                "<div style='width:100px;height:150px;background:linear-gradient(135deg,#2c3040,#363c4e);display:flex;align-items:center;justify-content:center;border-radius:5px;'><span style='color:#b3b3cc;'>No Image</span></div>",
-                                unsafe_allow_html=True
-                            )
-                    with cols[1]:
-                        st.markdown(f"""
-                            <div style="padding-left: 10px;">
-                                <div class="book-title">{book.get('bookname', 'No Title')}</div>
-                                <div class="book-info"><strong>Author:</strong> {book.get('authors', 'Unknown')}</div>
-                                <div class="book-info"><strong>Publisher:</strong> {book.get('publisher', 'Unknown')}</div>
-                                <div class="book-info"><strong>Year:</strong> {book.get('publication_year', 'Unknown')}</div>
-                            </div>
-                        """, unsafe_allow_html=True)
-                    with cols[2]:
-                        if st.button("Remove", key=f"remove_{book.get('isbn13', idx)}"):
-                            unlike_book_for_user(st.session_state.username, book.get('isbn13'))
-                            st.success(f"Removed '{book.get('bookname', 'No Title')}' from your liked books.")
-                            st.rerun()
-                    st.markdown('</div>', unsafe_allow_html=True)
-
-            if st.button("← Back", key="back_from_liked_books_btn"):
-                st.session_state.app_stage = "awaiting_user_input"
-                st.rerun()
 
     # --- Footer ---
     st.markdown('<div class="app-footer">', unsafe_allow_html=True)
@@ -719,4 +592,8 @@ def main():
     </div>
     """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
+
+if __name__ == "__main__":
+    main()
+
 

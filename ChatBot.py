@@ -408,10 +408,8 @@ def find_best_code(user_query, code_dict):
     return best_code, best_label, best_score
 
 def get_kdc_or_dtl_kdc(user_query):
-    # Try dtl_kdc first (more specific), then kdc
     dtl_code, dtl_label, dtl_score = find_best_code(user_query, dtl_kdc_dict)
     kdc_code, kdc_label, kdc_score = find_best_code(user_query, kdc_dict)
-    # Use the one with higher similarity (threshold 0.4 for Korean short labels)
     if dtl_score >= kdc_score and dtl_score > 0.4:
         return "dtl_kdc", dtl_code, dtl_label
     elif kdc_score > 0.4:
@@ -440,10 +438,12 @@ def get_books_by_kdc(kdc_type, kdc_code, auth_key, page_no=1, page_size=10):
         return docs
     return []
 
-# --- Main App ---
+# --- Main function ---
 def main():
+    st.set_page_config(page_title="Book Wanderer / 책방랑자", layout="wide")
     setup_sidebar()
 
+    # --- Session state initialization ---
     if "messages" not in st.session_state:
         st.session_state.messages = [{
             "role": "system",
@@ -455,21 +455,31 @@ def main():
             )
         }]
     if "app_stage" not in st.session_state:
-        st.session_state.app_stage = "init_convo"
+        st.session_state.app_stage = "welcome"
     if "books_data" not in st.session_state:
         st.session_state.books_data = []
+    if "liked_books" not in st.session_state:
+        st.session_state.liked_books = []
+    if "user_genre" not in st.session_state:
+        st.session_state.user_genre = ""
+    if "user_age" not in st.session_state:
+        st.session_state.user_age = ""
+    if "selected_book" not in st.session_state:
+        st.session_state.selected_book = None
+    if "showing_books" not in st.session_state:
+        st.session_state.showing_books = False
 
     st.markdown("<h1 style='text-align:center;'>📚 Book Wanderer / 책방랑자</h1>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:center;'>Discover your next favorite read with AI assistance in English and Korean</div>", unsafe_allow_html=True)
     st.markdown("---")
 
-    # Chat history
+    # --- Chat history ---
     for msg in st.session_state.messages:
         if msg["role"] != "system":
             st.markdown(f"**{msg['role'].capitalize()}:** {msg['content']}")
 
-    # Conversation stages
-    if st.session_state.app_stage == "init_convo":
+    # --- App stages ---
+    if st.session_state.app_stage == "welcome":
         st.session_state.messages.append({
             "role": "assistant",
             "content": "Hello! Tell me about your favourite books, author, genre, or age group.\n\n한국어 답변: 안녕하세요! 좋아하는 책, 작가, 장르 또는 연령대에 대해 말씀해 주세요."
@@ -521,12 +531,27 @@ def main():
         st.subheader("Recommended Books")
         for i, book in enumerate(st.session_state.books_data):
             st.write(f"{i+1}. **{book.get('bookname', 'Unknown Title')}** by {book.get('authors', 'Unknown Author')}")
+            # Like button for each book
+            if st.button(f"❤️ Like {i+1}", key=f"like_{i}"):
+                st.session_state.liked_books.append(book)
+                st.success("Book added to your liked list!")
         follow_up = st.text_input("Ask about these books, or tell me another genre/author (in Korean):", key="follow_up_input")
         if st.button("Send", key="send_follow_up"):
             if follow_up:
                 st.session_state.messages.append({"role": "user", "content": follow_up})
                 st.session_state.app_stage = "process_user_input"
                 st.rerun()
+
+    elif st.session_state.app_stage == "show_liked_books":
+        st.subheader("My Liked Books")
+        if st.session_state.liked_books:
+            for i, book in enumerate(st.session_state.liked_books):
+                st.write(f"{i+1}. **{book.get('bookname', 'Unknown Title')}** by {book.get('authors', 'Unknown Author')}")
+        else:
+            st.info("You have not liked any books yet.")
+        if st.button("Back to Recommendations"):
+            st.session_state.app_stage = "show_recommendations"
+            st.rerun()
 
     # Footer
     st.markdown("---")
@@ -540,6 +565,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-

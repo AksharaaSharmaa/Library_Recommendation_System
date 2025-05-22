@@ -379,57 +379,48 @@ def build_recommendations_context(books_data):
 
 import streamlit as st
 import requests
+import json
 from datetime import datetime
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.vectorstores import FAISS
-from langchain.docstore.document import Document
-from PyPDF2 import PdfReader
+from difflib import SequenceMatcher
 
-# --- PDF Extraction and Chunking ---
+# --- Load KDC and DTL_KDC JSONs ---
 @st.cache_resource
-def build_pdf_vectorstore(pdf_path="Codes.pdf"):
-    # 1. Extract text from PDF
-    reader = PdfReader(pdf_path)
-    full_text = ""
-    for page in reader.pages:
-        full_text += page.extract_text() + "\n"
-    # 2. Chunk text (keep chunks small for retrieval accuracy)
-    splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-    chunks = splitter.split_text(full_text)
-    documents = [Document(page_content=chunk) for chunk in chunks]
-    # 3. Embed and store in FAISS
-    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-    vectorstore = FAISS.from_documents(documents, embeddings)
-    return vectorstore
+def load_kdc_json():
+    with open("kdc.json", encoding="utf-8") as f:
+        kdc_list = json.load(f)
+    with open("dtl_kdc.json", encoding="utf-8") as f:
+        dtl_kdc_list = json.load(f)
+    return kdc_list, dtl_kdc_list
 
-pdf_vectorstore = build_pdf_vectorstore()
+kdc_list, dtl_kdc_list = load_kdc_json()
 
-# --- Utility: Retrieve best chunk and extract KDC code ---
-def extract_kdc_code_from_chunk(chunk):
-    # Look for KDC/dtl_kdc code patterns in the chunk
-    import re
-    # Match lines like: "dtl_kdc", "kdc", or "코드값" in tables
-    kdc_matches = re.findall(r'(?:kdc|dtl_kdc|코드값)\s*[:=]?\s*([0-9]{1,3}(?:\.[0-9]+)?)', chunk, flags=re.IGNORECASE)
-    if kdc_matches:
-        return kdc_matches[0]
-    # Also try to match lines like "813.7", "81", etc.
-    fallback = re.findall(r'\b([0-9]{1,3}(?:\.[0-9]+)?)\b', chunk)
-    if fallback:
-        return fallback[0]
-    return None
+# --- Utility: Find best code from JSON ---
+def find_best_code(user_query, code_list):
+    # Each item in code_list: {"code": "81", "keywords": ["literature", "novel", ...]}
+    best_score = 0
+    best_code = None
+    for item in code_list:
+        for kw in item.get("keywords", []):
+            score = SequenceMatcher(None, user_query.lower(), kw.lower()).ratio()
+            if score > best_score:
+                best_score = score
+                best_code = item["code"]
+    return best_code, best_score
 
-def get_relevant_kdc_code(user_query):
-    # Retrieve top relevant chunk from the PDF vectorstore
-    docs = pdf_vectorstore.similarity_search(user_query, k=2)
-    for doc in docs:
-        code = extract_kdc_code_from_chunk(doc.page_content)
-        if code:
-            return code
-    return None
+def get_kdc_or_dtl_kdc(user_query):
+    # Try dtl_kdc first (more specific), then kdc
+    dtl_code, dtl_score = find_best_code(user_query, dtl_kdc_list)
+    kdc_code, kdc_score = find_best_code(user_query, kdc_list)
+    # Use the one with higher similarity
+    if dtl_score >= kdc_score and dtl_score > 0.5:
+        return "dtl_kdc", dtl_code
+    elif kdc_score > 0.5:
+        return "kdc", kdc_code
+    else:
+        return None, None
 
 # --- Query library API for books by KDC code ---
-def get_books_by_kdc(kdc_code, auth_key, page_no=1, page_size=30):
+def get_books_by_kdc(kdc_type, kdc_code, auth_key, page_no=1, page_size=30):
     url = "http://data4library.kr/api/loanltemSrch"
     params = {
         "authKey": auth_key,
@@ -439,11 +430,7 @@ def get_books_by_kdc(kdc_code, auth_key, page_no=1, page_size=30):
         "pageNo": page_no,
         "pageSize": page_size
     }
-    # Use kdc or dtl_kdc depending on code length (API docs: dtl_kdc for subcategories)
-    if len(kdc_code) <= 2:
-        params["kdc"] = kdc_code
-    else:
-        params["dtl_kdc"] = kdc_code
+    params[kdc_type] = kdc_code
     r = requests.get(url, params=params)
     if r.status_code == 200:
         docs = r.json().get("response", {}).get("docs", {}).get("doc", [])
@@ -454,7 +441,7 @@ def get_books_by_kdc(kdc_code, auth_key, page_no=1, page_size=30):
     return []
 
 def main():
-    add_custom_css()
+    # --- UI/Session Setup ---
     if "messages" not in st.session_state:
         st.session_state.messages = [{
             "role": "system",
@@ -474,109 +461,70 @@ def main():
     if "books_data" not in st.session_state:
         st.session_state.books_data = []
 
-    setup_sidebar()
-    st.markdown('<div class="app-header">', unsafe_allow_html=True)
-    col1, col2, col3 = st.columns([1, 3, 1])
-    with col2:
-        gradient_title("Book Wanderer")
-        gradient_title("책방랑자")
-        st.markdown("""
-        <div style="text-align: center; margin-bottom: 20px;">
-            <p style="font-size: 1.1rem; color: #d1d1e0; margin-bottom: 20px;">
-                Discover your next favorite read with AI assistance in English and Korean
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.title("Book Wanderer / 책방랑자")
+    st.write("Discover your next favorite read with AI assistance in English and Korean")
 
-    chat_container = st.container()
-    with chat_container:
-        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-        for msg in st.session_state.messages:
-            if msg["role"] != "system":
-                display_message(msg)
-        st.markdown('</div>', unsafe_allow_html=True)
+    for msg in st.session_state.messages:
+        if msg["role"] != "system":
+            st.write(f"**{msg['role'].capitalize()}**: {msg['content']}")
 
-        if st.session_state.app_stage == "init_convo":
-            if len(st.session_state.messages) == 1 and st.session_state.api_key:
-                initial_message = call_hyperclova_api(st.session_state.messages, st.session_state.api_key)
-                if initial_message:
-                    st.session_state.messages.append({"role": "assistant", "content": initial_message})
-                else:
-                    st.session_state.messages.append({"role": "assistant", "content": "Hello! Tell me about your favourite books, author, genre, or age group.\n\n한국어 답변: 안녕하세요! 좋아하는 책, 작가, 장르 또는 연령대에 대해 말씀해 주세요."})
-                st.session_state.app_stage = "awaiting_user_input"
-                st.rerun()
-            elif not st.session_state.api_key:
-                st.warning("Please enter your HyperCLOVA API key in the sidebar to begin.")
-            else:
-                st.session_state.app_stage = "awaiting_user_input"
+    if st.session_state.app_stage == "init_convo":
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": "Hello! Tell me about your favourite books, author, genre, or age group.\n\n한국어 답변: 안녕하세요! 좋아하는 책, 작가, 장르 또는 연령대에 대해 말씀해 주세요."
+        })
+        st.session_state.app_stage = "awaiting_user_input"
+        st.rerun()
+
+    elif st.session_state.app_stage == "awaiting_user_input":
+        user_input = st.text_input("Tell me about your favorite genre, author, or book:", key="user_open_input")
+        if st.button("Send", key="send_open_input"):
+            if user_input:
+                st.session_state.messages.append({"role": "user", "content": user_input})
+                st.session_state.app_stage = "process_user_input"
                 st.rerun()
 
-        elif st.session_state.app_stage == "awaiting_user_input":
-            st.markdown('<div class="input-container">', unsafe_allow_html=True)
-            user_input = st.text_input("Tell me about your favorite genre, author, or book:", key="user_open_input")
-            if st.button("Send", key="send_open_input"):
-                if user_input:
-                    st.session_state.messages.append({"role": "user", "content": user_input})
-                    st.session_state.app_stage = "process_user_input"
-                    st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        elif st.session_state.app_stage == "process_user_input":
-            user_query = st.session_state.messages[-1]["content"]
-            # Use HyperCLOVA to extract intent (simulate or call API as needed)
-            # Use RAG (vector search) to find KDC code from documentation
-            kdc_code = get_relevant_kdc_code(user_query)
-            if not kdc_code:
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": "Sorry, I could not find a matching KDC code for your query. Please try a different genre or keyword.\n\n한국어 답변: 죄송합니다. 입력하신 내용과 일치하는 KDC 코드를 찾지 못했습니다. 다른 장르나 키워드로 시도해 주세요."
-                })
-                st.session_state.app_stage = "awaiting_user_input"
-                st.rerun()
-            if st.session_state.library_api_key:
-                books = get_books_by_kdc(kdc_code, st.session_state.library_api_key)
-                if books:
-                    st.session_state.books_data = books
-                    intro_msg = f"I found these books for KDC code '{kdc_code}', sorted by loan count.\n\n한국어 답변: KDC 코드 '{kdc_code}'에 해당하는 도서를 대출 건수 내림차순으로 찾았습니다."
-                    st.session_state.messages.append({"role": "assistant", "content": intro_msg})
-                    st.session_state.app_stage = "show_recommendations"
-                else:
-                    st.session_state.messages.append({
-                        "role": "assistant",
-                        "content": f"Sorry, no books found for KDC code '{kdc_code}'.\n\n한국어 답변: KDC 코드 '{kdc_code}'에 해당하는 도서를 찾을 수 없습니다."
-                    })
-                    st.session_state.app_stage = "awaiting_user_input"
-            else:
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": "Library API key required. Please check sidebar.\n\n한국어 답변: 라이브러리 API 키가 필요합니다. 사이드바를 확인해 주세요."
-                })
-                st.session_state.app_stage = "awaiting_user_input"
+    elif st.session_state.app_stage == "process_user_input":
+        user_query = st.session_state.messages[-1]["content"]
+        kdc_type, kdc_code = get_kdc_or_dtl_kdc(user_query)
+        if not kdc_code:
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": "Sorry, I could not find a matching KDC code for your query. Please try a different genre or keyword.\n\n한국어 답변: 죄송합니다. 입력하신 내용과 일치하는 KDC 코드를 찾지 못했습니다. 다른 장르나 키워드로 시도해 주세요."
+            })
+            st.session_state.app_stage = "awaiting_user_input"
             st.rerun()
+        if st.session_state.library_api_key:
+            books = get_books_by_kdc(kdc_type, kdc_code, st.session_state.library_api_key)
+            if books:
+                st.session_state.books_data = books
+                intro_msg = f"I found these books for {kdc_type.upper()} code '{kdc_code}', sorted by loan count.\n\n한국어 답변: {kdc_type.upper()} 코드 '{kdc_code}'에 해당하는 도서를 대출 건수 내림차순으로 찾았습니다."
+                st.session_state.messages.append({"role": "assistant", "content": intro_msg})
+                st.session_state.app_stage = "show_recommendations"
+            else:
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": f"Sorry, no books found for {kdc_type.upper()} code '{kdc_code}'.\n\n한국어 답변: {kdc_type.upper()} 코드 '{kdc_code}'에 해당하는 도서를 찾을 수 없습니다."
+                })
+                st.session_state.app_stage = "awaiting_user_input"
+        else:
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": "Library API key required. Please check sidebar.\n\n한국어 답변: 라이브러리 API 키가 필요합니다. 사이드바를 확인해 주세요."
+            })
+            st.session_state.app_stage = "awaiting_user_input"
+        st.rerun()
 
-        elif st.session_state.app_stage == "show_recommendations":
-            st.markdown('<div class="gradient-divider"></div>', unsafe_allow_html=True)
-            st.markdown("""
-            <h3 style="text-align: center; 
-                    background: linear-gradient(90deg, #221409, #3b2314);
-                    -webkit-background-clip: text;
-                    -webkit-text-fill-color: transparent;
-                    font-weight: 700;
-                    margin-bottom: 20px;">
-                Recommended Books
-            </h3>
-            """, unsafe_allow_html=True)
-            for i, book in enumerate(st.session_state.books_data):
-                display_book_card(book, i)
-            st.markdown('<div class="input-container">', unsafe_allow_html=True)
-            follow_up = st.text_input("Ask about these books, or tell me another genre/author:", key="follow_up_input")
-            if st.button("Send", key="send_follow_up"):
-                if follow_up:
-                    st.session_state.messages.append({"role": "user", "content": follow_up})
-                    st.session_state.app_stage = "process_user_input"
-                    st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
+    elif st.session_state.app_stage == "show_recommendations":
+        st.subheader("Recommended Books")
+        for i, book in enumerate(st.session_state.books_data):
+            st.write(f"{i+1}. {book.get('bookname', 'Unknown Title')} by {book.get('authors', 'Unknown Author')}")
+        follow_up = st.text_input("Ask about these books, or tell me another genre/author:", key="follow_up_input")
+        if st.button("Send", key="send_follow_up"):
+            if follow_up:
+                st.session_state.messages.append({"role": "user", "content": follow_up})
+                st.session_state.app_stage = "process_user_input"
+                st.rerun()
 
     # --- Footer ---
     st.markdown('<div class="app-footer">', unsafe_allow_html=True)

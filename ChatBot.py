@@ -10,6 +10,9 @@ import json
 from datetime import datetime
 from difflib import SequenceMatcher
 
+add_custom_css()
+gradient_title()
+
 def display_liked_book_card(book, index):
     """Display a liked book card with a remove (cross) button using MongoDB."""
     info = book if isinstance(book, dict) else book.get("doc", {})

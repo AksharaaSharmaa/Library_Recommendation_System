@@ -579,7 +579,7 @@ def main():
         st.rerun()
 
     elif st.session_state.app_stage == "show_recommendations":
-    add_vertical_space(2)
+        add_vertical_space(2)
         st.markdown(
             """
             <h2 style='text-align: center; font-size: 2.2em; font-weight: bold;'>

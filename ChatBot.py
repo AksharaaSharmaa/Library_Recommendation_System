@@ -394,15 +394,6 @@ def load_kdc_jsons():
 
 kdc_dict, dtl_kdc_dict = load_kdc_jsons()
 
-# --- Sidebar setup ---
-def setup_sidebar():
-    st.sidebar.title("🔑 API Keys")
-    st.sidebar.write("Enter your API keys below:")
-    st.session_state.api_key = st.sidebar.text_input("HyperCLOVA API Key", type="password", value=st.session_state.get("api_key", ""))
-    st.session_state.library_api_key = st.sidebar.text_input("Library API Key", type="password", value=st.session_state.get("library_api_key", ""))
-    st.sidebar.markdown("---")
-    st.sidebar.info("This app recommends books using the Korean Decimal Classification (KDC) system.")
-
 # --- Find best matching code from JSON ---
 def find_best_code(user_query, code_dict):
     best_score = 0

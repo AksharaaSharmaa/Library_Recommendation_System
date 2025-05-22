@@ -21,6 +21,57 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+def display_liked_book_card(book, index):
+    """Display a liked book card with a remove (cross) button."""
+    info = book if isinstance(book, dict) else book.get("doc", {})
+    with st.container():
+        st.markdown('<div class="book-card" style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px;">', unsafe_allow_html=True)
+        cols = st.columns([1, 3])
+        with cols[0]:
+            image_url = info.get("bookImageURL", "")
+            if image_url:
+                st.image(image_url, width=120)
+            else:
+                st.markdown("""
+                <div style="width: 100px; height: 150px; background: linear-gradient(135deg, #2c3040, #363c4e); 
+                            display: flex; align-items: center; justify-content: center; border-radius: 5px;">
+                    <span style="color: #b3b3cc;">No Image</span>
+                </div>
+                """, unsafe_allow_html=True)
+        with cols[1]:
+            title = info.get('bookname') or info.get('bookName', '제목 없음')
+            authors = info.get('authors') or info.get('author', '저자 없음')
+            publisher = info.get('publisher', '출판사 없음')
+            year = info.get('publication_year') or info.get('publicationYear', '연도 없음')
+            loan_count = info.get('loan_count') or info.get('loanCount', 0)
+            isbn = info.get('isbn13') or info.get('isbn', 'unknown')
+            st.markdown(f"""
+            <div style="padding-left: 10px;">
+                <div style="font-size: 1.2em; font-weight: bold; color: #333; margin-bottom: 8px;">{title}</div>
+                <div style="margin-bottom: 4px;"><strong>Author:</strong> {authors}</div>
+                <div style="margin-bottom: 4px;"><strong>Publisher:</strong> {publisher}</div>
+                <div style="margin-bottom: 4px;"><strong>Year:</strong> {year}</div>
+                <div style="margin-bottom: 8px;"><strong>Loan Count:</strong> {loan_count}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            btn_col1, btn_col2 = st.columns([3, 1])
+            with btn_col1:
+                if st.button(f"Tell me more about this book", key=f"details_liked_{isbn}_{index}"):
+                    st.session_state.selected_book = info
+                    st.session_state.app_stage = "discuss_book"
+                    st.rerun()
+            with btn_col2:
+                # Remove (cross) button
+                if st.button("❌", key=f"remove_{isbn}_{index}", help="Remove from My Library"):
+                    # Remove the book from liked_books
+                    st.session_state.liked_books = [
+                        b for b in st.session_state.liked_books
+                        if (b.get('isbn13') or b.get('isbn')) != isbn
+                    ]
+                    st.success("Removed from your library!")
+                    st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+
 # Add after MongoDB client initialization
 def get_user_library_collection():
     client = st.session_state.db_client  # Already set in login.py
@@ -625,7 +676,7 @@ def main():
     elif st.session_state.app_stage == "show_recommendations":
         st.subheader("📚 Recommended Books")
         for i, book in enumerate(st.session_state.books_data):
-            display_book_card(book, i)
+            display_liked_book_card(book, i)
             
         follow_up = st.text_input("Ask about these books, or tell me another genre/author (in Korean or English):", key="follow_up_input")
         if st.button("Send", key="send_follow_up"):

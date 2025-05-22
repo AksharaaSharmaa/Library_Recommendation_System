@@ -373,12 +373,58 @@ def get_books_by_kdc(kdc_type, kdc_code, auth_key, page_no=1, page_size=10):
         "pageSize": page_size
     }
     params[kdc_type] = kdc_code
-    r = requests.get(url, params=params)
-    if r.status_code == 200:
-        docs = r.json().get("response", {}).get("docs", [])
-        # docs is a list of dicts, each dict has keys like 'bookname', 'authors', etc.
-        docs = sorted(docs, key=lambda x: int(x.get("loan_count", 0)), reverse=True)
-        return docs
+    
+    try:
+        r = requests.get(url, params=params)
+        if r.status_code == 200:
+            response_data = r.json()
+            
+            # Check if response has the expected structure
+            if "response" in response_data:
+                docs = response_data["response"].get("docs", [])
+                
+                # Handle case where docs might be a single dict instead of list
+                if isinstance(docs, dict):
+                    docs = [docs]
+                elif not isinstance(docs, list):
+                    return []
+                
+                # Extract and clean book data
+                books = []
+                for doc in docs:
+                    # Handle nested 'doc' structure if it exists
+                    if "doc" in doc:
+                        book_data = doc["doc"]
+                    else:
+                        book_data = doc
+                    
+                    # Extract book information with fallback values
+                    book_info = {
+                        "bookname": book_data.get("bookname", book_data.get("bookName", "Unknown Title")),
+                        "authors": book_data.get("authors", book_data.get("author", "Unknown Author")),
+                        "publisher": book_data.get("publisher", "Unknown Publisher"),
+                        "publication_year": book_data.get("publication_year", book_data.get("publicationYear", "Unknown Year")),
+                        "isbn": book_data.get("isbn13", book_data.get("isbn", "")),
+                        "loan_count": int(book_data.get("loan_count", book_data.get("loanCount", 0)))
+                    }
+                    books.append(book_info)
+                
+                # Sort by loan count (descending)
+                books = sorted(books, key=lambda x: x["loan_count"], reverse=True)
+                return books
+            else:
+                st.error(f"Unexpected API response structure: {response_data}")
+                return []
+    except requests.exceptions.RequestException as e:
+        st.error(f"API request failed: {e}")
+        return []
+    except json.JSONDecodeError as e:
+        st.error(f"Failed to parse API response: {e}")
+        return []
+    except Exception as e:
+        st.error(f"Error processing API response: {e}")
+        return []
+    
     return []
 
 # --- Sidebar (as provided) ---
@@ -439,6 +485,7 @@ def setup_sidebar():
 
 # --- Main function ---
 def main():
+    st.set_page_config(page_title="Book Wanderer / 책방랑자", layout="wide")
     # --- Initialize all session state variables before use ---
     if "api_key" not in st.session_state:
         st.session_state.api_key = ""
@@ -532,18 +579,25 @@ def main():
     elif st.session_state.app_stage == "show_recommendations":
         st.subheader("Recommended Books")
         for i, book in enumerate(st.session_state.books_data):
-            # The book dict may be nested under a 'doc' key, or be flat; handle both
-            if isinstance(book, dict):
-                bookname = book.get('bookname') or book.get('bookName') or "Unknown Title"
-                authors = book.get('authors') or book.get('author') or "Unknown Author"
-            else:
-                bookname = "Unknown Title"
-                authors = "Unknown Author"
-            st.write(f"{i+1}. **{bookname}** by {authors}")
+            # Use the properly extracted book data
+            bookname = book["bookname"]
+            authors = book["authors"]
+            publisher = book["publisher"]
+            year = book["publication_year"]
+            loan_count = book["loan_count"]
+            
+            # Display book information
+            st.write(f"**{i+1}. {bookname}**")
+            st.write(f"   Author: {authors}")
+            st.write(f"   Publisher: {publisher} ({year})")
+            st.write(f"   Loan Count: {loan_count}")
+            
             # Like button for each book
-            if st.button(f"❤️", key=f"like_{i}"):
+            if st.button(f"❤️ Like {i+1}", key=f"like_{i}"):
                 st.session_state.liked_books.append(book)
                 st.success("Book added to your liked list!")
+            st.write("---")
+            
         follow_up = st.text_input("Ask about these books, or tell me another genre/author (in Korean):", key="follow_up_input")
         if st.button("Send", key="send_follow_up"):
             if follow_up:
@@ -555,13 +609,15 @@ def main():
         st.subheader("My Liked Books")
         if st.session_state.liked_books:
             for i, book in enumerate(st.session_state.liked_books):
-                if isinstance(book, dict):
-                    bookname = book.get('bookname') or book.get('bookName') or "Unknown Title"
-                    authors = book.get('authors') or book.get('author') or "Unknown Author"
-                else:
-                    bookname = "Unknown Title"
-                    authors = "Unknown Author"
-                st.write(f"{i+1}. **{bookname}** by {authors}")
+                bookname = book["bookname"]
+                authors = book["authors"]
+                publisher = book["publisher"]
+                year = book["publication_year"]
+                
+                st.write(f"**{i+1}. {bookname}**")
+                st.write(f"   Author: {authors}")
+                st.write(f"   Publisher: {publisher} ({year})")
+                st.write("---")
         else:
             st.info("You have not liked any books yet.")
         if st.button("Back to Recommendations"):

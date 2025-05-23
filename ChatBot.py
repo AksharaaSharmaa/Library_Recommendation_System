@@ -248,13 +248,19 @@ def generate_book_tagline(book_info, api_key):
 이 책에 대한 매력적이고 간결한 태그라인을 영어와 한국어로 각각 만들어주세요.
 태그라인은 각각 10-15자 이내로 작성하고, 책의 분위기나 주제를 잘 표현해야 합니다.
 
-다음 형식으로 답변해주세요:
+반드시 다음 형식으로 답변해주세요:
 English: [영어 태그라인]
 Korean: [한국어 태그라인]
 
 예시:
 English: Where love begins
 Korean: 사랑이 시작되는 곳
+
+English: Journey to truth
+Korean: 진실로의 여행
+
+English: Dreams come alive
+Korean: 꿈이 살아나다
 """
     
     headers = {
@@ -266,14 +272,14 @@ Korean: 사랑이 시작되는 곳
         "messages": [
             {
                 "role": "system",
-                "content": "당신은 책 마케팅 전문가입니다. 간결하고 매력적인 영어와 한국어 태그라인을 만드는 것이 전문입니다."
+                "content": "당신은 책 마케팅 전문가입니다. 간결하고 매력적인 영어와 한국어 태그라인을 정확한 형식으로 만드는 것이 전문입니다. 반드시 'English:'와 'Korean:' 라벨을 사용하여 답변하세요."
             },
             {
                 "role": "user",
                 "content": prompt
             }
         ],
-        "maxTokens": 100,
+        "maxTokens": 150,
         "temperature": 0.7,
         "topP": 0.8,
     }
@@ -296,21 +302,28 @@ Korean: 사랑이 시작되는 곳
             
             lines = content.split('\n')
             for line in lines:
+                line = line.strip()
                 if line.startswith('English:'):
                     english_tagline = line.replace('English:', '').strip().replace('"', '').replace("'", '')
                 elif line.startswith('Korean:'):
                     korean_tagline = line.replace('Korean:', '').strip().replace('"', '').replace("'", '')
             
+            # Validate length and return
+            if len(english_tagline) > 30:
+                english_tagline = "A special journey with books"
+            if len(korean_tagline) > 25:
+                korean_tagline = "책과 함께하는 특별한 여행"
+            
             return {
-                "english": english_tagline if len(english_tagline) <= 25 else "A special journey with books",
-                "korean": korean_tagline if len(korean_tagline) <= 20 else "책과 함께하는 특별한 여행"
+                "english": english_tagline,
+                "korean": korean_tagline
             }
         else:
+            st.error(f"API 오류: {response.status_code}")
             return {"english": "A special journey with books", "korean": "책과 함께하는 특별한 여행"}
     except Exception as e:
         st.error(f"태그라인 생성 중 오류: {e}")
         return {"english": "A special journey with books", "korean": "책과 함께하는 특별한 여행"}
-
 
 def fetch_unsplash_image(book_info, unsplash_access_key, api_key):
     """Fetch a contextually appropriate image from Unsplash based on book information"""
@@ -471,10 +484,13 @@ def create_book_image_with_tagline(image_url, taglines, book_title):
         return None
 
 def generate_and_display_book_image(book_info, unsplash_key, hyperclova_key):
-    """Generate and display book image with full app width and enhanced context"""
+    """Generate and display book image with English tagline overlay and Korean text below"""
     with st.spinner('책의 내용을 심층 분석하고 맞춤형 이미지를 생성하고 있습니다...'):
         # Generate both English and Korean taglines
         taglines = generate_book_tagline(book_info, hyperclova_key)
+        
+        # Debug: Show what taglines were generated
+        st.write(f"Generated taglines: {taglines}")
         
         # Fetch highly contextual image from Unsplash
         image_url = fetch_unsplash_image(book_info, unsplash_key, hyperclova_key)
@@ -504,6 +520,7 @@ def generate_and_display_book_image(book_info, unsplash_key, hyperclova_key):
                 st.error("이미지 생성에 실패했습니다.")
         else:
             st.error("적절한 이미지를 찾을 수 없습니다.")
+
 
 
 add_custom_css()

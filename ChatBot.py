@@ -28,7 +28,7 @@ def extract_search_keywords_from_book(book_info, api_key):
         import re
         words = re.findall(r'\b\w+\b', f"{title} {authors}".lower())
         # Filter out common words and return a meaningful word
-        common_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'ì˜', 'ì™€', 'ê³¼', 'ì—', 'ì„', 'ë¥¼', 'ì´', 'ê°€'}
+        common_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', '의', '와', '과', '에', '을', '를', '이', '가'}
         meaningful_words = [word for word in words if len(word) > 3 and word not in common_words]
         
         if meaningful_words:
@@ -36,29 +36,29 @@ def extract_search_keywords_from_book(book_info, api_key):
         else:
             return "books"
     
-    title = book_info.get('bookname') or book_info.get('bookName', 'ì•Œ ìˆ˜ ì—†ëŠ” ì œëª©')
-    authors = book_info.get('authors') or book_info.get('author', 'ì•Œ ìˆ˜ ì—†ëŠ” ì €ìž')
+    title = book_info.get('bookname') or book_info.get('bookName', '알 수 없는 제목')
+    authors = book_info.get('authors') or book_info.get('author', '알 수 없는 저자')
     
     prompt = f"""
-ì±… ì œëª©: "{title}"
-ì €ìž: {authors}
+책 제목: "{title}"
+저자: {authors}
 
-ì´ ì±…ì˜ ì œëª©ê³¼ ì €ìž ì •ë³´ë¥¼ ë¶„ì„í•˜ì—¬, ì´ë¯¸ì§€ ê²€ìƒ‰ì— ê°€ìž¥ ì í•©í•œ ì˜ì–´ í‚¤ì›Œë“œë¥¼ ìƒì„±í•´ì£¼ì„¸ìš”.
+이 책의 제목과 저자 정보를 분석하여, 이미지 검색에 가장 적합한 영어 키워드를 생성해주세요.
 
-ë‹¤ìŒ ì§€ì¹¨ì„ ë”°ë¼ì£¼ì„¸ìš”:
-1. ì±…ì˜ ë‚´ìš©, ë¶„ìœ„ê¸°, ì£¼ì œë¥¼ ì¶”ì¸¡í•˜ì—¬ ê´€ë ¨ëœ ì‹œê°ì  ìš”ì†Œë¥¼ ìƒê°í•´ë³´ì„¸ìš”
-2. ë¯¸ë¦¬ ì •ì˜ëœ ì¹´í…Œê³ ë¦¬ë¥¼ ì‚¬ìš©í•˜ì§€ ë§ê³ , ì±…ì˜ ê³ ìœ í•œ íŠ¹ì„±ì„ ë°˜ì˜í•˜ì„¸ìš”
-3. êµ¬ì²´ì ì´ê³  ì‹œê°ì ì¸ ì˜ì–´ ë‹¨ì–´ í•˜ë‚˜ë§Œ ë°˜í™˜í•˜ì„¸ìš”
-4. ì¶”ìƒì  ê°œë…ë³´ë‹¤ëŠ” êµ¬ì²´ì ì¸ ì´ë¯¸ì§€ë¥¼ ì—°ìƒì‹œí‚¤ëŠ” ë‹¨ì–´ë¥¼ ì„ íƒí•˜ì„¸ìš”
+다음 지침을 따라주세요:
+1. 책의 내용, 분위기, 주제를 추측하여 관련된 시각적 요소를 생각해보세요
+2. 미리 정의된 카테고리를 사용하지 말고, 책의 고유한 특성을 반영하세요
+3. 구체적이고 시각적인 영어 단어 하나만 반환하세요
+4. 추상적 개념보다는 구체적인 이미지를 연상시키는 단어를 선택하세요
 
-ì˜ˆì‹œ:
-- ë¡œë§¨ìŠ¤ ì†Œì„¤ â†’ "romance", "couple", "sunset", "flowers"
-- ì „ìŸ ì†Œì„¤ â†’ "battlefield", "soldier", "ruins", "memorial"
-- ê³¼í•™ ë„ì„œ â†’ "laboratory", "research", "microscope", "discovery"
-- ì—¬í–‰ ì—ì„¸ì´ â†’ "journey", "landscape", "adventure", "exploration"
-- ìš”ë¦¬ ì±… â†’ "kitchen", "ingredients", "cooking", "chef"
+예시:
+- 로맨스 소설 → "romance", "couple", "sunset", "flowers"
+- 전쟁 소설 → "battlefield", "soldier", "ruins", "memorial"
+- 과학 도서 → "laboratory", "research", "microscope", "discovery"
+- 여행 에세이 → "journey", "landscape", "adventure", "exploration"
+- 요리 책 → "kitchen", "ingredients", "cooking", "chef"
 
-ì±…ì˜ íŠ¹ì„±ì„ ê°€ìž¥ ìž˜ í‘œí˜„í•˜ëŠ” ì˜ì–´ í‚¤ì›Œë“œ í•˜ë‚˜ë§Œ ë°˜í™˜í•˜ì„¸ìš”.
+책의 특성을 가장 잘 표현하는 영어 키워드 하나만 반환하세요.
 """
     
     headers = {
@@ -70,7 +70,7 @@ def extract_search_keywords_from_book(book_info, api_key):
         "messages": [
             {
                 "role": "system",
-                "content": "ë‹¹ì‹ ì€ ì±…ì˜ ë‚´ìš©ì„ ë¶„ì„í•˜ì—¬ ì‹œê°ì  ì´ë¯¸ì§€ ê²€ìƒ‰ì— ì í•©í•œ í‚¤ì›Œë“œë¥¼ ìƒì„±í•˜ëŠ” ì „ë¬¸ê°€ìž…ë‹ˆë‹¤. ë¯¸ë¦¬ ì •ì˜ëœ ì¹´í…Œê³ ë¦¬ë¥¼ ì‚¬ìš©í•˜ì§€ ì•Šê³ , ê° ì±…ì˜ ê³ ìœ í•œ íŠ¹ì„±ì„ ë°˜ì˜í•œ êµ¬ì²´ì ì¸ í‚¤ì›Œë“œë¥¼ ìƒì„±í•©ë‹ˆë‹¤."
+                "content": "당신은 책의 내용을 분석하여 시각적 이미지 검색에 적합한 키워드를 생성하는 전문가입니다. 미리 정의된 카테고리를 사용하지 않고, 각 책의 고유한 특성을 반영한 구체적인 키워드를 생성합니다."
             },
             {
                 "role": "user",
@@ -105,7 +105,7 @@ def extract_search_keywords_from_book(book_info, api_key):
         else:
             return "literature"
     except Exception as e:
-        st.error(f"í‚¤ì›Œë“œ ì¶”ì¶œ ì¤‘ ì˜¤ë¥˜: {e}")
+        st.error(f"키워드 추출 중 오류: {e}")
         return "literature"
 
 def fetch_unsplash_image(book_info, unsplash_access_key, api_key):
@@ -129,16 +129,16 @@ def fetch_unsplash_image(book_info, unsplash_access_key, api_key):
     if api_key:
         try:
             context_prompt = f"""
-ì£¼ìš” í‚¤ì›Œë“œ: "{primary_keyword}"
-ì±… ì œëª©: "{title}"
+주요 키워드: "{primary_keyword}"
+책 제목: "{title}"
 
-ì£¼ìš” í‚¤ì›Œë“œì™€ ê´€ë ¨ëœ ì‹œê°ì  ìˆ˜ì‹ì–´ë¥¼ 2-3ê°œ ìƒì„±í•´ì£¼ì„¸ìš”.
-ì˜ˆì‹œ:
-- "ocean" â†’ "serene", "vast", "blue"
-- "forest" â†’ "mysterious", "green", "peaceful"
-- "city" â†’ "modern", "bustling", "urban"
+주요 키워드와 관련된 시각적 수식어를 2-3개 생성해주세요.
+예시:
+- "ocean" → "serene", "vast", "blue"
+- "forest" → "mysterious", "green", "peaceful"
+- "city" → "modern", "bustling", "urban"
 
-ì˜ì–´ ë‹¨ì–´ë§Œ ì‰¼í‘œë¡œ êµ¬ë¶„í•˜ì—¬ ë°˜í™˜í•˜ì„¸ìš”.
+영어 단어만 쉼표로 구분하여 반환하세요.
 """
             
             headers = {
@@ -150,7 +150,7 @@ def fetch_unsplash_image(book_info, unsplash_access_key, api_key):
                 "messages": [
                     {
                         "role": "system",
-                        "content": "ì‹œê°ì  ìˆ˜ì‹ì–´ë¥¼ ìƒì„±í•˜ëŠ” ì „ë¬¸ê°€ìž…ë‹ˆë‹¤."
+                        "content": "시각적 수식어를 생성하는 전문가입니다."
                     },
                     {
                         "role": "user",
@@ -217,26 +217,26 @@ def fetch_unsplash_image(book_info, unsplash_access_key, api_key):
                 return image_url
         return None
     except Exception as e:
-        st.error(f"ì´ë¯¸ì§€ ê²€ìƒ‰ ì¤‘ ì˜¤ë¥˜: {e}")
+        st.error(f"이미지 검색 중 오류: {e}")
         return None
 
 def generate_book_tagline(book_info, api_key):
     """Generate a Korean tagline for the book using HyperCLOVA"""
     if not api_key:
-        return "ì±…ê³¼ í•¨ê»˜í•˜ëŠ” íŠ¹ë³„í•œ ì—¬í–‰"  # Default tagline
+        return "책과 함께하는 특별한 여행"  # Default tagline
     
-    title = book_info.get('bookname') or book_info.get('bookName', 'ì•Œ ìˆ˜ ì—†ëŠ” ì œëª©')
-    authors = book_info.get('authors') or book_info.get('author', 'ì•Œ ìˆ˜ ì—†ëŠ” ì €ìž')
+    title = book_info.get('bookname') or book_info.get('bookName', '알 수 없는 제목')
+    authors = book_info.get('authors') or book_info.get('author', '알 수 없는 저자')
     
     prompt = f"""
-ì±… ì œëª©: "{title}"
-ì €ìž: {authors}
+책 제목: "{title}"
+저자: {authors}
 
-ì´ ì±…ì— ëŒ€í•œ ë§¤ë ¥ì ì´ê³  ê°„ê²°í•œ í•œêµ­ì–´ íƒœê·¸ë¼ì¸ì„ ë§Œë“¤ì–´ì£¼ì„¸ìš”.
-íƒœê·¸ë¼ì¸ì€ 10-15ìž ì´ë‚´ë¡œ ìž‘ì„±í•˜ê³ , ì±…ì˜ ë¶„ìœ„ê¸°ë‚˜ ì£¼ì œë¥¼ ìž˜ í‘œí˜„í•´ì•¼ í•©ë‹ˆë‹¤.
-ì˜ˆì‹œ: "ì‚¬ëž‘ì´ ì‹œìž‘ë˜ëŠ” ê³³", "ëª¨í—˜ì´ ê¸°ë‹¤ë¦¬ëŠ” ì„¸ìƒ", "ì§„ì‹¤ì„ ì°¾ëŠ” ì—¬í–‰"
+이 책에 대한 매력적이고 간결한 한국어 태그라인을 만들어주세요.
+태그라인은 10-15자 이내로 작성하고, 책의 분위기나 주제를 잘 표현해야 합니다.
+예시: "사랑이 시작되는 곳", "모험이 기다리는 세상", "진실을 찾는 여행"
 
-íƒœê·¸ë¼ì¸ë§Œ ë°˜í™˜í•´ì£¼ì„¸ìš”.
+태그라인만 반환해주세요.
 """
     
     headers = {
@@ -248,7 +248,7 @@ def generate_book_tagline(book_info, api_key):
         "messages": [
             {
                 "role": "system",
-                "content": "ë‹¹ì‹ ì€ ì±… ë§ˆì¼€íŒ… ì „ë¬¸ê°€ìž…ë‹ˆë‹¤. ê°„ê²°í•˜ê³  ë§¤ë ¥ì ì¸ í•œêµ­ì–´ íƒœê·¸ë¼ì¸ì„ ë§Œë“œëŠ” ê²ƒì´ ì „ë¬¸ìž…ë‹ˆë‹¤."
+                "content": "당신은 책 마케팅 전문가입니다. 간결하고 매력적인 한국어 태그라인을 만드는 것이 전문입니다."
             },
             {
                 "role": "user",
@@ -273,12 +273,12 @@ def generate_book_tagline(book_info, api_key):
             tagline = result['result']['message']['content'].strip()
             # Clean up the tagline
             tagline = tagline.replace('"', '').replace("'", '').strip()
-            return tagline if len(tagline) <= 20 else "ì±…ê³¼ í•¨ê»˜í•˜ëŠ” íŠ¹ë³„í•œ ì—¬í–‰"
+            return tagline if len(tagline) <= 20 else "책과 함께하는 특별한 여행"
         else:
-            return "ì±…ê³¼ í•¨ê»˜í•˜ëŠ” íŠ¹ë³„í•œ ì—¬í–‰"
+            return "책과 함께하는 특별한 여행"
     except Exception as e:
-        st.error(f"íƒœê·¸ë¼ì¸ ìƒì„± ì¤‘ ì˜¤ë¥˜: {e}")
-        return "ì±…ê³¼ í•¨ê»˜í•˜ëŠ” íŠ¹ë³„í•œ ì—¬í–‰"
+        st.error(f"태그라인 생성 중 오류: {e}")
+        return "책과 함께하는 특별한 여행"
 
 def fetch_unsplash_image(book_info, unsplash_access_key, api_key):
     """Fetch a contextually appropriate image from Unsplash based on book information"""
@@ -334,7 +334,7 @@ def fetch_unsplash_image(book_info, unsplash_access_key, api_key):
                 return image_url
         return None
     except Exception as e:
-        st.error(f"ì´ë¯¸ì§€ ê²€ìƒ‰ ì¤‘ ì˜¤ë¥˜: {e}")
+        st.error(f"이미지 검색 중 오류: {e}")
         return None
 
 def create_book_image_with_tagline(image_url, tagline, book_title):
@@ -439,12 +439,12 @@ def create_book_image_with_tagline(image_url, tagline, book_title):
         
         return img_str
     except Exception as e:
-        st.error(f"ì´ë¯¸ì§€ ìƒì„± ì¤‘ ì˜¤ë¥˜: {e}")
+        st.error(f"이미지 생성 중 오류: {e}")
         return None
 
 def generate_and_display_book_image(book_info, unsplash_key, hyperclova_key):
     """Generate and display book image with tagline"""
-    with st.spinner('ì±…ì˜ ë‚´ìš©ì„ ë¶„ì„í•˜ê³  ë§žì¶¤ ì´ë¯¸ì§€ë¥¼ ìƒì„±í•˜ê³  ìžˆìŠµë‹ˆë‹¤...'):
+    with st.spinner('책의 내용을 분석하고 맞춤 이미지를 생성하고 있습니다...'):
         # Generate tagline
         tagline = generate_book_tagline(book_info, hyperclova_key)
         
@@ -453,28 +453,28 @@ def generate_and_display_book_image(book_info, unsplash_key, hyperclova_key):
         
         if image_url:
             # Create image with tagline
-            book_title = book_info.get('bookname') or book_info.get('bookName', 'ì±…')
+            book_title = book_info.get('bookname') or book_info.get('bookName', '책')
             img_base64 = create_book_image_with_tagline(image_url, tagline, book_title)
             
             if img_base64:
-                st.markdown("### ðŸ“¸ ìƒì„±ëœ ì±… ì´ë¯¸ì§€")
-                st.image(f"data:image/jpeg;base64,{img_base64}", caption=f"íƒœê·¸ë¼ì¸: {tagline}")
+                st.markdown("### 📸 생성된 책 이미지")
+                st.image(f"data:image/jpeg;base64,{img_base64}", caption=f"태그라인: {tagline}")
                 
                 # Show the search context used
                 search_keyword = extract_search_keywords_from_book(book_info, hyperclova_key)
-                st.info(f"ì´ë¯¸ì§€ ê²€ìƒ‰ í‚¤ì›Œë“œ: {search_keyword}")
+                st.info(f"이미지 검색 키워드: {search_keyword}")
                 
                 # Download button
                 st.download_button(
-                    label="ì´ë¯¸ì§€ ë‹¤ìš´ë¡œë“œ",
+                    label="이미지 다운로드",
                     data=base64.b64decode(img_base64),
                     file_name=f"{book_title}_image.jpg",
                     mime="image/jpeg"
                 )
             else:
-                st.error("ì´ë¯¸ì§€ ìƒì„±ì— ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.")
+                st.error("이미지 생성에 실패했습니다.")
         else:
-            st.error("ì ì ˆí•œ ì´ë¯¸ì§€ë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.")
+            st.error("적절한 이미지를 찾을 수 없습니다.")
 
 
 add_custom_css()
@@ -497,10 +497,10 @@ def display_liked_book_card(book, index):
                 </div>
                 """, unsafe_allow_html=True)
         with cols[1]:
-            title = info.get('bookname') or info.get('bookName', 'ì œëª© ì—†ìŒ')
-            authors = info.get('authors') or info.get('author', 'ì €ìž ì—†ìŒ')
-            publisher = info.get('publisher', 'ì¶œíŒì‚¬ ì—†ìŒ')
-            year = info.get('publication_year') or info.get('publicationYear', 'ì—°ë„ ì—†ìŒ')
+            title = info.get('bookname') or info.get('bookName', '제목 없음')
+            authors = info.get('authors') or info.get('author', '저자 없음')
+            publisher = info.get('publisher', '출판사 없음')
+            year = info.get('publication_year') or info.get('publicationYear', '연도 없음')
             loan_count = info.get('loan_count') or info.get('loanCount', 0)
             isbn13 = info.get('isbn13') or info.get('isbn', 'unknown')
             st.markdown(f"""
@@ -520,7 +520,7 @@ def display_liked_book_card(book, index):
                     st.rerun()
             with btn_col2:
                 # Remove (cross) button
-                if st.button("âŒ", key=f"remove_{isbn13}_{index}", help="Remove from My Library"):
+                if st.button("❌", key=f"remove_{isbn13}_{index}", help="Remove from My Library"):
                     unlike_book_for_user(st.session_state.username, isbn13)
                     st.success("Removed from your library!")
                     st.rerun()
@@ -571,8 +571,8 @@ def display_message(message):
             avatar_class = "assistant-avatar"
             message_class = "assistant-message"
             
-            if "í•œêµ­ì–´ ë‹µë³€:" in message["content"]:
-                parts = message["content"].split("í•œêµ­ì–´ ë‹µë³€:", 1)
+            if "한국어 답변:" in message["content"]:
+                parts = message["content"].split("한국어 답변:", 1)
                 english_part = parts[0].strip()
                 korean_part = parts[1].strip() if len(parts) > 1 else ""
                 
@@ -582,7 +582,7 @@ def display_message(message):
                     <div class="chat-message {message_class}">
                         {english_part}
                         <div class="korean-text">
-                            <span class="korean-label">í•œêµ­ì–´ ë‹µë³€:</span><br>
+                            <span class="korean-label">한국어 답변:</span><br>
                             {korean_part}
                         </div>
                         <div class="message-timestamp">Now</div>
@@ -665,26 +665,26 @@ def display_book_card(book, index):
                 </div>
                 """, unsafe_allow_html=True)
         with cols[1]:
-            title = info.get('bookname') or info.get('bookName', 'ì œëª© ì—†ìŒ')
-            authors = info.get('authors') or info.get('author', 'ì €ìž ì—†ìŒ')
-            publisher = info.get('publisher', 'ì¶œíŒì‚¬ ì—†ìŒ')
-            year = info.get('publication_year') or info.get('publicationYear', 'ì—°ë„ ì—†ìŒ')
+            title = info.get('bookname') or info.get('bookName', '제목 없음')
+            authors = info.get('authors') or info.get('author', '저자 없음')
+            publisher = info.get('publisher', '출판사 없음')
+            year = info.get('publication_year') or info.get('publicationYear', '연도 없음')
             loan_count = info.get('loan_count') or info.get('loanCount', 0)
             isbn13 = info.get('isbn13') or info.get('isbn', 'unknown')
 
             st.markdown(f"""
             <div style="padding-left: 10px;">
                 <div style="font-size: 1.2em; font-weight: bold; color: #333; margin-bottom: 8px;">{title}</div>
-                <div style="margin-bottom: 4px;"><strong>ì €ìž:</strong> {authors}</div>
-                <div style="margin-bottom: 4px;"><strong>ì¶œíŒì‚¬:</strong> {publisher}</div>
-                <div style="margin-bottom: 4px;"><strong>ì¶œê°„ë…„ë„:</strong> {year}</div>
-                <div style="margin-bottom: 8px;"><strong>ëŒ€ì¶œ íšŸìˆ˜:</strong> {loan_count}</div>
+                <div style="margin-bottom: 4px;"><strong>저자:</strong> {authors}</div>
+                <div style="margin-bottom: 4px;"><strong>출판사:</strong> {publisher}</div>
+                <div style="margin-bottom: 4px;"><strong>출간년도:</strong> {year}</div>
+                <div style="margin-bottom: 8px;"><strong>대출 횟수:</strong> {loan_count}</div>
             </div>
             """, unsafe_allow_html=True)
 
             btn_col1, btn_col2, btn_col3 = st.columns([2, 1, 1])
             with btn_col1:
-                if st.button(f"ì´ ì±…ì— ëŒ€í•´ ë” ì•Œì•„ë³´ê¸°", key=f"details_{isbn13}_{index}"):
+                if st.button(f"이 책에 대해 더 알아보기", key=f"details_{isbn13}_{index}"):
                     st.session_state.selected_book = info
                     st.session_state.app_stage = "discuss_book"
                     st.rerun()
@@ -693,22 +693,22 @@ def display_book_card(book, index):
                 liked_books = get_liked_books(st.session_state.username)
                 already_liked = any((b.get("isbn13") or b.get("isbn")) == isbn13 for b in liked_books)
                 if already_liked:
-                    st.button("â¤ï¸", key=f"liked_{isbn13}_{index}", help="ë‚´ ì„œìž¬ì— ì¶”ê°€ë¨", disabled=True)
+                    st.button("❤️", key=f"liked_{isbn13}_{index}", help="내 서재에 추가됨", disabled=True)
                 else:
-                    if st.button("â¤ï¸", key=f"like_{isbn13}_{index}", help="ë‚´ ì„œìž¬ì— ì¶”ê°€"):
+                    if st.button("❤️", key=f"like_{isbn13}_{index}", help="내 서재에 추가"):
                         # Store the book in MongoDB with consistent ISBN field
                         book_data = info.copy()
                         book_data['isbn13'] = isbn13
                         like_book_for_user(st.session_state.username, book_data)
-                        st.success("ì„œìž¬ì— ì¶”ê°€ë˜ì—ˆìŠµë‹ˆë‹¤!")
+                        st.success("서재에 추가되었습니다!")
                         st.rerun()
             with btn_col3:
                 # Image generation button
-                if st.button("ðŸ–¼ï¸", key=f"image_{isbn13}_{index}", help="ë§žì¶¤ ì´ë¯¸ì§€ ìƒì„±"):
+                if st.button("🖼️", key=f"image_{isbn13}_{index}", help="맞춤 이미지 생성"):
                     if st.session_state.get('unsplash_api_key') and st.session_state.api_key:
                         generate_and_display_book_image(info, st.session_state.unsplash_api_key, st.session_state.api_key)
                     else:
-                        st.error("ì´ë¯¸ì§€ ìƒì„±ì„ ìœ„í•´ Unsplash API í‚¤ì™€ HyperCLOVA API í‚¤ê°€ í•„ìš”í•©ë‹ˆë‹¤.")
+                        st.error("이미지 생성을 위해 Unsplash API 키와 HyperCLOVA API 키가 필요합니다.")
         st.markdown('</div>', unsafe_allow_html=True)
 
 # --- Load JSON files ---
@@ -741,26 +741,26 @@ def extract_keywords_with_hyperclova(user_input, api_key, dtl_kdc_dict):
     
     # First prompt - look for exact keywords
     prompt_exact = f"""
-ë‹¤ìŒì€ ì „ì²´ ë„ì„œ ë¶„ë¥˜ ì½”ë“œ ëª©ë¡ìž…ë‹ˆë‹¤:
+다음은 전체 도서 분류 코드 목록입니다:
 {categories_text}
 
-ì‚¬ìš©ìž ìž…ë ¥: "{user_input}"
+사용자 입력: "{user_input}"
 
-ìœ„ì˜ ì „ì²´ ëª©ë¡ì—ì„œ ì‚¬ìš©ìž ìž…ë ¥ê³¼ ì •í™•ížˆ ì¼ì¹˜í•˜ëŠ” í‚¤ì›Œë“œë‚˜ ë¶„ë¥˜ëª…ì„ ì°¾ì•„ì£¼ì„¸ìš”.
-ì˜ˆë¥¼ ë“¤ì–´:
-- "ì˜ë¬¸í•™" â†’ ì˜ë¯¸ë¬¸í•™ ê´€ë ¨ ì½”ë“œ
-- "ì—­ì‚¬" â†’ ì—­ì‚¬ ê´€ë ¨ ì½”ë“œ  
-- "ì†Œì„¤" â†’ ì†Œì„¤ ê´€ë ¨ ì½”ë“œ
-- "ì² í•™" â†’ ì² í•™ ê´€ë ¨ ì½”ë“œ
+위의 전체 목록에서 사용자 입력과 정확히 일치하는 키워드나 분류명을 찾아주세요.
+예를 들어:
+- "영문학" → 영미문학 관련 코드
+- "역사" → 역사 관련 코드  
+- "소설" → 소설 관련 코드
+- "철학" → 철학 관련 코드
 
-ì •í™•í•œ ì¼ì¹˜ê°€ ìžˆìœ¼ë©´ í•´ë‹¹ ì½”ë“œë²ˆí˜¸ë§Œ ë°˜í™˜í•˜ì„¸ìš”. ì •í™•í•œ ì¼ì¹˜ê°€ ì—†ìœ¼ë©´ "NO_EXACT_MATCH"ë¥¼ ë°˜í™˜í•˜ì„¸ìš”.
+정확한 일치가 있으면 해당 코드번호만 반환하세요. 정확한 일치가 없으면 "NO_EXACT_MATCH"를 반환하세요.
 """
     
     data_exact = {
         "messages": [
             {
                 "role": "system",
-                "content": "ë‹¹ì‹ ì€ ë„ì„œ ë¶„ë¥˜ ì „ë¬¸ê°€ìž…ë‹ˆë‹¤. ì „ì²´ ë¶„ë¥˜ ëª©ë¡ì—ì„œ ì •í™•í•œ í‚¤ì›Œë“œ ì¼ì¹˜ë¥¼ ì°¾ì•„ ì½”ë“œë²ˆí˜¸ë§Œ ë°˜í™˜í•©ë‹ˆë‹¤."
+                "content": "당신은 도서 분류 전문가입니다. 전체 분류 목록에서 정확한 키워드 일치를 찾아 코드번호만 반환합니다."
             },
             {
                 "role": "user", 
@@ -792,28 +792,28 @@ def extract_keywords_with_hyperclova(user_input, api_key, dtl_kdc_dict):
             
             # If no exact match, try second attempt with similarity
             prompt_similar = f"""
-ì‚¬ìš©ìž ìž…ë ¥: "{user_input}"
+사용자 입력: "{user_input}"
 
-ë‹¤ìŒì€ ì‚¬ìš©í•  ìˆ˜ ìžˆëŠ” ë„ì„œ ë¶„ë¥˜ ì½”ë“œë“¤ìž…ë‹ˆë‹¤:
+다음은 사용할 수 있는 도서 분류 코드들입니다:
 {categories_text}
 
-ì •í™•í•œ ì¼ì¹˜ê°€ ì—†ìœ¼ë¯€ë¡œ, ì‚¬ìš©ìž ìž…ë ¥ì˜ ì˜ë¯¸ì™€ ê°€ìž¥ ìœ ì‚¬í•œ ë¶„ë¥˜ ì½”ë“œë¥¼ ì°¾ì•„ì£¼ì„¸ìš”.
-ì˜ë¯¸ìƒ ì—°ê´€ì„±ì„ ê³ ë ¤í•˜ì—¬ ê°€ìž¥ ì ì ˆí•œ ì½”ë“œë¥¼ ì„ íƒí•˜ì„¸ìš”.
+정확한 일치가 없으므로, 사용자 입력의 의미와 가장 유사한 분류 코드를 찾아주세요.
+의미상 연관성을 고려하여 가장 적절한 코드를 선택하세요.
 
-ì˜ˆë¥¼ ë“¤ì–´:
-- "ì±… ì¶”ì²œ" â†’ ì¼ë°˜ì ì¸ ë¬¸í•™ì´ë‚˜ ì´ë¥˜ ê´€ë ¨ ì½”ë“œ
-- "ê²½ì œ ê´€ë ¨" â†’ ê²½ì œí•™ ê´€ë ¨ ì½”ë“œ
-- "ê±´ê°•" â†’ ì˜í•™ì´ë‚˜ ê±´ê°• ê´€ë ¨ ì½”ë“œ
-- "ìš”ë¦¬" â†’ ìš”ë¦¬, ìŒì‹ ê´€ë ¨ ì½”ë“œ
+예를 들어:
+- "책 추천" → 일반적인 문학이나 총류 관련 코드
+- "경제 관련" → 경제학 관련 코드
+- "건강" → 의학이나 건강 관련 코드
+- "요리" → 요리, 음식 관련 코드
 
-ê°€ìž¥ ìœ ì‚¬í•œ ì½”ë“œë²ˆí˜¸ë§Œ ë°˜í™˜í•˜ì„¸ìš”.
+가장 유사한 코드번호만 반환하세요.
 """
             
             data_similar = {
                 "messages": [
                     {
                         "role": "system",
-                        "content": "ë‹¹ì‹ ì€ ë„ì„œ ë¶„ë¥˜ ì „ë¬¸ê°€ìž…ë‹ˆë‹¤. ì˜ë¯¸ì  ìœ ì‚¬ì„±ì„ ë°”íƒ•ìœ¼ë¡œ ê°€ìž¥ ì ì ˆí•œ ë¶„ë¥˜ ì½”ë“œë¥¼ ì°¾ì•„ ë°˜í™˜í•©ë‹ˆë‹¤."
+                        "content": "당신은 도서 분류 전문가입니다. 의미적 유사성을 바탕으로 가장 적절한 분류 코드를 찾아 반환합니다."
                     },
                     {
                         "role": "user", 
@@ -973,7 +973,7 @@ def get_books_by_dtl_kdc(dtl_kdc_code, auth_key, page_no=1, page_size=10):
 # --- Sidebar (as provided) ---
 def setup_sidebar():
     with st.sidebar:
-        if st.button("ì¢‹ì•„í•˜ëŠ” ì±…ë“¤"):
+        if st.button("좋아하는 책들"):
             st.session_state.app_stage = "show_liked_books"
             st.rerun()
 
@@ -983,7 +983,7 @@ def setup_sidebar():
                       -webkit-background-clip: text;
                       -webkit-text-fill-color: transparent;
                       font-weight: 700;">
-                API ì„¤ì •
+                API 설정
             </h3>
         </div>
         """, unsafe_allow_html=True)
@@ -993,19 +993,19 @@ def setup_sidebar():
             st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
             
             # HyperCLOVA API Key
-            hyperclova_api_key = st.text_input("HyperCLOVA API í‚¤ë¥¼ ìž…ë ¥í•˜ì„¸ìš”", 
+            hyperclova_api_key = st.text_input("HyperCLOVA API 키를 입력하세요", 
                                               type="password", 
                                               value=st.session_state.api_key)
             st.session_state.api_key = hyperclova_api_key
             
             # Library API Key
-            library_api_key = st.text_input("ë„ì„œê´€ API í‚¤ë¥¼ ìž…ë ¥í•˜ì„¸ìš”", 
+            library_api_key = st.text_input("도서관 API 키를 입력하세요", 
                                             type="password", 
                                             value=st.session_state.library_api_key)
             st.session_state.library_api_key = library_api_key
             
             # Unsplash API Key
-            unsplash_api_key = st.text_input("Unsplash API í‚¤ë¥¼ ìž…ë ¥í•˜ì„¸ìš”", 
+            unsplash_api_key = st.text_input("Unsplash API 키를 입력하세요", 
                                             type="password", 
                                             value=st.session_state.get('unsplash_api_key', ''))
             st.session_state.unsplash_api_key = unsplash_api_key
@@ -1013,9 +1013,9 @@ def setup_sidebar():
             st.markdown('</div>', unsafe_allow_html=True)
         
         # Reset button
-        if st.button("ë‹¤ì‹œ ì‹œìž‘í•˜ê¸° ðŸ’«"):
+        if st.button("다시 시작하기 💫"):
             st.session_state.messages = [
-                {"role": "system", "content": "You are a helpful AI assistant specializing in book recommendations. For EVERY response, you must answer in BOTH English and Korean. First provide the complete answer in English, then provide 'í•œêµ­ì–´ ë‹µë³€:' followed by the complete Korean translation of your answer."}
+                {"role": "system", "content": "You are a helpful AI assistant specializing in book recommendations. For EVERY response, you must answer in BOTH English and Korean. First provide the complete answer in English, then provide '한국어 답변:' followed by the complete Korean translation of your answer."}
             ]
             st.session_state.app_stage = "welcome"
             st.session_state.user_genre = ""
@@ -1027,7 +1027,7 @@ def setup_sidebar():
         st.markdown("""
         <div style="text-align: center; margin-top: 30px; padding: 10px;">
             <p style="color: #b3b3cc; font-size: 0.8rem;">
-                HyperCLOVA X, í•œêµ­ ë„ì„œê´€ API & Unsplashë¡œ êµ¬ë™
+                HyperCLOVA X, 한국 도서관 API & Unsplash로 구동
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -1036,7 +1036,7 @@ def setup_sidebar():
 def process_followup_with_hyperclova(user_input, api_key):
     """Process follow-up questions using HyperCLOVA API"""
     if not api_key:
-        return "Please provide your HyperCLOVA API key in the sidebar to get detailed responses.\n\ní•œêµ­ì–´ ë‹µë³€: ìžì„¸í•œ ë‹µë³€ì„ ë°›ìœ¼ë ¤ë©´ ì‚¬ì´ë“œë°”ì—ì„œ HyperCLOVA API í‚¤ë¥¼ ì œê³µí•´ ì£¼ì„¸ìš”."
+        return "Please provide your HyperCLOVA API key in the sidebar to get detailed responses.\n\n한국어 답변: 자세한 답변을 받으려면 사이드바에서 HyperCLOVA API 키를 제공해 주세요."
     
     # Create context from previous messages
     conversation_context = ""
@@ -1046,22 +1046,22 @@ def process_followup_with_hyperclova(user_input, api_key):
             conversation_context += f"{msg['role']}: {msg['content']}\n"
     
     prompt = f"""
-ì´ì „ ëŒ€í™” ë‚´ìš©:
+이전 대화 내용:
 {conversation_context}
 
-ì‚¬ìš©ìžì˜ ìƒˆë¡œìš´ ì§ˆë¬¸: "{user_input}"
+사용자의 새로운 질문: "{user_input}"
 
-ìœ„ì˜ ë§¥ë½ì„ ê³ ë ¤í•˜ì—¬ ì‚¬ìš©ìžì˜ ì§ˆë¬¸ì— ëŒ€í•´ ë„ì›€ì´ ë˜ëŠ” ë‹µë³€ì„ í•´ì£¼ì„¸ìš”. 
-ë§Œì•½ ìƒˆë¡œìš´ ë„ì„œ ì¶”ì²œì„ ìš”ì²­í•˜ëŠ” ê²ƒ ê°™ë‹¤ë©´, êµ¬ì²´ì ì¸ ìž¥ë¥´ë‚˜ ì£¼ì œë¥¼ ì œì‹œí•´ì£¼ì„¸ìš”.
+위의 맥락을 고려하여 사용자의 질문에 대해 도움이 되는 답변을 해주세요. 
+만약 새로운 도서 추천을 요청하는 것 같다면, 구체적인 장르나 주제를 제시해주세요.
 
-ë‹µë³€ì€ ì˜ì–´ì™€ í•œêµ­ì–´ ëª¨ë‘ë¡œ ì œê³µí•˜ë˜, ë¨¼ì € ì˜ì–´ë¡œ ì™„ì „í•œ ë‹µë³€ì„ í•˜ê³ , 
-ê·¸ ë‹¤ìŒ "í•œêµ­ì–´ ë‹µë³€:" ì´í›„ì— í•œêµ­ì–´ ë²ˆì—­ì„ ì œê³µí•˜ì„¸ìš”.
+답변은 영어와 한국어 모두로 제공하되, 먼저 영어로 완전한 답변을 하고, 
+그 다음 "한국어 답변:" 이후에 한국어 번역을 제공하세요.
 """
     
     messages = [
         {
             "role": "system",
-            "content": "ë‹¹ì‹ ì€ ë„ì„œ ì¶”ì²œ ì „ë¬¸ê°€ìž…ë‹ˆë‹¤. ì‚¬ìš©ìžì™€ì˜ ëŒ€í™” ë§¥ë½ì„ ì´í•´í•˜ê³  ë„ì›€ì´ ë˜ëŠ” ë‹µë³€ì„ ì œê³µí•©ë‹ˆë‹¤. í•­ìƒ ì˜ì–´ì™€ í•œêµ­ì–´ë¡œ ë‹µë³€í•˜ì„¸ìš”."
+            "content": "당신은 도서 추천 전문가입니다. 사용자와의 대화 맥락을 이해하고 도움이 되는 답변을 제공합니다. 항상 영어와 한국어로 답변하세요."
         },
         {
             "role": "user", 
@@ -1080,14 +1080,14 @@ def generate_book_introduction(book, api_key):
     loan_count = book.get('loan_count') or book.get('loanCount', 0)
     
     if not api_key:
-        return f"Let's discuss '{title}' by {authors}! This book was published by {publisher} in {year} and has been borrowed {loan_count} times, showing its popularity. What would you like to know about this book - its themes, plot, writing style, or would you like similar recommendations?\n\ní•œêµ­ì–´ ë‹µë³€: {authors}ì˜ '{title}'ì— ëŒ€í•´ ì´ì•¼ê¸°í•´ ë´…ì‹œë‹¤! ì´ ì±…ì€ {year}ë…„ì— {publisher}ì—ì„œ ì¶œê°„ë˜ì—ˆìœ¼ë©° {loan_count}ë²ˆ ëŒ€ì¶œë˜ì–´ ì¸ê¸°ë¥¼ ë³´ì—¬ì¤ë‹ˆë‹¤. ì´ ì±…ì— ëŒ€í•´ ë¬´ì—‡ì„ ì•Œê³  ì‹¶ìœ¼ì‹ ê°€ìš” - ì£¼ì œ, ì¤„ê±°ë¦¬, ë¬¸ì²´, ì•„ë‹ˆë©´ ë¹„ìŠ·í•œ ì¶”ì²œì„ ì›í•˜ì‹œë‚˜ìš”?"
+        return f"Let's discuss '{title}' by {authors}! This book was published by {publisher} in {year} and has been borrowed {loan_count} times, showing its popularity. What would you like to know about this book - its themes, plot, writing style, or would you like similar recommendations?\n\n한국어 답변: {authors}의 '{title}'에 대해 이야기해 봅시다! 이 책은 {year}년에 {publisher}에서 출간되었으며 {loan_count}번 대출되어 인기를 보여줍니다. 이 책에 대해 무엇을 알고 싶으신가요 - 주제, 줄거리, 문체, 아니면 비슷한 추천을 원하시나요?"
     
     book_context = f"Book: {title} by {authors}, published by {publisher} in {year}, with {loan_count} loans"
     
     messages = [
         {
             "role": "system",
-            "content": "You are a knowledgeable book expert. For EVERY response, answer in BOTH English and Korean. First provide complete English answer, then 'í•œêµ­ì–´ ë‹µë³€:' with Korean translation. Provide an engaging introduction about the book."
+            "content": "You are a knowledgeable book expert. For EVERY response, answer in BOTH English and Korean. First provide complete English answer, then '한국어 답변:' with Korean translation. Provide an engaging introduction about the book."
         },
         {
             "role": "user", 
@@ -1100,12 +1100,12 @@ def generate_book_introduction(book, api_key):
         return response
     else:
         # Fallback if API fails
-        return f"Let's explore '{title}' by {authors}! This book from {publisher} ({year}) has {loan_count} loans, indicating its appeal to readers. I'm here to discuss anything about this book - from plot details to thematic analysis. What aspect interests you most?\n\ní•œêµ­ì–´ ë‹µë³€: {authors}ì˜ '{title}'ì„ íƒí—˜í•´ ë´…ì‹œë‹¤! {publisher}({year})ì˜ ì´ ì±…ì€ {loan_count}ë²ˆì˜ ëŒ€ì¶œë¡œ ë…ìžë“¤ì—ê²Œ ì–´í•„í•˜ê³  ìžˆìŒì„ ë³´ì—¬ì¤ë‹ˆë‹¤. ì¤„ê±°ë¦¬ ì„¸ë¶€ì‚¬í•­ë¶€í„° ì£¼ì œ ë¶„ì„ê¹Œì§€ ì´ ì±…ì— ëŒ€í•œ ëª¨ë“  ê²ƒì„ ë…¼ì˜í•  ì¤€ë¹„ê°€ ë˜ì–´ ìžˆìŠµë‹ˆë‹¤. ì–´ë–¤ ì¸¡ë©´ì— ê°€ìž¥ ê´€ì‹¬ì´ ìžˆìœ¼ì‹ ê°€ìš”?"
+        return f"Let's explore '{title}' by {authors}! This book from {publisher} ({year}) has {loan_count} loans, indicating its appeal to readers. I'm here to discuss anything about this book - from plot details to thematic analysis. What aspect interests you most?\n\n한국어 답변: {authors}의 '{title}'을 탐험해 봅시다! {publisher}({year})의 이 책은 {loan_count}번의 대출로 독자들에게 어필하고 있음을 보여줍니다. 줄거리 세부사항부터 주제 분석까지 이 책에 대한 모든 것을 논의할 준비가 되어 있습니다. 어떤 측면에 가장 관심이 있으신가요?"
 
 def process_book_question(book, question, api_key, conversation_history):
     """Process specific questions about a book using HyperCLOVA with improved context handling"""
     if not api_key:
-        return "Please provide your HyperCLOVA API key in the sidebar to get detailed responses about this book.\n\ní•œêµ­ì–´ ë‹µë³€: ì´ ì±…ì— ëŒ€í•œ ìžì„¸í•œ ë‹µë³€ì„ ë°›ìœ¼ë ¤ë©´ ì‚¬ì´ë“œë°”ì—ì„œ HyperCLOVA API í‚¤ë¥¼ ì œê³µí•´ ì£¼ì„¸ìš”."
+        return "Please provide your HyperCLOVA API key in the sidebar to get detailed responses about this book.\n\n한국어 답변: 이 책에 대한 자세한 답변을 받으려면 사이드바에서 HyperCLOVA API 키를 제공해 주세요."
     
     title = book.get('bookname') or book.get('bookName', 'Unknown Title')
     authors = book.get('authors') or book.get('author', 'Unknown Author')
@@ -1119,36 +1119,36 @@ def process_book_question(book, question, api_key, conversation_history):
         # Include more context - last 6 messages for better continuity
         recent_history = conversation_history[-6:] if len(conversation_history) >= 6 else conversation_history
         for msg in recent_history:
-            role = "ì‚¬ìš©ìž" if msg["role"] == "user" else "AI"
+            role = "사용자" if msg["role"] == "user" else "AI"
             context_string += f"{role}: {msg['content']}\n\n"
     
-    book_info = f"ì œëª©: '{title}', ì €ìž: {authors}, ì¶œíŒì‚¬: {publisher}, ì¶œê°„ë…„ë„: {year}, ì¸ê¸°ë„: {loan_count}íšŒ ëŒ€ì¶œ"
+    book_info = f"제목: '{title}', 저자: {authors}, 출판사: {publisher}, 출간년도: {year}, 인기도: {loan_count}회 대출"
     
     # Enhanced prompt with better context integration
     enhanced_prompt = f"""
-í˜„ìž¬ ë…¼ì˜ ì¤‘ì¸ ë„ì„œ ì •ë³´:
+현재 논의 중인 도서 정보:
 {book_info}
 
-ì´ì „ ëŒ€í™” ë‚´ìš©:
+이전 대화 내용:
 {context_string}
 
-ì‚¬ìš©ìžì˜ ìƒˆë¡œìš´ ì§ˆë¬¸: "{question}"
+사용자의 새로운 질문: "{question}"
 
-ìœ„ì˜ ë„ì„œì™€ ì´ì „ ëŒ€í™” ë§¥ë½ì„ ëª¨ë‘ ê³ ë ¤í•˜ì—¬ ì‚¬ìš©ìžì˜ ì§ˆë¬¸ì— ëŒ€í•´ ìƒì„¸í•˜ê³  ë„ì›€ì´ ë˜ëŠ” ë‹µë³€ì„ ì œê³µí•´ì£¼ì„¸ìš”.
+위의 도서와 이전 대화 맥락을 모두 고려하여 사용자의 질문에 대해 상세하고 도움이 되는 답변을 제공해주세요.
 
-ë‹µë³€ ì§€ì¹¨:
-1. ì´ì „ ëŒ€í™”ì˜ ë§¥ë½ì„ ì°¸ê³ í•˜ì—¬ ì—°ì†ì„± ìžˆëŠ” ë‹µë³€ì„ ì œê³µí•˜ì„¸ìš”
-2. ì±…ì˜ ë‚´ìš©, ì£¼ì œ, ë“±ìž¥ì¸ë¬¼, ë¬¸ì²´, ë¬¸í™”ì  ë°°ê²½ ë“±ì— ëŒ€í•´ êµ¬ì²´ì ìœ¼ë¡œ ì„¤ëª…í•˜ì„¸ìš”
-3. í•„ìš”ì‹œ ìœ ì‚¬í•œ ì±… ì¶”ì²œë„ í¬í•¨í•˜ì„¸ìš”
-4. ì˜ì–´ë¡œ ì™„ì „í•œ ë‹µë³€ì„ ë¨¼ì € ì œê³µí•˜ê³ , ê·¸ ë‹¤ìŒ "í•œêµ­ì–´ ë‹µë³€:" ì´í›„ì— í•œêµ­ì–´ ë²ˆì—­ì„ ì œê³µí•˜ì„¸ìš”
+답변 지침:
+1. 이전 대화의 맥락을 참고하여 연속성 있는 답변을 제공하세요
+2. 책의 내용, 주제, 등장인물, 문체, 문화적 배경 등에 대해 구체적으로 설명하세요
+3. 필요시 유사한 책 추천도 포함하세요
+4. 영어로 완전한 답변을 먼저 제공하고, 그 다음 "한국어 답변:" 이후에 한국어 번역을 제공하세요
 
-ë‹µë³€ì€ ìƒì„¸í•˜ê³  í†µì°°ë ¥ ìžˆê²Œ ìž‘ì„±í•´ì£¼ì„¸ìš”.
+답변은 상세하고 통찰력 있게 작성해주세요.
 """
     
     messages = [
         {
             "role": "system",
-            "content": f"ë‹¹ì‹ ì€ '{title}' by {authors}ì— ëŒ€í•´ ë…¼ì˜í•˜ëŠ” ì§€ì‹ì´ í’ë¶€í•œ ë„ì„œ ì „ë¬¸ê°€ìž…ë‹ˆë‹¤. ì´ì „ ëŒ€í™”ì˜ ë§¥ë½ì„ ê¸°ì–µí•˜ê³  ì—°ì†ì„± ìžˆëŠ” ë‹µë³€ì„ ì œê³µí•©ë‹ˆë‹¤. ëª¨ë“  ë‹µë³€ì€ ì˜ì–´ì™€ í•œêµ­ì–´ ëª¨ë‘ë¡œ ì œê³µí•˜ë©°, ë¨¼ì € ì˜ì–´ë¡œ ì™„ì „í•œ ë‹µë³€ì„ í•˜ê³  ê·¸ ë‹¤ìŒ 'í•œêµ­ì–´ ë‹µë³€:'ìœ¼ë¡œ í•œêµ­ì–´ ë²ˆì—­ì„ ì œê³µí•©ë‹ˆë‹¤. ë„ì„œì˜ ì£¼ì œ, ì¤„ê±°ë¦¬ ìš”ì†Œ, ë“±ìž¥ì¸ë¬¼ ë¶„ì„, ë¬¸ì²´, ë¬¸í™”ì  ë§¥ë½, ìœ ì‚¬í•œ ë„ì„œ ì¶”ì²œ ë“±ì„ í¬í•¨í•œ ìƒì„¸í•˜ê³  í†µì°°ë ¥ ìžˆëŠ” ì •ë³´ë¥¼ ì œê³µí•©ë‹ˆë‹¤."
+            "content": f"당신은 '{title}' by {authors}에 대해 논의하는 지식이 풍부한 도서 전문가입니다. 이전 대화의 맥락을 기억하고 연속성 있는 답변을 제공합니다. 모든 답변은 영어와 한국어 모두로 제공하며, 먼저 영어로 완전한 답변을 하고 그 다음 '한국어 답변:'으로 한국어 번역을 제공합니다. 도서의 주제, 줄거리 요소, 등장인물 분석, 문체, 문화적 맥락, 유사한 도서 추천 등을 포함한 상세하고 통찰력 있는 정보를 제공합니다."
         },
         {
             "role": "user",
@@ -1161,10 +1161,10 @@ def process_book_question(book, question, api_key, conversation_history):
         if response:
             return response
         else:
-            return f"I'd be happy to continue our discussion about '{title}', but I'm having trouble connecting to the AI service right now. Could you try asking your question again?\n\ní•œêµ­ì–´ ë‹µë³€: '{title}'ì— ëŒ€í•œ ë…¼ì˜ë¥¼ ê³„ì†í•˜ê³  ì‹¶ì§€ë§Œ ì§€ê¸ˆ AI ì„œë¹„ìŠ¤ì— ì—°ê²°í•˜ëŠ” ë° ë¬¸ì œê°€ ìžˆìŠµë‹ˆë‹¤. ì§ˆë¬¸ì„ ë‹¤ì‹œ í•´ë³´ì‹œê² ì–´ìš”?"
+            return f"I'd be happy to continue our discussion about '{title}', but I'm having trouble connecting to the AI service right now. Could you try asking your question again?\n\n한국어 답변: '{title}'에 대한 논의를 계속하고 싶지만 지금 AI 서비스에 연결하는 데 문제가 있습니다. 질문을 다시 해보시겠어요?"
     except Exception as e:
         st.error(f"Error processing question: {e}")
-        return f"I encountered an error while processing your question about '{title}'. Please try rephrasing your question or check your API connection.\n\ní•œêµ­ì–´ ë‹µë³€: '{title}'ì— ëŒ€í•œ ì§ˆë¬¸ì„ ì²˜ë¦¬í•˜ëŠ” ì¤‘ ì˜¤ë¥˜ê°€ ë°œìƒí–ˆìŠµë‹ˆë‹¤. ì§ˆë¬¸ì„ ë‹¤ì‹œ í‘œí˜„í•˜ê±°ë‚˜ API ì—°ê²°ì„ í™•ì¸í•´ ì£¼ì„¸ìš”."
+        return f"I encountered an error while processing your question about '{title}'. Please try rephrasing your question or check your API connection.\n\n한국어 답변: '{title}'에 대한 질문을 처리하는 중 오류가 발생했습니다. 질문을 다시 표현하거나 API 연결을 확인해 주세요."
 
 def main():
     # --- Initialize all session state variables before use ---
@@ -1181,7 +1181,7 @@ def main():
                 "You are a friendly AI assistant specializing in book recommendations. "
                 "Start by greeting and asking about favorite books/authors/genres/age. "
                 "For EVERY response, answer in BOTH English and Korean. "
-                "First provide complete English answer, then 'í•œêµ­ì–´ ë‹µë³€:' with Korean translation."
+                "First provide complete English answer, then '한국어 답변:' with Korean translation."
             )
         }]
     if "app_stage" not in st.session_state:
@@ -1203,7 +1203,7 @@ def main():
 
     setup_sidebar()
 
-    st.markdown("<h1 style='text-align:center;'>ðŸ“š Book Wanderer / ì±…ë°©ëž‘ìž</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align:center;'>📚 Book Wanderer / 책방랑자</h1>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:center;'>Discover your next favorite read with AI assistance in English and Korean</div>", unsafe_allow_html=True)
     st.markdown("---")
 
@@ -1216,7 +1216,7 @@ def main():
     if st.session_state.app_stage == "welcome":
         st.session_state.messages.append({
             "role": "assistant",
-            "content": "Hello! Tell me about your favourite books, author, genre, or age group. You can describe what you're looking for in natural language.\n\ní•œêµ­ì–´ ë‹µë³€: ì•ˆë…•í•˜ì„¸ìš”! ì¢‹ì•„í•˜ëŠ” ì±…, ìž‘ê°€, ìž¥ë¥´ ë˜ëŠ” ì—°ë ¹ëŒ€ì— ëŒ€í•´ ë§ì”€í•´ ì£¼ì„¸ìš”. ìžì—°ìŠ¤ëŸ¬ìš´ ì–¸ì–´ë¡œ ì›í•˜ëŠ” ê²ƒì„ ì„¤ëª…í•´ ì£¼ì‹œë©´ ë©ë‹ˆë‹¤."
+            "content": "Hello! Tell me about your favourite books, author, genre, or age group. You can describe what you're looking for in natural language.\n\n한국어 답변: 안녕하세요! 좋아하는 책, 작가, 장르 또는 연령대에 대해 말씀해 주세요. 자연스러운 언어로 원하는 것을 설명해 주시면 됩니다."
         })
         st.session_state.app_stage = "awaiting_user_input"
         st.rerun()
@@ -1245,7 +1245,7 @@ def main():
                 # Generate AI response about the recommendations using HyperCLOVA
                 if st.session_state.api_key:
                     ai_response = call_hyperclova_api([
-                        {"role": "system", "content": "You are a helpful book recommendation assistant. For EVERY response, answer in BOTH English and Korean. First provide complete English answer, then 'í•œêµ­ì–´ ë‹µë³€:' with Korean translation."},
+                        {"role": "system", "content": "You are a helpful book recommendation assistant. For EVERY response, answer in BOTH English and Korean. First provide complete English answer, then '한국어 답변:' with Korean translation."},
                         {"role": "user", "content": f"I found {len(books)} books in the {dtl_label} category. Tell me about this category and encourage me to explore these recommendations."}
                     ], st.session_state.api_key)
                     
@@ -1254,14 +1254,14 @@ def main():
                     else:
                         st.session_state.messages.append({
                             "role": "assistant", 
-                            "content": f"Great! I found {len(books)} excellent books in the {dtl_label} category. These recommendations are based on popularity and should match your interests perfectly. Take a look at the books below!\n\ní•œêµ­ì–´ ë‹µë³€: ì¢‹ìŠµë‹ˆë‹¤! {dtl_label} ì¹´í…Œê³ ë¦¬ì—ì„œ {len(books)}ê¶Œì˜ í›Œë¥­í•œ ì±…ì„ ì°¾ì•˜ìŠµë‹ˆë‹¤. ì´ ì¶”ì²œì€ ì¸ê¸°ë„ë¥¼ ë°”íƒ•ìœ¼ë¡œ í•˜ë©° ë‹¹ì‹ ì˜ ê´€ì‹¬ì‚¬ì™€ ì™„ë²½í•˜ê²Œ ì¼ì¹˜í•  ê²ƒìž…ë‹ˆë‹¤. ì•„ëž˜ ì±…ë“¤ì„ ì‚´íŽ´ë³´ì„¸ìš”!"
+                            "content": f"Great! I found {len(books)} excellent books in the {dtl_label} category. These recommendations are based on popularity and should match your interests perfectly. Take a look at the books below!\n\n한국어 답변: 좋습니다! {dtl_label} 카테고리에서 {len(books)}권의 훌륭한 책을 찾았습니다. 이 추천은 인기도를 바탕으로 하며 당신의 관심사와 완벽하게 일치할 것입니다. 아래 책들을 살펴보세요!"
                         })
                 
                 st.session_state.app_stage = "show_recommendations"
             else:
                 st.session_state.messages.append({
                     "role": "assistant", 
-                    "content": "I couldn't find books in that specific category. Could you try describing your preferences differently? For example, mention specific genres like 'mystery novels', 'self-help books', or 'Korean literature'.\n\ní•œêµ­ì–´ ë‹µë³€: í•´ë‹¹ ì¹´í…Œê³ ë¦¬ì—ì„œ ì±…ì„ ì°¾ì„ ìˆ˜ ì—†ì—ˆìŠµë‹ˆë‹¤. ë‹¤ë¥¸ ë°©ì‹ìœ¼ë¡œ ì„ í˜¸ë„ë¥¼ ì„¤ëª…í•´ ì£¼ì‹œê² ì–´ìš”? ì˜ˆë¥¼ ë“¤ì–´ 'ì¶”ë¦¬ì†Œì„¤', 'ìžê¸°ê³„ë°œì„œ', 'í•œêµ­ë¬¸í•™'ê³¼ ê°™ì€ êµ¬ì²´ì ì¸ ìž¥ë¥´ë¥¼ ì–¸ê¸‰í•´ ì£¼ì„¸ìš”."
+                    "content": "I couldn't find books in that specific category. Could you try describing your preferences differently? For example, mention specific genres like 'mystery novels', 'self-help books', or 'Korean literature'.\n\n한국어 답변: 해당 카테고리에서 책을 찾을 수 없었습니다. 다른 방식으로 선호도를 설명해 주시겠어요? 예를 들어 '추리소설', '자기계발서', '한국문학'과 같은 구체적인 장르를 언급해 주세요."
                 })
                 st.session_state.app_stage = "awaiting_user_input"
         else:
@@ -1272,18 +1272,18 @@ def main():
                 missing_items.append("Library API key")
             
             error_msg = f"Unable to process your request due to: {', '.join(missing_items)}. Please check your API configuration in the sidebar."
-            korean_msg = f"ë‹¤ìŒ ì´ìœ ë¡œ ìš”ì²­ì„ ì²˜ë¦¬í•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤: {', '.join(missing_items)}. ì‚¬ì´ë“œë°”ì—ì„œ API ì„¤ì •ì„ í™•ì¸í•´ ì£¼ì„¸ìš”."
+            korean_msg = f"다음 이유로 요청을 처리할 수 없습니다: {', '.join(missing_items)}. 사이드바에서 API 설정을 확인해 주세요."
             
             st.session_state.messages.append({
                 "role": "assistant", 
-                "content": f"{error_msg}\n\ní•œêµ­ì–´ ë‹µë³€: {korean_msg}"
+                "content": f"{error_msg}\n\n한국어 답변: {korean_msg}"
             })
             st.session_state.app_stage = "awaiting_user_input"
         
         st.rerun()
 
     elif st.session_state.app_stage == "show_recommendations":
-        st.markdown("### ðŸ“– Recommended Books for You")
+        st.markdown("### 📖 Recommended Books for You")
         
         # Display books
         for i, book in enumerate(st.session_state.books_data[:10]):  # Show top 10 books
@@ -1296,7 +1296,7 @@ def main():
                 st.session_state.messages.append({"role": "user", "content": user_followup})
                 
                 # Check if user wants new recommendations
-                if any(keyword in user_followup.lower() for keyword in ['different', 'other', 'new', 'more', 'ë‹¤ë¥¸', 'ìƒˆë¡œìš´', 'ë”']):
+                if any(keyword in user_followup.lower() for keyword in ['different', 'other', 'new', 'more', '다른', '새로운', '더']):
                     st.session_state.app_stage = "process_user_input"
                 else:
                     # Process as follow-up question using HyperCLOVA
@@ -1306,7 +1306,7 @@ def main():
                     else:
                         st.session_state.messages.append({
                             "role": "assistant",
-                            "content": "I'd be happy to help you with more information about these books or other recommendations. What specific aspect would you like to know more about?\n\ní•œêµ­ì–´ ë‹µë³€: ì´ ì±…ë“¤ì— ëŒ€í•œ ë” ë§Žì€ ì •ë³´ë‚˜ ë‹¤ë¥¸ ì¶”ì²œì— ëŒ€í•´ ê¸°êº¼ì´ ë„ì™€ë“œë¦¬ê² ìŠµë‹ˆë‹¤. ì–´ë–¤ êµ¬ì²´ì ì¸ ì¸¡ë©´ì— ëŒ€í•´ ë” ì•Œê³  ì‹¶ìœ¼ì‹ ê°€ìš”?"
+                            "content": "I'd be happy to help you with more information about these books or other recommendations. What specific aspect would you like to know more about?\n\n한국어 답변: 이 책들에 대한 더 많은 정보나 다른 추천에 대해 기꺼이 도와드리겠습니다. 어떤 구체적인 측면에 대해 더 알고 싶으신가요?"
                         })
                 st.rerun()
 
@@ -1315,7 +1315,7 @@ def main():
             book = st.session_state.selected_book
             
             # Display selected book details
-            st.markdown("### ðŸ“– Let's Talk About This Book")
+            st.markdown("### 📖 Let's Talk About This Book")
             
             with st.container():
                 cols = st.columns([1, 2])
@@ -1388,7 +1388,7 @@ def main():
                     st.rerun()
             
             # Back to recommendations button
-            if st.button("â† Back to Recommendations", key="back_to_recs"):
+            if st.button("← Back to Recommendations", key="back_to_recs"):
                 # Clear book discussion messages and intro flag when going back
                 st.session_state.book_discussion_messages = []
                 st.session_state.book_intro_shown = False
@@ -1396,7 +1396,7 @@ def main():
                 st.rerun()
 
     elif st.session_state.app_stage == "show_liked_books":
-        st.markdown("### â¤ï¸ My Library")
+        st.markdown("### ❤️ My Library")
         
         if hasattr(st.session_state, 'username') and st.session_state.username:
             liked_books = get_liked_books(st.session_state.username)
@@ -1414,7 +1414,7 @@ def main():
             st.error("Please ensure you are logged in to view your library.")
         
         # Back to main app button
-        if st.button("â† Back to Book Discovery", key="back_to_main"):
+        if st.button("← Back to Book Discovery", key="back_to_main"):
             st.session_state.app_stage = "show_recommendations" if st.session_state.books_data else "welcome"
             st.rerun()
 

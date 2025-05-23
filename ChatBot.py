@@ -334,6 +334,9 @@ def find_best_code(user_query, code_dict):
     return best_code, best_label, best_score
 
 def get_kdc_or_dtl_kdc(user_query, api_key=None):
+    # Load the dictionaries
+    kdc_dict, dtl_kdc_dict = load_kdc_jsons()
+    
     # First try to extract keywords using HyperCLOVA
     if api_key:
         extracted_keywords = extract_keywords_with_hyperclova(user_query, api_key)
@@ -360,7 +363,7 @@ def get_kdc_or_dtl_kdc(user_query, api_key=None):
             elif kdc_score > 0.2:
                 return "kdc", kdc_code, kdc_label
         return None, None, None
-
+        
 # --- Query library API for books by KDC code ---
 def get_books_by_kdc(kdc_type, kdc_code, auth_key, page_no=1, page_size=10):
     url = "http://data4library.kr/api/loanItemSrch"

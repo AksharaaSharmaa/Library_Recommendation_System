@@ -18,47 +18,56 @@ import hashlib
 import random
 
 def extract_search_keywords_from_book(book_info, api_key):
-    """Extract contextual search keywords from book information using AI without predefined categories"""
+    """Extract contextual search keywords from book information using AI with enhanced context analysis"""
     if not api_key:
-        # Fallback - use basic title analysis without predefined categories
+        # Enhanced fallback - use more sophisticated title analysis
         title = book_info.get('bookname') or book_info.get('bookName', '')
         authors = book_info.get('authors') or book_info.get('author', '')
         
-        # Extract meaningful words from title and author
+        # Extract meaningful words from title and author with better filtering
         import re
         words = re.findall(r'\b\w+\b', f"{title} {authors}".lower())
-        # Filter out common words and return a meaningful word
-        common_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', '의', '와', '과', '에', '을', '를', '이', '가'}
-        meaningful_words = [word for word in words if len(word) > 3 and word not in common_words]
+        
+        # Enhanced common words filter including more stop words
+        common_words = {
+            'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 
+            '의', '와', '과', '에', '을', '를', '이', '가', 'book', 'novel', 'story', 'tale', 'guide',
+            'how', 'what', 'when', 'where', 'why', 'who', 'this', 'that', 'these', 'those'
+        }
+        
+        meaningful_words = [word for word in words if len(word) > 2 and word not in common_words]
         
         if meaningful_words:
             return meaningful_words[0]
         else:
-            return "books"
+            return "literature"
     
     title = book_info.get('bookname') or book_info.get('bookName', '알 수 없는 제목')
     authors = book_info.get('authors') or book_info.get('author', '알 수 없는 저자')
     
+    # Enhanced prompt for better contextual understanding
     prompt = f"""
 책 제목: "{title}"
 저자: {authors}
 
-이 책의 제목과 저자 정보를 분석하여, 이미지 검색에 가장 적합한 영어 키워드를 생성해주세요.
+이 책의 제목과 저자를 분석하여 가장 적합한 시각적 이미지 키워드를 생성해주세요.
 
-다음 지침을 따라주세요:
-1. 책의 내용, 분위기, 주제를 추측하여 관련된 시각적 요소를 생각해보세요
-2. 미리 정의된 카테고리를 사용하지 말고, 책의 고유한 특성을 반영하세요
-3. 구체적이고 시각적인 영어 단어 하나만 반환하세요
-4. 추상적 개념보다는 구체적인 이미지를 연상시키는 단어를 선택하세요
+분석 지침:
+1. 제목에서 핵심 주제나 분위기를 파악하세요
+2. 저자의 스타일이나 장르 특성을 고려하세요
+3. 책이 전달하고자 하는 감정이나 메시지를 생각해보세요
+4. 구체적이고 시각적인 영어 단어를 선택하세요
 
-예시:
-- 로맨스 소설 → "romance", "couple", "sunset", "flowers"
-- 전쟁 소설 → "battlefield", "soldier", "ruins", "memorial"
-- 과학 도서 → "laboratory", "research", "microscope", "discovery"
-- 여행 에세이 → "journey", "landscape", "adventure", "exploration"
-- 요리 책 → "kitchen", "ingredients", "cooking", "chef"
+예시 분석:
+- "사랑" 관련 → "romance", "heart", "couple", "sunset"
+- "전쟁" 관련 → "battlefield", "soldier", "conflict", "memorial"
+- "자연" 관련 → "forest", "mountain", "ocean", "landscape"
+- "도시" 관련 → "cityscape", "urban", "street", "architecture"
+- "과학" 관련 → "laboratory", "technology", "research", "innovation"
+- "역사" 관련 → "ancient", "historical", "monument", "heritage"
+- "철학" 관련 → "contemplation", "wisdom", "meditation", "thought"
 
-책의 특성을 가장 잘 표현하는 영어 키워드 하나만 반환하세요.
+책의 본질을 가장 잘 표현하는 구체적인 영어 키워드 하나만 반환하세요.
 """
     
     headers = {
@@ -70,16 +79,16 @@ def extract_search_keywords_from_book(book_info, api_key):
         "messages": [
             {
                 "role": "system",
-                "content": "당신은 책의 내용을 분석하여 시각적 이미지 검색에 적합한 키워드를 생성하는 전문가입니다. 미리 정의된 카테고리를 사용하지 않고, 각 책의 고유한 특성을 반영한 구체적인 키워드를 생성합니다."
+                "content": "당신은 책의 내용과 분위기를 분석하여 시각적 이미지 검색에 최적화된 키워드를 생성하는 전문가입니다. 책의 주제, 장르, 감정적 톤을 종합적으로 고려하여 가장 적절한 시각적 키워드를 선택합니다."
             },
             {
                 "role": "user",
                 "content": prompt
             }
         ],
-        "maxTokens": 20,
-        "temperature": 0.7,
-        "topP": 0.8,
+        "maxTokens": 30,
+        "temperature": 0.5,
+        "topP": 0.7,
     }
     
     try:
@@ -95,7 +104,7 @@ def extract_search_keywords_from_book(book_info, api_key):
             keyword = result['result']['message']['content'].strip().lower()
             keyword = keyword.replace('"', '').replace("'", '').strip()
             
-            # Clean up the keyword - extract only the main word
+            # Enhanced keyword cleaning
             import re
             clean_keyword = re.findall(r'\b[a-zA-Z]+\b', keyword)
             if clean_keyword:
@@ -109,36 +118,37 @@ def extract_search_keywords_from_book(book_info, api_key):
         return "literature"
 
 def fetch_unsplash_image(book_info, unsplash_access_key, api_key):
-    """Fetch a contextually appropriate image from Unsplash based on AI-generated keywords"""
+    """Fetch a highly contextual image from Unsplash with enhanced search strategy"""
     if not unsplash_access_key:
         return None
     
-    # Extract contextual keywords using AI (no predefined categories)
+    # Extract primary contextual keyword using enhanced AI analysis
     primary_keyword = extract_search_keywords_from_book(book_info, api_key)
     
-    # Create unique seed for this book to ensure different images
+    # Create unique seed for this book
     title = book_info.get('bookname') or book_info.get('bookName', '')
     authors = book_info.get('authors') or book_info.get('author', '')
     isbn = book_info.get('isbn13') or book_info.get('isbn', '')
     
-    # Create a unique seed based on book details
     book_seed = hashlib.md5(f"{title}{authors}{isbn}".encode()).hexdigest()[:8]
     
-    # Generate additional contextual terms using AI
-    additional_terms = []
+    # Generate contextual modifiers using AI for better image variety
+    contextual_modifiers = []
     if api_key:
         try:
-            context_prompt = f"""
+            modifier_prompt = f"""
 주요 키워드: "{primary_keyword}"
 책 제목: "{title}"
 
-주요 키워드와 관련된 시각적 수식어를 2-3개 생성해주세요.
-예시:
-- "ocean" → "serene", "vast", "blue"
-- "forest" → "mysterious", "green", "peaceful"
-- "city" → "modern", "bustling", "urban"
+이 키워드와 책 제목을 바탕으로 이미지 검색을 더 구체적이고 아름답게 만들 수 있는 영어 수식어 2-3개를 생성해주세요.
 
-영어 단어만 쉼표로 구분하여 반환하세요.
+예시:
+- "ocean" → "serene blue", "vast horizon", "peaceful waves"
+- "forest" → "mystical green", "ancient trees", "sunlight filtering"
+- "city" → "modern skyline", "bustling streets", "neon lights"
+- "mountain" → "majestic peaks", "misty valleys", "golden sunrise"
+
+영어 수식어만 쉼표로 구분하여 반환하세요.
 """
             
             headers = {
@@ -150,16 +160,16 @@ def fetch_unsplash_image(book_info, unsplash_access_key, api_key):
                 "messages": [
                     {
                         "role": "system",
-                        "content": "시각적 수식어를 생성하는 전문가입니다."
+                        "content": "시각적 이미지 검색을 위한 구체적이고 아름다운 영어 수식어를 생성하는 전문가입니다."
                     },
                     {
                         "role": "user",
-                        "content": context_prompt
+                        "content": modifier_prompt
                     }
                 ],
-                "maxTokens": 30,
+                "maxTokens": 40,
                 "temperature": 0.6,
-                "topP": 0.7,
+                "topP": 0.8,
             }
             
             response = requests.post(
@@ -171,35 +181,38 @@ def fetch_unsplash_image(book_info, unsplash_access_key, api_key):
             
             if response.status_code == 200:
                 result = response.json()
-                terms_text = result['result']['message']['content'].strip()
+                modifiers_text = result['result']['message']['content'].strip()
                 import re
-                additional_terms = re.findall(r'\b[a-zA-Z]+\b', terms_text)
-                additional_terms = [term for term in additional_terms if len(term) > 2][:3]
+                contextual_modifiers = re.findall(r'\b[a-zA-Z\s]+\b', modifiers_text)
+                contextual_modifiers = [mod.strip() for mod in modifiers_text.split(',') if len(mod.strip()) > 2][:3]
         except:
             pass
     
-    # Fallback additional terms if AI fails
-    if not additional_terms:
-        aesthetic_terms = ["beautiful", "artistic", "elegant", "serene", "dramatic", "peaceful", "inspiring", "creative", "atmospheric", "stunning"]
-        # Select terms based on book seed for consistency
+    # Enhanced fallback modifiers based on common aesthetic terms
+    if not contextual_modifiers:
+        aesthetic_modifiers = [
+            "beautiful artistic", "serene peaceful", "dramatic lighting", "golden hour", 
+            "misty atmospheric", "vibrant colorful", "minimalist clean", "vintage classic",
+            "ethereal dreamy", "bold striking", "soft gentle", "mysterious dark"
+        ]
         seed_int = int(book_seed[:4], 16)
-        additional_terms = [aesthetic_terms[seed_int % len(aesthetic_terms)]]
+        contextual_modifiers = [aesthetic_modifiers[seed_int % len(aesthetic_modifiers)]]
     
-    # Select additional term based on book seed
-    variety_index = int(book_seed[4:6], 16) % len(additional_terms)
-    variety_term = additional_terms[variety_index] if additional_terms else "beautiful"
+    # Select modifier based on book seed for consistency
+    modifier_index = int(book_seed[4:6], 16) % len(contextual_modifiers)
+    selected_modifier = contextual_modifiers[modifier_index] if contextual_modifiers else "beautiful"
     
-    # Combine primary keyword with AI-generated variety term
-    search_query = f"{primary_keyword} {variety_term}"
+    # Create enhanced search query
+    search_query = f"{primary_keyword} {selected_modifier}"
     
-    # Use book seed to determine page number for variety
-    page_num = (int(book_seed[:4], 16) % 10) + 1
+    # Use book seed for pagination variety
+    page_num = (int(book_seed[:4], 16) % 15) + 1  # Increased page range for more variety
     
     url = "https://api.unsplash.com/search/photos"
     params = {
         "query": search_query,
         "client_id": unsplash_access_key,
-        "per_page": 5,
+        "per_page": 10,  # Increased results per page
         "page": page_num,
         "orientation": "landscape",
         "content_filter": "high",
@@ -212,7 +225,7 @@ def fetch_unsplash_image(book_info, unsplash_access_key, api_key):
             data = response.json()
             if data['results']:
                 # Select image based on book seed for consistency
-                image_index = int(book_seed[4:6], 16) % len(data['results'])
+                image_index = int(book_seed[6:8], 16) % len(data['results'])
                 image_url = data['results'][image_index]['urls']['regular']
                 return image_url
         return None
@@ -458,12 +471,12 @@ def create_book_image_with_tagline(image_url, taglines, book_title):
         return None
 
 def generate_and_display_book_image(book_info, unsplash_key, hyperclova_key):
-    """Generate and display book image with English tagline overlay and Korean text below"""
-    with st.spinner('책의 내용을 분석하고 맞춤 이미지를 생성하고 있습니다...'):
+    """Generate and display book image with full app width and enhanced context"""
+    with st.spinner('책의 내용을 심층 분석하고 맞춤형 이미지를 생성하고 있습니다...'):
         # Generate both English and Korean taglines
         taglines = generate_book_tagline(book_info, hyperclova_key)
         
-        # Fetch contextually appropriate image from Unsplash
+        # Fetch highly contextual image from Unsplash
         image_url = fetch_unsplash_image(book_info, unsplash_key, hyperclova_key)
         
         if image_url:
@@ -473,7 +486,8 @@ def generate_and_display_book_image(book_info, unsplash_key, hyperclova_key):
             
             if img_base64:
                 st.markdown("### 📸 생성된 책 이미지")
-                st.image(f"data:image/jpeg;base64,{img_base64}", use_column_width=True)
+                # Use use_container_width=True for full app width display
+                st.image(f"data:image/jpeg;base64,{img_base64}", use_container_width=True)
                 
                 # Show Korean tagline below the image
                 korean_tagline = taglines.get("korean", "책과 함께하는 특별한 여행")
@@ -490,6 +504,7 @@ def generate_and_display_book_image(book_info, unsplash_key, hyperclova_key):
                 st.error("이미지 생성에 실패했습니다.")
         else:
             st.error("적절한 이미지를 찾을 수 없습니다.")
+
 
 add_custom_css()
 

@@ -369,26 +369,45 @@ def get_dtl_kdc_code(user_query, api_key=None):
             return None, None
     
     # Fallback: direct matching with DTL_KDC if no API key
-    dtl_kdc_dict = load_dtl_kdc_json()
-    best_score = 0
-    best_code = None
-    best_label = ""
-    
-    for code, label in dtl_kdc_dict.items():
-        score = SequenceMatcher(None, user_query.lower(), label.lower()).ratio()
-        if score > best_score:
-            best_score = score
-            best_code = code
-            best_label = label
-    
-    if best_score > 0.3:
-        return best_code, best_label
-    else:
+    try:
+        dtl_kdc_dict = load_dtl_kdc_json()
+        best_score = 0
+        best_code = None
+        best_label = ""
+        
+        # Try exact matching first
+        for code, label in dtl_kdc_dict.items():
+            if user_query.lower() in label.lower() or label.lower() in user_query.lower():
+                return code, label
+        
+        # If no exact match, try fuzzy matching
+        for code, label in dtl_kdc_dict.items():
+            score = SequenceMatcher(None, user_query.lower(), label.lower()).ratio()
+            if score > best_score:
+                best_score = score
+                best_code = code
+                best_label = label
+        
+        if best_score > 0.3:
+            st.info(f"선택된 분류: {best_label}")
+            return best_code, best_label
+        else:
+            return None, None
+    except Exception as e:
+        st.error(f"Error in DTL_KDC code matching: {e}")
         return None, None
 
 # --- Modified API call function ---
 def get_books_by_dtl_kdc(dtl_kdc_code, auth_key, page_no=1, page_size=10):
-    """Get books using only DTL_KDC code"""
+    """Get books using only DTL_KDC code with improved error handling"""
+    if not auth_key:
+        st.error("Library API key is required")
+        return []
+        
+    if not dtl_kdc_code:
+        st.error("DTL_KDC code is required")
+        return []
+    
     url = "http://data4library.kr/api/loanItemSrch"
     params = {
         "authKey": auth_key,
@@ -397,56 +416,95 @@ def get_books_by_dtl_kdc(dtl_kdc_code, auth_key, page_no=1, page_size=10):
         "format": "json",
         "pageNo": page_no,
         "pageSize": page_size,
-        "dtl_kdc": dtl_kdc_code  # Only use DTL_KDC
+        "dtl_kdc": dtl_kdc_code
     }
     
     try:
-        r = requests.get(url, params=params)
-        if r.status_code == 200:
+        st.info(f"Searching for books with DTL_KDC code: {dtl_kdc_code}")
+        r = requests.get(url, params=params, timeout=30)
+        
+        if r.status_code != 200:
+            st.error(f"API request failed with status code: {r.status_code}")
+            st.error(f"Response: {r.text}")
+            return []
+        
+        try:
             response_data = r.json()
+        except json.JSONDecodeError as e:
+            st.error(f"Failed to parse JSON response: {e}")
+            st.error(f"Raw response: {r.text[:500]}...")
+            return []
+        
+        # Debug: Show API response structure
+        st.write("API Response Structure:", response_data.keys() if isinstance(response_data, dict) else type(response_data))
+        
+        if "response" not in response_data:
+            st.error(f"No 'response' key in API response. Keys available: {list(response_data.keys()) if isinstance(response_data, dict) else 'Not a dict'}")
+            return []
             
-            if "response" in response_data:
-                docs = response_data["response"].get("docs", [])
+        response_section = response_data["response"]
+        
+        # Check if there are any results
+        if "numFound" in response_section and response_section.get("numFound", 0) == 0:
+            st.warning(f"No books found for DTL_KDC code: {dtl_kdc_code}")
+            return []
+        
+        docs = response_section.get("docs", [])
+        
+        if not docs:
+            st.warning("No documents found in API response")
+            return []
+        
+        # Handle different response formats
+        if isinstance(docs, dict):
+            docs = [docs]
+        elif not isinstance(docs, list):
+            st.error(f"Unexpected docs format: {type(docs)}")
+            return []
+        
+        books = []
+        for i, doc in enumerate(docs):
+            try:
+                # Handle nested structure
+                if "doc" in doc:
+                    book_data = doc["doc"]
+                else:
+                    book_data = doc
                 
-                if isinstance(docs, dict):
-                    docs = [docs]
-                elif not isinstance(docs, list):
-                    return []
+                # Extract book information with fallbacks
+                book_info = {
+                    "bookname": book_data.get("bookname") or book_data.get("bookName", "Unknown Title"),
+                    "authors": book_data.get("authors") or book_data.get("author", "Unknown Author"),
+                    "publisher": book_data.get("publisher", "Unknown Publisher"),
+                    "publication_year": book_data.get("publication_year") or book_data.get("publicationYear", "Unknown Year"),
+                    "isbn13": book_data.get("isbn13") or book_data.get("isbn", ""),
+                    "loan_count": int(book_data.get("loan_count") or book_data.get("loanCount", 0)),
+                    "bookImageURL": book_data.get("bookImageURL", "")
+                }
+                books.append(book_info)
                 
-                books = []
-                for doc in docs:
-                    if "doc" in doc:
-                        book_data = doc["doc"]
-                    else:
-                        book_data = doc
-                    
-                    book_info = {
-                        "bookname": book_data.get("bookname", book_data.get("bookName", "Unknown Title")),
-                        "authors": book_data.get("authors", book_data.get("author", "Unknown Author")),
-                        "publisher": book_data.get("publisher", "Unknown Publisher"),
-                        "publication_year": book_data.get("publication_year", book_data.get("publicationYear", "Unknown Year")),
-                        "isbn13": book_data.get("isbn13", book_data.get("isbn", "")),
-                        "loan_count": int(book_data.get("loan_count", book_data.get("loanCount", 0))),
-                        "bookImageURL": book_data.get("bookImageURL", "")
-                    }
-                    books.append(book_info)
-                
-                books = sorted(books, key=lambda x: x["loan_count"], reverse=True)
-                return books
-            else:
-                st.error(f"Unexpected API response structure: {response_data}")
-                return []
-    except requests.exceptions.RequestException as e:
-        st.error(f"API request failed: {e}")
+            except Exception as e:
+                st.warning(f"Error processing book {i+1}: {e}")
+                continue
+        
+        if not books:
+            st.warning("No valid books could be extracted from API response")
+            return []
+        
+        # Sort by loan count
+        books = sorted(books, key=lambda x: x["loan_count"], reverse=True)
+        st.success(f"Found {len(books)} books!")
+        return books
+        
+    except requests.exceptions.Timeout:
+        st.error("API request timed out. Please try again.")
         return []
-    except json.JSONDecodeError as e:
-        st.error(f"Failed to parse API response: {e}")
+    except requests.exceptions.RequestException as e:
+        st.error(f"Network error: {e}")
         return []
     except Exception as e:
-        st.error(f"Error processing API response: {e}")
+        st.error(f"Unexpected error: {e}")
         return []
-    
-    return []
 
 # --- Sidebar (as provided) ---
 def setup_sidebar():
@@ -504,9 +562,88 @@ def setup_sidebar():
         </div>
         """, unsafe_allow_html=True)
 
+def handle_process_user_input():
+    """Handle the process_user_input stage with proper error handling"""
+    user_query = st.session_state.messages[-1]["content"]
+    
+    # Debug information
+    st.write(f"Processing query: '{user_query}'")
+    
+    # Get DTL_KDC code
+    dtl_code, dtl_label = get_dtl_kdc_code(user_query, st.session_state.api_key)
+    
+    if not dtl_code:
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": "Sorry, I could not find a matching DTL_KDC code for your query. Please try describing your preferred genre more specifically (e.g., '소설', '역사', '과학', '자기계발').\n\n한국어 답변: 죄송합니다. 입력하신 내용과 일치하는 DTL_KDC 코드를 찾지 못했습니다. 원하시는 장르를 더 구체적으로 설명해 주세요 (예: '소설', '역사', '과학', '자기계발')."
+        })
+        st.session_state.app_stage = "awaiting_user_input"
+        st.rerun()
+        return
+    
+    # Check if library API key is available
+    if not st.session_state.library_api_key:
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": "Library API key required. Please check sidebar.\n\n한국어 답변: 라이브러리 API 키가 필요합니다. 사이드바를 확인해 주세요."
+        })
+        st.session_state.app_stage = "awaiting_user_input"
+        st.rerun()
+        return
+    
+    # Get books using the DTL_KDC code
+    books = get_books_by_dtl_kdc(dtl_code, st.session_state.library_api_key)
+    
+    if books:
+        st.session_state.books_data = books
+        intro_msg = (f"선택하신 '{dtl_label}' 분류의 인기 도서를 찾았습니다.\n\n"
+                     f"I found popular books for the '{dtl_label}' category.")
+        st.session_state.messages.append({"role": "assistant", "content": intro_msg})
+        st.session_state.app_stage = "show_recommendations"
+    else:
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": f"Sorry, no books found for DTL_KDC code '{dtl_code}' ({dtl_label}). Try a different genre or keyword.\n\n한국어 답변: DTL_KDC 코드 '{dtl_code}' ({dtl_label})에 해당하는 도서를 찾을 수 없습니다. 다른 장르나 키워드로 시도해 주세요."
+        })
+        st.session_state.app_stage = "awaiting_user_input"
+    
+    st.rerun()
+
+def debug_dtl_kdc_codes():
+    """Debug function to show available DTL_KDC codes"""
+    try:
+        dtl_kdc_dict = load_dtl_kdc_json()
+        st.write("Available DTL_KDC codes:")
+        for code, label in list(dtl_kdc_dict.items())[:10]:  # Show first 10
+            st.write(f"Code: {code} - Label: {label}")
+        st.write(f"Total codes available: {len(dtl_kdc_dict)}")
+    except Exception as e:
+        st.error(f"Error loading DTL_KDC codes: {e}")
+
+
+def test_dtl_kdc_matching(test_query="소설"):
+    """Test function to verify DTL_KDC code matching"""
+    st.write(f"Testing DTL_KDC matching for query: '{test_query}'")
+    
+    dtl_code, dtl_label = get_dtl_kdc_code(test_query)
+    
+    if dtl_code:
+        st.success(f"Found match - Code: {dtl_code}, Label: {dtl_label}")
+        
+        # Test API call
+        if st.session_state.library_api_key:
+            books = get_books_by_dtl_kdc(dtl_code, st.session_state.library_api_key, page_size=5)
+            st.write(f"API returned {len(books)} books")
+            if books:
+                st.write("Sample book:", books[0])
+        else:
+            st.warning("No library API key for testing API call")
+    else:
+        st.error("No DTL_KDC code found for query")
+
+
 # --- Main function ---
 def main():
-
     # --- Initialize all session state variables before use ---
     if "api_key" not in st.session_state:
         st.session_state.api_key = ""
@@ -526,7 +663,6 @@ def main():
         st.session_state.app_stage = "welcome"
     if "books_data" not in st.session_state:
         st.session_state.books_data = []
-
     if "user_genre" not in st.session_state:
         st.session_state.user_genre = ""
     if "user_age" not in st.session_state:
@@ -535,6 +671,9 @@ def main():
         st.session_state.selected_book = None
     if "showing_books" not in st.session_state:
         st.session_state.showing_books = False
+    # Add username initialization for MongoDB operations
+    if "username" not in st.session_state:
+        st.session_state.username = "default_user"  # You should set this from your login system
 
     setup_sidebar()
 
@@ -565,41 +704,44 @@ def main():
                 st.rerun()
 
     elif st.session_state.app_stage == "process_user_input":
-            user_query = st.session_state.messages[-1]["content"]
-            dtl_code, dtl_label = get_dtl_kdc_code(user_query, st.session_state.api_key)
-            
-            # Fix 1: Change 'kdc_code' to 'dtl_code'
-            if not dtl_code:
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": "Sorry, I could not find a matching DTL_KDC code for your query. Please try describing your preferred genre more specifically (e.g., '소설', '역사', '과학', '자기계발').\n\n한국어 답변: 죄송합니다. 입력하신 내용과 일치하는 DTL_KDC 코드를 찾지 못했습니다. 원하시는 장르를 더 구체적으로 설명해 주세요 (예: '소설', '역사', '과학', '자기계발')."
-                })
-                st.session_state.app_stage = "awaiting_user_input"
-                st.rerun()
-                
-            # Fix 2: Add 'return' after the error message or use 'elif' for the next condition
-            elif st.session_state.library_api_key:
-                books = get_books_by_dtl_kdc(dtl_code, st.session_state.library_api_key)
-                if books:
-                    st.session_state.books_data = books
-                    intro_msg = (f"선택하신 '{dtl_label}' 분류의 인기 도서를 찾았습니다.\n\n"
-                                 f"I found popular books for the '{dtl_label}' category.")
-                    st.session_state.messages.append({"role": "assistant", "content": intro_msg})
-                    st.session_state.app_stage = "show_recommendations"
-                else:
-                    # Fix 3: Update variable names in error message
-                    st.session_state.messages.append({
-                        "role": "assistant",
-                        "content": f"Sorry, no books found for DTL_KDC code '{dtl_code}' ({dtl_label}). Try a different genre or keyword.\n\n한국어 답변: DTL_KDC 코드 '{dtl_code}' ({dtl_label})에 해당하는 도서를 찾을 수 없습니다. 다른 장르나 키워드로 시도해 주세요."
-                    })
-                    st.session_state.app_stage = "awaiting_user_input"
-            else:
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": "Library API key required. Please check sidebar.\n\n한국어 답변: 라이브러리 API 키가 필요합니다. 사이드바를 확인해 주세요."
-                })
-                st.session_state.app_stage = "awaiting_user_input"
+        user_query = st.session_state.messages[-1]["content"]
+        dtl_code, dtl_label = get_dtl_kdc_code(user_query, st.session_state.api_key)
+        
+        if not dtl_code:
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": "Sorry, I could not find a matching DTL_KDC code for your query. Please try describing your preferred genre more specifically (e.g., '소설', '역사', '과학', '자기계발').\n\n한국어 답변: 죄송합니다. 입력하신 내용과 일치하는 DTL_KDC 코드를 찾지 못했습니다. 원하시는 장르를 더 구체적으로 설명해 주세요 (예: '소설', '역사', '과학', '자기계발')."
+            })
+            st.session_state.app_stage = "awaiting_user_input"
             st.rerun()
+            return  # Exit early to prevent further execution
+            
+        if not st.session_state.library_api_key:
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": "Library API key required. Please check sidebar.\n\n한국어 답변: 라이브러리 API 키가 필요합니다. 사이드바를 확인해 주세요."
+            })
+            st.session_state.app_stage = "awaiting_user_input"
+            st.rerun()
+            return  # Exit early to prevent further execution
+        
+        # Get books using the DTL_KDC code
+        books = get_books_by_dtl_kdc(dtl_code, st.session_state.library_api_key)
+        
+        if books:
+            st.session_state.books_data = books
+            intro_msg = (f"선택하신 '{dtl_label}' 분류의 인기 도서를 찾았습니다.\n\n"
+                         f"I found popular books for the '{dtl_label}' category.")
+            st.session_state.messages.append({"role": "assistant", "content": intro_msg})
+            st.session_state.app_stage = "show_recommendations"
+        else:
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": f"Sorry, no books found for DTL_KDC code '{dtl_code}' ({dtl_label}). Try a different genre or keyword.\n\n한국어 답변: DTL_KDC 코드 '{dtl_code}' ({dtl_label})에 해당하는 도서를 찾을 수 없습니다. 다른 장르나 키워드로 시도해 주세요."
+            })
+            st.session_state.app_stage = "awaiting_user_input"
+        
+        st.rerun()
 
     elif st.session_state.app_stage == "show_recommendations":
         add_vertical_space(2)
@@ -623,8 +765,7 @@ def main():
                 st.rerun()
 
     elif st.session_state.app_stage == "show_liked_books":
-        add_vertical_space(2)  # Adds two lines of vertical space above
-
+        add_vertical_space(2)
         st.markdown(
             """
             <h2 style='text-align: center; font-size: 2.2em; font-weight: bold; margin-bottom: 0.5em;'>
@@ -633,16 +774,25 @@ def main():
             """,
             unsafe_allow_html=True
         )
+        
+        # Check if username is properly set
+        if not hasattr(st.session_state, 'username') or not st.session_state.username:
+            st.error("User not logged in. Please log in first.")
+            if st.button("Back to Login"):
+                st.session_state.app_stage = "welcome"
+                st.rerun()
+            return
+            
         liked_books = get_liked_books(st.session_state.username)
         if liked_books:
             for i, book in enumerate(liked_books):
                 display_liked_book_card(book, i)
         else:
             st.info("You have not liked any books yet. Start exploring recommendations to build your library!")
+            
         if st.button("Back to Recommendations"):
             st.session_state.app_stage = "show_recommendations"
             st.rerun()
-
 
     elif st.session_state.app_stage == "discuss_book":
         if st.session_state.selected_book:
@@ -654,25 +804,57 @@ def main():
             with col1:
                 if book.get("bookImageURL"):
                     st.image(book["bookImageURL"], width=200)
+                else:
+                    st.markdown("""
+                    <div style="width: 200px; height: 300px; background: linear-gradient(135deg, #2c3040, #363c4e); 
+                                display: flex; align-items: center; justify-content: center; border-radius: 5px;">
+                        <span style="color: #b3b3cc;">No Image</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
             with col2:
                 st.write(f"**Author:** {book.get('authors', 'Unknown')}")
                 st.write(f"**Publisher:** {book.get('publisher', 'Unknown')}")
                 st.write(f"**Year:** {book.get('publication_year', 'Unknown')}")
                 st.write(f"**ISBN:** {book.get('isbn13', book.get('isbn', 'N/A'))}")
+                st.write(f"**Loan Count:** {book.get('loan_count', 0)}")
                 
             st.markdown("---")
             
             # Chat about the book
             discussion_input = st.text_input("Ask me anything about this book:", key="book_discussion")
             if st.button("Ask", key="ask_about_book"):
-                if discussion_input:
-                    # Here you could integrate with HyperCLOVA for book discussions
+                if discussion_input and st.session_state.api_key:
+                    # Use HyperCLOVA for book discussions
+                    book_context = f"Book: {book.get('bookname')} by {book.get('authors')}"
+                    messages = [
+                        {"role": "system", "content": "You are a knowledgeable book assistant. Answer questions about books in both English and Korean."},
+                        {"role": "user", "content": f"{book_context}\n\nQuestion: {discussion_input}"}
+                    ]
+                    
+                    response = call_hyperclova_api(messages, st.session_state.api_key)
+                    if response:
+                        st.markdown(f"**AI Response:**\n\n{response}")
+                    else:
+                        st.error("Failed to get response from AI. Please try again.")
+                elif discussion_input:
+                    # Fallback response without API
                     response = f"I'd be happy to discuss '{book.get('bookname')}' with you! This book by {book.get('authors')} seems interesting. What specifically would you like to know about it?\n\n한국어 답변: '{book.get('bookname')}'에 대해 기꺼이 이야기해 드리겠습니다! {book.get('authors')}의 이 책은 흥미로워 보입니다. 구체적으로 무엇을 알고 싶으신가요?"
-                    st.write(response)
+                    st.markdown(f"**Response:**\n\n{response}")
             
-            if st.button("Back to Recommendations"):
-                st.session_state.app_stage = "show_recommendations"
-                st.rerun()
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("Back to Recommendations"):
+                    st.session_state.app_stage = "show_recommendations"
+                    st.rerun()
+            with col2:
+                if st.button("View My Library"):
+                    st.session_state.app_stage = "show_liked_books"
+                    st.rerun()
+        else:
+            st.error("No book selected. Returning to recommendations.")
+            st.session_state.app_stage = "show_recommendations"
+            st.rerun()
 
     # Footer
     st.markdown("---")
@@ -683,6 +865,3 @@ def main():
         Powered by Streamlit • Korean Library API • HyperCLOVA X
     </div>
     """, unsafe_allow_html=True)
-
-if __name__ == "__main__":
-    main()

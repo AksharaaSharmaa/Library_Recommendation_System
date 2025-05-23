@@ -1,14 +1,14 @@
 def display_liked_book_card(book, index):
-  from streamlit_extras.colored_header import colored_header
-  import base64
-  from Frontend import add_custom_css
-  from pymongo.errors import DuplicateKeyError
-  import streamlit as st
-  import requests
-  import json
-  from datetime import datetime
-  from difflib import SequenceMatcher
-  from streamlit_extras.add_vertical_space import add_vertical_space
+    from streamlit_extras.colored_header import colored_header
+    import base64
+    from Frontend import add_custom_css
+    from pymongo.errors import DuplicateKeyError
+    import streamlit as st
+    import requests
+    import json
+    from datetime import datetime
+    from difflib import SequenceMatcher
+    from streamlit_extras.add_vertical_space import add_vertical_space
 
     """Display a liked book card with a remove (cross) button using MongoDB."""
     info = book if isinstance(book, dict) else book.get("doc", {})
@@ -58,32 +58,32 @@ def display_liked_book_card(book, index):
 
   # Add after MongoDB client initialization
 def get_user_library_collection():
-  from streamlit_extras.colored_header import colored_header
-  import base64
-  from Frontend import add_custom_css
-  from pymongo.errors import DuplicateKeyError
-  import streamlit as st
-  import requests
-  import json
-  from datetime import datetime
-  from difflib import SequenceMatcher
-  from streamlit_extras.add_vertical_space import add_vertical_space
+    from streamlit_extras.colored_header import colored_header
+    import base64
+    from Frontend import add_custom_css
+    from pymongo.errors import DuplicateKeyError
+    import streamlit as st
+    import requests
+    import json
+    from datetime import datetime
+    from difflib import SequenceMatcher
+    from streamlit_extras.add_vertical_space import add_vertical_space
 
     client = st.session_state.db_client  # Already set in login.py
     db = client["Login_Credentials"]
     return db["user_libraries"]
 
 def like_book_for_user(username, book_info):
-  from streamlit_extras.colored_header import colored_header
-  import base64
-  from Frontend import add_custom_css
-  from pymongo.errors import DuplicateKeyError
-  import streamlit as st
-  import requests
-  import json
-  from datetime import datetime
-  from difflib import SequenceMatcher
-  from streamlit_extras.add_vertical_space import add_vertical_space
+    from streamlit_extras.colored_header import colored_header
+    import base64
+    from Frontend import add_custom_css
+    from pymongo.errors import DuplicateKeyError
+    import streamlit as st
+    import requests
+    import json
+    from datetime import datetime
+    from difflib import SequenceMatcher
+    from streamlit_extras.add_vertical_space import add_vertical_space
 
     user_library = get_user_library_collection()
     isbn = book_info.get("isbn13")
@@ -104,32 +104,32 @@ def like_book_for_user(username, book_info):
     return True
 
 def get_liked_books(username):
-  from streamlit_extras.colored_header import colored_header
-  import base64
-  from Frontend import add_custom_css
-  from pymongo.errors import DuplicateKeyError
-  import streamlit as st
-  import requests
-  import json
-  from datetime import datetime
-  from difflib import SequenceMatcher
-  from streamlit_extras.add_vertical_space import add_vertical_space
+    from streamlit_extras.colored_header import colored_header
+    import base64
+    from Frontend import add_custom_css
+    from pymongo.errors import DuplicateKeyError
+    import streamlit as st
+    import requests
+    import json
+    from datetime import datetime
+    from difflib import SequenceMatcher
+    from streamlit_extras.add_vertical_space import add_vertical_space
 
     user_library = get_user_library_collection()
     doc = user_library.find_one({"username": username})
     return doc.get("liked_books", []) if doc else []
 
 def unlike_book_for_user(username, isbn):
-  from streamlit_extras.colored_header import colored_header
-  import base64
-  from Frontend import add_custom_css
-  from pymongo.errors import DuplicateKeyError
-  import streamlit as st
-  import requests
-  import json
-  from datetime import datetime
-  from difflib import SequenceMatcher
-  from streamlit_extras.add_vertical_space import add_vertical_space
+    from streamlit_extras.colored_header import colored_header
+    import base64
+    from Frontend import add_custom_css
+    from pymongo.errors import DuplicateKeyError
+    import streamlit as st
+    import requests
+    import json
+    from datetime import datetime
+    from difflib import SequenceMatcher
+    from streamlit_extras.add_vertical_space import add_vertical_space
 
     user_library = get_user_library_collection()
     user_library.update_one(
@@ -138,16 +138,16 @@ def unlike_book_for_user(username, isbn):
     )
 
 def display_message(message):
-  from streamlit_extras.colored_header import colored_header
-  import base64
-  from Frontend import add_custom_css
-  from pymongo.errors import DuplicateKeyError
-  import streamlit as st
-  import requests
-  import json
-  from datetime import datetime
-  from difflib import SequenceMatcher
-  from streamlit_extras.add_vertical_space import add_vertical_space
+    from streamlit_extras.colored_header import colored_header
+    import base64
+    from Frontend import add_custom_css
+    from pymongo.errors import DuplicateKeyError
+    import streamlit as st
+    import requests
+    import json
+    from datetime import datetime
+    from difflib import SequenceMatcher
+    from streamlit_extras.add_vertical_space import add_vertical_space
 
     if message["role"] != "system":
         if message["role"] == "assistant":
@@ -199,16 +199,16 @@ def display_message(message):
             """, unsafe_allow_html=True)
 
 def call_hyperclova_api(messages, api_key):
-  from streamlit_extras.colored_header import colored_header
-  import base64
-  from Frontend import add_custom_css
-  from pymongo.errors import DuplicateKeyError
-  import streamlit as st
-  import requests
-  import json
-  from datetime import datetime
-  from difflib import SequenceMatcher
-  from streamlit_extras.add_vertical_space import add_vertical_space
+    from streamlit_extras.colored_header import colored_header
+    import base64
+    from Frontend import add_custom_css
+    from pymongo.errors import DuplicateKeyError
+    import streamlit as st
+    import requests
+    import json
+    from datetime import datetime
+    from difflib import SequenceMatcher
+    from streamlit_extras.add_vertical_space import add_vertical_space
 
     """Helper function to call HyperCLOVA API with correct headers"""
     try:
@@ -238,16 +238,16 @@ def call_hyperclova_api(messages, api_key):
         return None
 
 def display_book_card(book, index):
-  from streamlit_extras.colored_header import colored_header
-  import base64
-  from Frontend import add_custom_css
-  from pymongo.errors import DuplicateKeyError
-  import streamlit as st
-  import requests
-  import json
-  from datetime import datetime
-  from difflib import SequenceMatcher
-  from streamlit_extras.add_vertical_space import add_vertical_space
+    from streamlit_extras.colored_header import colored_header
+    import base64
+    from Frontend import add_custom_css
+    from pymongo.errors import DuplicateKeyError
+    import streamlit as st
+    import requests
+    import json
+    from datetime import datetime
+    from difflib import SequenceMatcher
+    from streamlit_extras.add_vertical_space import add_vertical_space
 
     """Display a book card with like functionality, using MongoDB for liked books."""
     # Handle both old format (direct keys) and new format (nested in 'doc')
@@ -313,16 +313,16 @@ def display_book_card(book, index):
 # --- Load JSON files ---
 @st.cache_resource
 def load_dtl_kdc_json():
-  from streamlit_extras.colored_header import colored_header
-  import base64
-  from Frontend import add_custom_css
-  from pymongo.errors import DuplicateKeyError
-  import streamlit as st
-  import requests
-  import json
-  from datetime import datetime
-  from difflib import SequenceMatcher
-  from streamlit_extras.add_vertical_space import add_vertical_space
+    from streamlit_extras.colored_header import colored_header
+    import base64
+    from Frontend import add_custom_css
+    from pymongo.errors import DuplicateKeyError
+    import streamlit as st
+    import requests
+    import json
+    from datetime import datetime
+    from difflib import SequenceMatcher
+    from streamlit_extras.add_vertical_space import add_vertical_space
 
     """Load only the detailed KDC JSON file"""
     with open("dtl_kdc.json", encoding="utf-8") as f:
@@ -333,16 +333,16 @@ dtl_kdc_dict = load_dtl_kdc_json()
 
 # --- Enhanced HyperCLOVA API Integration ---
 def extract_keywords_with_hyperclova(user_input, api_key, dtl_kdc_dict):
-  from streamlit_extras.colored_header import colored_header
-  import base64
-  from Frontend import add_custom_css
-  from pymongo.errors import DuplicateKeyError
-  import streamlit as st
-  import requests
-  import json
-  from datetime import datetime
-  from difflib import SequenceMatcher
-  from streamlit_extras.add_vertical_space import add_vertical_space
+    from streamlit_extras.colored_header import colored_header
+    import base64
+    from Frontend import add_custom_css
+    from pymongo.errors import DuplicateKeyError
+    import streamlit as st
+    import requests
+    import json
+    from datetime import datetime
+    from difflib import SequenceMatcher
+    from streamlit_extras.add_vertical_space import add_vertical_space
 
     """Extract and match the most appropriate DTL KDC code using HyperCLOVA with two-step process"""
     if not api_key:
@@ -475,16 +475,16 @@ def extract_keywords_with_hyperclova(user_input, api_key, dtl_kdc_dict):
         return find_best_dtl_code_fallback(user_input, dtl_kdc_dict)
 
 def find_best_dtl_code_fallback(user_query, dtl_kdc_dict, ai_suggested_code=None):
-  from streamlit_extras.colored_header import colored_header
-  import base64
-  from Frontend import add_custom_css
-  from pymongo.errors import DuplicateKeyError
-  import streamlit as st
-  import requests
-  import json
-  from datetime import datetime
-  from difflib import SequenceMatcher
-  from streamlit_extras.add_vertical_space import add_vertical_space
+    from streamlit_extras.colored_header import colored_header
+    import base64
+    from Frontend import add_custom_css
+    from pymongo.errors import DuplicateKeyError
+    import streamlit as st
+    import requests
+    import json
+    from datetime import datetime
+    from difflib import SequenceMatcher
+    from streamlit_extras.add_vertical_space import add_vertical_space
 
     """Fallback method to find the best matching DTL KDC code"""
     best_score = 0
@@ -516,16 +516,16 @@ def find_best_dtl_code_fallback(user_query, dtl_kdc_dict, ai_suggested_code=None
     return best_code, best_label if best_score > 0.2 else (None, None)
 
 def get_dtl_kdc_code(user_query, api_key=None):
-  from streamlit_extras.colored_header import colored_header
-  import base64
-  from Frontend import add_custom_css
-  from pymongo.errors import DuplicateKeyError
-  import streamlit as st
-  import requests
-  import json
-  from datetime import datetime
-  from difflib import SequenceMatcher
-  from streamlit_extras.add_vertical_space import add_vertical_space
+    from streamlit_extras.colored_header import colored_header
+    import base64
+    from Frontend import add_custom_css
+    from pymongo.errors import DuplicateKeyError
+    import streamlit as st
+    import requests
+    import json
+    from datetime import datetime
+    from difflib import SequenceMatcher
+    from streamlit_extras.add_vertical_space import add_vertical_space
 
     """Get DTL KDC code using HyperCLOVA or fallback method"""
     if api_key:
@@ -547,16 +547,16 @@ def get_dtl_kdc_code(user_query, api_key=None):
 
 # --- Query library API for books by DTL KDC code ---
 def get_books_by_dtl_kdc(dtl_kdc_code, auth_key, page_no=1, page_size=10):
-  from streamlit_extras.colored_header import colored_header
-  import base64
-  from Frontend import add_custom_css
-  from pymongo.errors import DuplicateKeyError
-  import streamlit as st
-  import requests
-  import json
-  from datetime import datetime
-  from difflib import SequenceMatcher
-  from streamlit_extras.add_vertical_space import add_vertical_space
+    from streamlit_extras.colored_header import colored_header
+    import base64
+    from Frontend import add_custom_css
+    from pymongo.errors import DuplicateKeyError
+    import streamlit as st
+    import requests
+    import json
+    from datetime import datetime
+    from difflib import SequenceMatcher
+    from streamlit_extras.add_vertical_space import add_vertical_space
 
     """Get books using DTL KDC code"""
     url = "http://data4library.kr/api/loanItemSrch"
@@ -626,16 +626,16 @@ def get_books_by_dtl_kdc(dtl_kdc_code, auth_key, page_no=1, page_size=10):
 
 # --- Sidebar (as provided) ---
 def setup_sidebar():
-  from streamlit_extras.colored_header import colored_header
-  import base64
-  from Frontend import add_custom_css
-  from pymongo.errors import DuplicateKeyError
-  import streamlit as st
-  import requests
-  import json
-  from datetime import datetime
-  from difflib import SequenceMatcher
-  from streamlit_extras.add_vertical_space import add_vertical_space
+    from streamlit_extras.colored_header import colored_header
+    import base64
+    from Frontend import add_custom_css
+    from pymongo.errors import DuplicateKeyError
+    import streamlit as st
+    import requests
+    import json
+    from datetime import datetime
+    from difflib import SequenceMatcher
+    from streamlit_extras.add_vertical_space import add_vertical_space
     with st.sidebar:
         if st.button("My Liked Books"):
             st.session_state.app_stage = "show_liked_books"
@@ -692,16 +692,16 @@ def setup_sidebar():
 
 # --- Process follow-up questions with HyperCLOVA ---
 def process_followup_with_hyperclova(user_input, api_key):
-  from streamlit_extras.colored_header import colored_header
-  import base64
-  from Frontend import add_custom_css
-  from pymongo.errors import DuplicateKeyError
-  import streamlit as st
-  import requests
-  import json
-  from datetime import datetime
-  from difflib import SequenceMatcher
-  from streamlit_extras.add_vertical_space import add_vertical_space
+    from streamlit_extras.colored_header import colored_header
+    import base64
+    from Frontend import add_custom_css
+    from pymongo.errors import DuplicateKeyError
+    import streamlit as st
+    import requests
+    import json
+    from datetime import datetime
+    from difflib import SequenceMatcher
+    from streamlit_extras.add_vertical_space import add_vertical_space
   
     """Process follow-up questions using HyperCLOVA API"""
     if not api_key:
@@ -741,16 +741,16 @@ def process_followup_with_hyperclova(user_input, api_key):
     return call_hyperclova_api(messages, api_key)
 
 def generate_book_introduction(book, api_key):
-  from streamlit_extras.colored_header import colored_header
-  import base64
-  from Frontend import add_custom_css
-  from pymongo.errors import DuplicateKeyError
-  import streamlit as st
-  import requests
-  import json
-  from datetime import datetime
-  from difflib import SequenceMatcher
-  from streamlit_extras.add_vertical_space import add_vertical_space
+    from streamlit_extras.colored_header import colored_header
+    import base64
+    from Frontend import add_custom_css
+    from pymongo.errors import DuplicateKeyError
+    import streamlit as st
+    import requests
+    import json
+    from datetime import datetime
+    from difflib import SequenceMatcher
+    from streamlit_extras.add_vertical_space import add_vertical_space
 
     """Generate an introduction about the book when first selected"""
     title = book.get('bookname') or book.get('bookName', 'Unknown Title')
@@ -783,16 +783,16 @@ def generate_book_introduction(book, api_key):
         return f"Let's explore '{title}' by {authors}! This book from {publisher} ({year}) has {loan_count} loans, indicating its appeal to readers. I'm here to discuss anything about this book - from plot details to thematic analysis. What aspect interests you most?\n\n한국어 답변: {authors}의 '{title}'을 탐험해 봅시다! {publisher}({year})의 이 책은 {loan_count}번의 대출로 독자들에게 어필하고 있음을 보여줍니다. 줄거리 세부사항부터 주제 분석까지 이 책에 대한 모든 것을 논의할 준비가 되어 있습니다. 어떤 측면에 가장 관심이 있으신가요?"
 
 def process_book_question(book, question, api_key, conversation_history):
-  from streamlit_extras.colored_header import colored_header
-  import base64
-  from Frontend import add_custom_css
-  from pymongo.errors import DuplicateKeyError
-  import streamlit as st
-  import requests
-  import json
-  from datetime import datetime
-  from difflib import SequenceMatcher
-  from streamlit_extras.add_vertical_space import add_vertical_space
+    from streamlit_extras.colored_header import colored_header
+    import base64
+    from Frontend import add_custom_css
+    from pymongo.errors import DuplicateKeyError
+    import streamlit as st
+    import requests
+    import json
+    from datetime import datetime
+    from difflib import SequenceMatcher
+    from streamlit_extras.add_vertical_space import add_vertical_space
 
     """Process specific questions about a book using HyperCLOVA with improved context handling"""
     if not api_key:

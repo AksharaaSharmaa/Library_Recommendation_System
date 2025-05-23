@@ -149,12 +149,13 @@ def display_message(message):
             """, unsafe_allow_html=True)
 
 def call_hyperclova_api(messages, api_key):
-    """Helper function to call HyperCLOVA API"""
+    """Helper function to call HyperCLOVA API with correct headers"""
     try:
         endpoint = "https://clovastudio.stream.ntruss.com/testapp/v1/chat-completions/HCX-003"
         headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
+            'X-NCP-APIGW-API-KEY-ID': api_key,
+            'X-NCP-APIGW-API-KEY': api_key,
+            'Content-Type': 'application/json'
         }
         
         payload = {
@@ -162,6 +163,10 @@ def call_hyperclova_api(messages, api_key):
             "maxTokens": 1024,
             "temperature": 0.7,
             "topP": 0.8,
+            "topK": 0,
+            "repeatPenalty": 1.2,
+            "stopBefore": [],
+            "includeAiFilters": True
         }
         
         response = requests.post(endpoint, headers=headers, json=payload)
@@ -515,13 +520,7 @@ def setup_sidebar():
 def process_followup_with_hyperclova(user_input, api_key):
     """Process follow-up questions using HyperCLOVA API"""
     if not api_key:
-        return None
-    
-    headers = {
-        'X-NCP-APIGW-API-KEY-ID': api_key,
-        'X-NCP-APIGW-API-KEY': api_key,
-        'Content-Type': 'application/json'
-    }
+        return "Please provide your HyperCLOVA API key in the sidebar to get detailed responses.\n\n한국어 답변: 자세한 답변을 받으려면 사이드바에서 HyperCLOVA API 키를 제공해 주세요."
     
     # Create context from previous messages
     conversation_context = ""
@@ -543,46 +542,21 @@ def process_followup_with_hyperclova(user_input, api_key):
 그 다음 "한국어 답변:" 이후에 한국어 번역을 제공하세요.
 """
     
-    data = {
-        "messages": [
-            {
-                "role": "system",
-                "content": "당신은 도서 추천 전문가입니다. 사용자와의 대화 맥락을 이해하고 도움이 되는 답변을 제공합니다."
-            },
-            {
-                "role": "user", 
-                "content": prompt
-            }
-        ],
-        "topP": 0.8,
-        "topK": 0,
-        "maxTokens": 500,
-        "temperature": 0.7,
-        "repeatPenalty": 1.2,
-        "stopBefore": [],
-        "includeAiFilters": True
-    }
+    messages = [
+        {
+            "role": "system",
+            "content": "당신은 도서 추천 전문가입니다. 사용자와의 대화 맥락을 이해하고 도움이 되는 답변을 제공합니다. 항상 영어와 한국어로 답변하세요."
+        },
+        {
+            "role": "user", 
+            "content": prompt
+        }
+    ]
     
-    try:
-        response = requests.post(
-            "https://clovastudio.stream.ntruss.com/testapp/v1/chat-completions/HCX-003",
-            headers=headers,
-            json=data,
-            timeout=30
-        )
-        
-        if response.status_code == 200:
-            result = response.json()
-            return result['result']['message']['content'].strip()
-        else:
-            return None
-            
-    except Exception as e:
-        return None
+    return call_hyperclova_api(messages, api_key)
 
 # --- Main function ---
 def main():
-
     # --- Initialize all session state variables before use ---
     if "api_key" not in st.session_state:
         st.session_state.api_key = ""
@@ -602,7 +576,6 @@ def main():
         st.session_state.app_stage = "welcome"
     if "books_data" not in st.session_state:
         st.session_state.books_data = []
-
     if "user_genre" not in st.session_state:
         st.session_state.user_genre = ""
     if "user_age" not in st.session_state:
@@ -611,6 +584,8 @@ def main():
         st.session_state.selected_book = None
     if "showing_books" not in st.session_state:
         st.session_state.showing_books = False
+    if "book_discussion_messages" not in st.session_state:
+        st.session_state.book_discussion_messages = []
 
     setup_sidebar()
 
@@ -618,9 +593,9 @@ def main():
     st.markdown("<div style='text-align:center;'>Discover your next favorite read with AI assistance in English and Korean</div>", unsafe_allow_html=True)
     st.markdown("---")
 
-    # --- Chat history ---
+    # --- Chat history (only show non-book-specific messages in main flow) ---
     for msg in st.session_state.messages:
-        if msg["role"] != "system":
+        if msg["role"] != "system" and not msg.get("book_context"):
             display_message(msg)
 
     # --- App stages ---
@@ -643,17 +618,17 @@ def main():
     elif st.session_state.app_stage == "process_user_input":
         user_input = st.session_state.messages[-1]["content"]
         
-        # Get DTL KDC code using HyperCLOVA or fallback
+        # Only use Library API for book fetching, HyperCLOVA only for category matching
         dtl_code, dtl_label = get_dtl_kdc_code(user_input, st.session_state.api_key)
         
         if dtl_code and st.session_state.library_api_key:
-            # Fetch books using the DTL KDC code
+            # Fetch books using the DTL KDC code (Library API only)
             books = get_books_by_dtl_kdc(dtl_code, st.session_state.library_api_key, page_no=1, page_size=20)
             
             if books:
                 st.session_state.books_data = books
                 
-                # Generate AI response about the recommendations
+                # Generate AI response about the recommendations using HyperCLOVA
                 if st.session_state.api_key:
                     ai_response = call_hyperclova_api([
                         {"role": "system", "content": "You are a helpful book recommendation assistant. For EVERY response, answer in BOTH English and Korean. First provide complete English answer, then '한국어 답변:' with Korean translation."},
@@ -710,20 +685,14 @@ def main():
                 if any(keyword in user_followup.lower() for keyword in ['different', 'other', 'new', 'more', '다른', '새로운', '더']):
                     st.session_state.app_stage = "process_user_input"
                 else:
-                    # Process as follow-up question
-                    if st.session_state.api_key:
-                        response = process_followup_with_hyperclova(user_followup, st.session_state.api_key)
-                        if response:
-                            st.session_state.messages.append({"role": "assistant", "content": response})
-                        else:
-                            st.session_state.messages.append({
-                                "role": "assistant",
-                                "content": "I'd be happy to help you with more information about these books or other recommendations. What specific aspect would you like to know more about?\n\n한국어 답변: 이 책들에 대한 더 많은 정보나 다른 추천에 대해 기꺼이 도와드리겠습니다. 어떤 구체적인 측면에 대해 더 알고 싶으신가요?"
-                            })
+                    # Process as follow-up question using HyperCLOVA
+                    response = process_followup_with_hyperclova(user_followup, st.session_state.api_key)
+                    if response:
+                        st.session_state.messages.append({"role": "assistant", "content": response})
                     else:
                         st.session_state.messages.append({
                             "role": "assistant",
-                            "content": "I'd be happy to help! Please provide your HyperCLOVA API key in the sidebar for more detailed responses about these books.\n\n한국어 답변: 기꺼이 도와드리겠습니다! 이 책들에 대한 더 자세한 답변을 위해 사이드바에서 HyperCLOVA API 키를 제공해 주세요."
+                            "content": "I'd be happy to help you with more information about these books or other recommendations. What specific aspect would you like to know more about?\n\n한국어 답변: 이 책들에 대한 더 많은 정보나 다른 추천에 대해 기꺼이 도와드리겠습니다. 어떤 구체적인 측면에 대해 더 알고 싶으신가요?"
                         })
                 st.rerun()
 
@@ -765,20 +734,19 @@ def main():
                     </div>
                     """, unsafe_allow_html=True)
             
-            # Display chat history for this book
-            book_messages = [msg for msg in st.session_state.messages if msg.get("book_context")]
-            for msg in book_messages:
+            # Display chat history for this specific book
+            for msg in st.session_state.book_discussion_messages:
                 display_message(msg)
             
             # Chat input for book discussion
             book_question = st.text_input("Ask me anything about this book (plot, themes, similar books, etc.):", key="book_discussion_input")
             if st.button("Ask", key="ask_about_book"):
                 if book_question:
-                    # Add user message
-                    user_msg = {"role": "user", "content": book_question, "book_context": True}
-                    st.session_state.messages.append(user_msg)
+                    # Add user message to book discussion
+                    user_msg = {"role": "user", "content": book_question}
+                    st.session_state.book_discussion_messages.append(user_msg)
                     
-                    # Generate AI response about the book
+                    # Generate AI response about the book using HyperCLOVA
                     if st.session_state.api_key:
                         book_context = f"Book: {title} by {authors}, published by {publisher} in {year}"
                         ai_response = call_hyperclova_api([
@@ -787,27 +755,27 @@ def main():
                         ], st.session_state.api_key)
                         
                         if ai_response:
-                            assistant_msg = {"role": "assistant", "content": ai_response, "book_context": True}
-                            st.session_state.messages.append(assistant_msg)
+                            assistant_msg = {"role": "assistant", "content": ai_response}
+                            st.session_state.book_discussion_messages.append(assistant_msg)
                         else:
                             fallback_msg = {
                                 "role": "assistant", 
-                                "content": f"I'd love to discuss '{title}' with you! This book by {authors} seems quite popular with {loan_count} loans. What specific aspect interests you most - the plot, characters, themes, or would you like similar book recommendations?\n\n한국어 답변: '{title}'에 대해 함께 이야기하고 싶습니다! {authors}의 이 책은 {loan_count}번의 대출로 꽤 인기가 있는 것 같습니다. 어떤 구체적인 측면에 가장 관심이 있으신가요 - 줄거리, 등장인물, 주제, 아니면 비슷한 책 추천을 원하시나요?",
-                                "book_context": True
+                                "content": f"I'd love to discuss '{title}' with you! This book by {authors} seems quite popular with {loan_count} loans. What specific aspect interests you most - the plot, characters, themes, or would you like similar book recommendations?\n\n한국어 답변: '{title}'에 대해 함께 이야기하고 싶습니다! {authors}의 이 책은 {loan_count}번의 대출로 꽤 인기가 있는 것 같습니다. 어떤 구체적인 측면에 가장 관심이 있으신가요 - 줄거리, 등장인물, 주제, 아니면 비슷한 책 추천을 원하시나요?"
                             }
-                            st.session_state.messages.append(fallback_msg)
+                            st.session_state.book_discussion_messages.append(fallback_msg)
                     else:
                         fallback_msg = {
                             "role": "assistant",
-                            "content": f"I'd love to discuss '{title}' by {authors}! To provide detailed insights about this book, please add your HyperCLOVA API key in the sidebar. I can then share information about themes, plot, writing style, and recommend similar books.\n\n한국어 답변: {authors}의 '{title}'에 대해 이야기하고 싶습니다! 이 책에 대한 자세한 통찰을 제공하려면 사이드바에서 HyperCLOVA API 키를 추가해 주세요. 그러면 주제, 줄거리, 문체에 대한 정보를 공유하고 비슷한 책을 추천해 드릴 수 있습니다.",
-                            "book_context": True
+                            "content": f"I'd love to discuss '{title}' by {authors}! To provide detailed insights about this book, please add your HyperCLOVA API key in the sidebar. I can then share information about themes, plot, writing style, and recommend similar books.\n\n한국어 답변: {authors}의 '{title}'에 대해 이야기하고 싶습니다! 이 책에 대한 자세한 통찰을 제공하려면 사이드바에서 HyperCLOVA API 키를 추가해 주세요. 그러면 주제, 줄거리, 문체에 대한 정보를 공유하고 비슷한 책을 추천해 드릴 수 있습니다."
                         }
-                        st.session_state.messages.append(fallback_msg)
+                        st.session_state.book_discussion_messages.append(fallback_msg)
                     
                     st.rerun()
             
             # Back to recommendations button
             if st.button("← Back to Recommendations", key="back_to_recs"):
+                # Clear book discussion messages when going back
+                st.session_state.book_discussion_messages = []
                 st.session_state.app_stage = "show_recommendations"
                 st.rerun()
 

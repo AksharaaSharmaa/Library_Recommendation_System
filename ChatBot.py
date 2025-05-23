@@ -1,16 +1,28 @@
 import streamlit as st
 import requests
-from streamlit_extras.colored_header import colored_header
-import base64
-from Frontend import add_custom_css
-from pymongo.errors import DuplicateKeyError
-import streamlit as st
-import requests
 import json
 from datetime import datetime
 from difflib import SequenceMatcher
+from streamlit_extras.colored_header import colored_header
 from streamlit_extras.add_vertical_space import add_vertical_space
-from Helper_Functions import display_liked_book_card, like_book_for_user, get_liked_books, unlike_book_for_user, display_message, call_hyperclova_api, display_book_card, load_kdc_jsons
+import base64
+from pymongo.errors import DuplicateKeyError
+
+# Import your custom modules
+from Frontend import add_custom_css
+from Helper_Functions import (
+    display_liked_book_card, 
+    like_book_for_user, 
+    get_liked_books, 
+    unlike_book_for_user, 
+    display_message, 
+    call_hyperclova_api, 
+    display_book_card, 
+    load_kdc_jsons
+)
+
+# Load KDC dictionaries at startup
+kdc_dict, dtl_kdc_dict = load_kdc_jsons()
 
 add_custom_css()
 
@@ -171,7 +183,7 @@ def get_books_by_kdc(kdc_type, kdc_code, auth_key, page_no=1, page_size=10):
                         "authors": book_data.get("authors", book_data.get("author", "Unknown Author")),
                         "publisher": book_data.get("publisher", "Unknown Publisher"),
                         "publication_year": book_data.get("publication_year", book_data.get("publicationYear", "Unknown Year")),
-                        "isbn13": book_data.get("isbn13", book_data.get("isbn", "")),  # ← Change "isbn" to "isbn13"
+                        "isbn13": book_data.get("isbn13", book_data.get("isbn", "")),
                         "loan_count": int(book_data.get("loan_count", book_data.get("loanCount", 0))),
                         "bookImageURL": book_data.get("bookImageURL", "")
                     }
@@ -195,9 +207,13 @@ def get_books_by_kdc(kdc_type, kdc_code, auth_key, page_no=1, page_size=10):
     
     return []
 
-# --- Sidebar (as provided) ---
+# --- Sidebar setup ---
 def setup_sidebar():
     with st.sidebar:
+        # Initialize username if not exists
+        if "username" not in st.session_state:
+            st.session_state.username = "default_user"
+            
         if st.button("My Liked Books"):
             st.session_state.app_stage = "show_liked_books"
             st.rerun()
@@ -220,19 +236,24 @@ def setup_sidebar():
             # HyperCLOVA API Key
             hyperclova_api_key = st.text_input("Enter your HyperCLOVA API Key", 
                                               type="password", 
-                                              value=st.session_state.api_key)
+                                              value=st.session_state.get("api_key", ""))
             st.session_state.api_key = hyperclova_api_key
             
             # Library API Key
             library_api_key = st.text_input("Enter Library API Key", 
                                             type="password", 
-                                            value=st.session_state.library_api_key)
+                                            value=st.session_state.get("library_api_key", ""))
             st.session_state.library_api_key = library_api_key
             
             st.markdown('</div>', unsafe_allow_html=True)
         
         # Reset button
         if st.button("Start Over 💫"):
+            # Reset all session state variables
+            for key in list(st.session_state.keys()):
+                if key not in ["api_key", "library_api_key", "username"]:
+                    del st.session_state[key]
+            
             st.session_state.messages = [
                 {"role": "system", "content": "You are a helpful AI assistant specializing in book recommendations. For EVERY response, you must answer in BOTH English and Korean. First provide the complete answer in English, then provide '한국어 답변:' followed by the complete Korean translation of your answer."}
             ]
@@ -253,12 +274,13 @@ def setup_sidebar():
 
 # --- Main function ---
 def main():
-
     # --- Initialize all session state variables before use ---
     if "api_key" not in st.session_state:
         st.session_state.api_key = ""
     if "library_api_key" not in st.session_state:
         st.session_state.library_api_key = ""
+    if "username" not in st.session_state:
+        st.session_state.username = "default_user"
     if "messages" not in st.session_state:
         st.session_state.messages = [{
             "role": "system",
@@ -273,7 +295,6 @@ def main():
         st.session_state.app_stage = "welcome"
     if "books_data" not in st.session_state:
         st.session_state.books_data = []
-
     if "user_genre" not in st.session_state:
         st.session_state.user_genre = ""
     if "user_age" not in st.session_state:
@@ -365,7 +386,7 @@ def main():
                 st.rerun()
 
     elif st.session_state.app_stage == "show_liked_books":
-        add_vertical_space(2)  # Adds two lines of vertical space above
+        add_vertical_space(2)
 
         st.markdown(
             """
@@ -384,7 +405,6 @@ def main():
         if st.button("Back to Recommendations"):
             st.session_state.app_stage = "show_recommendations"
             st.rerun()
-
 
     elif st.session_state.app_stage == "discuss_book":
         if st.session_state.selected_book:

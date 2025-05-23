@@ -240,20 +240,26 @@ def display_book_card(book, index):
 
 # --- Load JSON files ---
 @st.cache_resource
-def load_kdc_jsons():
-    with open("kdc.json", encoding="utf-8") as f:
-        kdc_dict = json.load(f)
+def load_dtl_kdc_json():
+    """Load only the detailed KDC JSON file"""
     with open("dtl_kdc.json", encoding="utf-8") as f:
         dtl_kdc_dict = json.load(f)
-    return kdc_dict, dtl_kdc_dict
+    return dtl_kdc_dict
 
-kdc_dict, dtl_kdc_dict = load_kdc_jsons()
+dtl_kdc_dict = load_dtl_kdc_json()
 
-# --- HyperCLOVA API Integration ---
-def extract_keywords_with_hyperclova(user_input, api_key):
-    """Extract genre/topic keywords from user input using HyperCLOVA"""
+# --- Enhanced HyperCLOVA API Integration ---
+def extract_keywords_with_hyperclova(user_input, api_key, dtl_kdc_dict):
+    """Extract and match the most appropriate DTL KDC code using HyperCLOVA"""
     if not api_key:
-        return user_input  # Fallback to original input
+        return find_best_dtl_code_fallback(user_input, dtl_kdc_dict)
+    
+    # Create a list of available categories for the AI to reference
+    categories_list = []
+    for code, label in list(dtl_kdc_dict.items())[:50]:  # Show first 50 as examples
+        categories_list.append(f"- {code}: {label}")
+    
+    categories_text = "\n".join(categories_list)
     
     headers = {
         'X-NCP-APIGW-API-KEY-ID': api_key,
@@ -261,40 +267,41 @@ def extract_keywords_with_hyperclova(user_input, api_key):
         'Content-Type': 'application/json'
     }
     
-    # Enhanced prompt for better keyword extraction
     prompt = f"""
-사용자의 입력에서 도서 장르나 주제와 관련된 핵심 키워드를 추출해주세요.
+사용자의 요청에서 가장 적합한 도서 분류 코드를 찾아주세요.
 
 사용자 입력: "{user_input}"
 
-다음 중에서 가장 관련있는 키워드들을 찾아서 나열해주세요:
-- 문학, 소설, 시, 에세이
-- 철학, 종교, 심리학
-- 역사, 전기, 정치
-- 과학, 기술, 의학
-- 예술, 음악, 영화
-- 경제, 경영, 자기계발
-- 교육, 아동, 청소년
-- 요리, 여행, 취미
-- 추리, 스릴러, 로맨스, 판타지, SF
+다음은 사용할 수 있는 도서 분류 코드들의 예시입니다:
+{categories_text}
 
-답변은 관련 키워드만 간단히 나열해주세요 (예: "소설, 문학" 또는 "과학, 기술"):
+지시사항:
+1. 사용자의 입력을 분석하여 가장 관련성이 높은 분류 코드를 찾으세요
+2. 만약 정확한 일치가 없다면, 의미상 가장 가까운 코드를 선택하세요
+3. 예를 들어:
+   - "영문학 책 추천해 줘" → "영미문학" 관련 코드
+   - "역사책 읽고 싶어" → "역사" 관련 코드
+   - "소설 추천" → "소설" 관련 코드
+   - "자기계발서" → "자기계발" 관련 코드
+
+답변 형식: 오직 코드번호만 반환해주세요 (예: "843" 또는"911.05")
+코드번호가 확실하지 않으면 가장 가까운 의미의 코드를 선택하세요.
 """
     
     data = {
         "messages": [
             {
                 "role": "system",
-                "content": "당신은 도서 추천을 위한 키워드 추출 전문가입니다. 사용자의 입력에서 도서 장르나 주제 관련 핵심 키워드만 추출합니다."
+                "content": "당신은 도서 분류 전문가입니다. 사용자의 요청을 분석하여 가장 적합한 DTL KDC 코드를 찾아 반환합니다. 반드시 코드번호만 반환하세요."
             },
             {
                 "role": "user", 
                 "content": prompt
             }
         ],
-        "topP": 0.8,
+        "topP": 0.7,
         "topK": 0,
-        "maxTokens": 100,
+        "maxTokens": 50,
         "temperature": 0.3,
         "repeatPenalty": 1.2,
         "stopBefore": [],
@@ -302,7 +309,6 @@ def extract_keywords_with_hyperclova(user_input, api_key):
     }
     
     try:
-        # Replace with your actual HyperCLOVA endpoint
         response = requests.post(
             "https://clovastudio.stream.ntruss.com/testapp/v1/chat-completions/HCX-003",
             headers=headers,
@@ -312,59 +318,78 @@ def extract_keywords_with_hyperclova(user_input, api_key):
         
         if response.status_code == 200:
             result = response.json()
-            extracted_keywords = result['result']['message']['content'].strip()
-            return extracted_keywords if extracted_keywords else user_input
+            extracted_code = result['result']['message']['content'].strip()
+            
+            # Clean the response to get just the code
+            extracted_code = extracted_code.replace('"', '').replace("'", '').strip()
+            
+            # Verify if the extracted code exists in our dictionary
+            if extracted_code in dtl_kdc_dict:
+                return extracted_code, dtl_kdc_dict[extracted_code]
+            else:
+                # If exact code not found, try to find partial matches or similar codes
+                return find_best_dtl_code_fallback(user_input, dtl_kdc_dict, extracted_code)
+                
         else:
             st.warning(f"HyperCLOVA API error: {response.status_code}")
-            return user_input
+            return find_best_dtl_code_fallback(user_input, dtl_kdc_dict)
             
     except Exception as e:
         st.warning(f"Keyword extraction failed: {e}")
-        return user_input
+        return find_best_dtl_code_fallback(user_input, dtl_kdc_dict)
 
-# --- Find best matching code from JSON ---
-def find_best_code(user_query, code_dict):
+def find_best_dtl_code_fallback(user_query, dtl_kdc_dict, ai_suggested_code=None):
+    """Fallback method to find the best matching DTL KDC code"""
     best_score = 0
     best_code = None
     best_label = ""
-    for code, label in code_dict.items():
+    
+    # If AI suggested a code but it wasn't exact, try to find similar codes
+    if ai_suggested_code:
+        for code, label in dtl_kdc_dict.items():
+            if ai_suggested_code in code or code in ai_suggested_code:
+                return code, label
+    
+    # Original similarity matching
+    for code, label in dtl_kdc_dict.items():
+        # Check similarity with the label
         score = SequenceMatcher(None, user_query.lower(), label.lower()).ratio()
+        
+        # Also check if any word from user query is in the label
+        user_words = user_query.lower().split()
+        for word in user_words:
+            if len(word) > 1 and word in label.lower():
+                score += 0.3  # Boost score for word matches
+        
         if score > best_score:
             best_score = score
             best_code = code
             best_label = label
-    return best_code, best_label, best_score
+    
+    return best_code, best_label if best_score > 0.2 else (None, None)
 
-def get_kdc_or_dtl_kdc(user_query, api_key=None):
-    # First try to extract keywords using HyperCLOVA
+def get_dtl_kdc_code(user_query, api_key=None):
+    """Get DTL KDC code using HyperCLOVA or fallback method"""
     if api_key:
-        extracted_keywords = extract_keywords_with_hyperclova(user_query, api_key)
-        st.info(f"Extracted keywords: {extracted_keywords}")
-        search_query = extracted_keywords
-    else:
-        search_query = user_query
+        try:
+            code, label = extract_keywords_with_hyperclova(user_query, api_key, dtl_kdc_dict)
+            if code and label:
+                st.info(f"Found category: {label} (Code: {code})")
+                return code, label
+        except Exception as e:
+            st.warning(f"HyperCLOVA extraction failed, using fallback: {e}")
     
-    dtl_code, dtl_label, dtl_score = find_best_code(search_query, dtl_kdc_dict)
-    kdc_code, kdc_label, kdc_score = find_best_code(search_query, kdc_dict)
+    # Fallback to similarity matching
+    code, label = find_best_dtl_code_fallback(user_query, dtl_kdc_dict)
+    if code and label:
+        st.info(f"Found category: {label} (Code: {code})")
+        return code, label
     
-    # Lower threshold and prefer more specific DTL codes
-    if dtl_score >= kdc_score and dtl_score > 0.3:
-        return "dtl_kdc", dtl_code, dtl_label
-    elif kdc_score > 0.3:
-        return "kdc", kdc_code, kdc_label
-    else:
-        # If no good match found, try with original user query
-        if search_query != user_query:
-            dtl_code, dtl_label, dtl_score = find_best_code(user_query, dtl_kdc_dict)
-            kdc_code, kdc_label, kdc_score = find_best_code(user_query, kdc_dict)
-            if dtl_score >= kdc_score and dtl_score > 0.2:
-                return "dtl_kdc", dtl_code, dtl_label
-            elif kdc_score > 0.2:
-                return "kdc", kdc_code, kdc_label
-        return None, None, None
+    return None, None
 
-# --- Query library API for books by KDC code ---
-def get_books_by_kdc(kdc_type, kdc_code, auth_key, page_no=1, page_size=10):
+# --- Query library API for books by DTL KDC code ---
+def get_books_by_dtl_kdc(dtl_kdc_code, auth_key, page_no=1, page_size=10):
+    """Get books using DTL KDC code"""
     url = "http://data4library.kr/api/loanItemSrch"
     params = {
         "authKey": auth_key,
@@ -372,9 +397,9 @@ def get_books_by_kdc(kdc_type, kdc_code, auth_key, page_no=1, page_size=10):
         "endDt": datetime.now().strftime("%Y-%m-%d"),
         "format": "json",
         "pageNo": page_no,
-        "pageSize": page_size
+        "pageSize": page_size,
+        "dtl_kdc": dtl_kdc_code  # Use dtl_kdc parameter
     }
-    params[kdc_type] = kdc_code
     
     try:
         r = requests.get(url, params=params)
@@ -406,7 +431,7 @@ def get_books_by_kdc(kdc_type, kdc_code, auth_key, page_no=1, page_size=10):
                         "authors": book_data.get("authors", book_data.get("author", "Unknown Author")),
                         "publisher": book_data.get("publisher", "Unknown Publisher"),
                         "publication_year": book_data.get("publication_year", book_data.get("publicationYear", "Unknown Year")),
-                        "isbn13": book_data.get("isbn13", book_data.get("isbn", "")),  # ← Change "isbn" to "isbn13"
+                        "isbn13": book_data.get("isbn13", book_data.get("isbn", "")),
                         "loan_count": int(book_data.get("loan_count", book_data.get("loanCount", 0))),
                         "bookImageURL": book_data.get("bookImageURL", "")
                     }
@@ -486,6 +511,75 @@ def setup_sidebar():
         </div>
         """, unsafe_allow_html=True)
 
+# --- Process follow-up questions with HyperCLOVA ---
+def process_followup_with_hyperclova(user_input, api_key):
+    """Process follow-up questions using HyperCLOVA API"""
+    if not api_key:
+        return None
+    
+    headers = {
+        'X-NCP-APIGW-API-KEY-ID': api_key,
+        'X-NCP-APIGW-API-KEY': api_key,
+        'Content-Type': 'application/json'
+    }
+    
+    # Create context from previous messages
+    conversation_context = ""
+    recent_messages = st.session_state.messages[-5:]  # Get last 5 messages for context
+    for msg in recent_messages:
+        if msg["role"] != "system":
+            conversation_context += f"{msg['role']}: {msg['content']}\n"
+    
+    prompt = f"""
+이전 대화 내용:
+{conversation_context}
+
+사용자의 새로운 질문: "{user_input}"
+
+위의 맥락을 고려하여 사용자의 질문에 대해 도움이 되는 답변을 해주세요. 
+만약 새로운 도서 추천을 요청하는 것 같다면, 구체적인 장르나 주제를 제시해주세요.
+
+답변은 영어와 한국어 모두로 제공하되, 먼저 영어로 완전한 답변을 하고, 
+그 다음 "한국어 답변:" 이후에 한국어 번역을 제공하세요.
+"""
+    
+    data = {
+        "messages": [
+            {
+                "role": "system",
+                "content": "당신은 도서 추천 전문가입니다. 사용자와의 대화 맥락을 이해하고 도움이 되는 답변을 제공합니다."
+            },
+            {
+                "role": "user", 
+                "content": prompt
+            }
+        ],
+        "topP": 0.8,
+        "topK": 0,
+        "maxTokens": 500,
+        "temperature": 0.7,
+        "repeatPenalty": 1.2,
+        "stopBefore": [],
+        "includeAiFilters": True
+    }
+    
+    try:
+        response = requests.post(
+            "https://clovastudio.stream.ntruss.com/testapp/v1/chat-completions/HCX-003",
+            headers=headers,
+            json=data,
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            return result['result']['message']['content'].strip()
+        else:
+            return None
+            
+    except Exception as e:
+        return None
+
 # --- Main function ---
 def main():
 
@@ -547,119 +641,198 @@ def main():
                 st.rerun()
 
     elif st.session_state.app_stage == "process_user_input":
-        user_query = st.session_state.messages[-1]["content"]
-        kdc_type, kdc_code, kdc_label = get_kdc_or_dtl_kdc(user_query, st.session_state.api_key)
-        if not kdc_code:
-            st.session_state.messages.append({
-                "role": "assistant",
-                "content": "Sorry, I could not find a matching KDC code for your query. Please try describing your preferred genre more specifically (e.g., '소설', '역사', '과학', '자기계발').\n\n한국어 답변: 죄송합니다. 입력하신 내용과 일치하는 KDC 코드를 찾지 못했습니다. 원하시는 장르를 더 구체적으로 설명해 주세요 (예: '소설', '역사', '과학', '자기계발')."
-            })
-            st.session_state.app_stage = "awaiting_user_input"
-            st.rerun()
-        if st.session_state.library_api_key:
-            books = get_books_by_kdc(kdc_type, kdc_code, st.session_state.library_api_key)
+        user_input = st.session_state.messages[-1]["content"]
+        
+        # Get DTL KDC code using HyperCLOVA or fallback
+        dtl_code, dtl_label = get_dtl_kdc_code(user_input, st.session_state.api_key)
+        
+        if dtl_code and st.session_state.library_api_key:
+            # Fetch books using the DTL KDC code
+            books = get_books_by_dtl_kdc(dtl_code, st.session_state.library_api_key, page_no=1, page_size=20)
+            
             if books:
                 st.session_state.books_data = books
-                intro_msg = (f"I found these books for {kdc_type.upper()} code '{kdc_code}' ({kdc_label}), sorted by popularity.\n\n"
-                             f"한국어 답변: {kdc_type.upper()} 코드 '{kdc_code}' ({kdc_label})에 해당하는 도서를 인기순으로 찾았습니다.")
-                st.session_state.messages.append({"role": "assistant", "content": intro_msg})
+                
+                # Generate AI response about the recommendations
+                if st.session_state.api_key:
+                    ai_response = call_hyperclova_api([
+                        {"role": "system", "content": "You are a helpful book recommendation assistant. For EVERY response, answer in BOTH English and Korean. First provide complete English answer, then '한국어 답변:' with Korean translation."},
+                        {"role": "user", "content": f"I found {len(books)} books in the {dtl_label} category. Tell me about this category and encourage me to explore these recommendations."}
+                    ], st.session_state.api_key)
+                    
+                    if ai_response:
+                        st.session_state.messages.append({"role": "assistant", "content": ai_response})
+                    else:
+                        st.session_state.messages.append({
+                            "role": "assistant", 
+                            "content": f"Great! I found {len(books)} excellent books in the {dtl_label} category. These recommendations are based on popularity and should match your interests perfectly. Take a look at the books below!\n\n한국어 답변: 좋습니다! {dtl_label} 카테고리에서 {len(books)}권의 훌륭한 책을 찾았습니다. 이 추천은 인기도를 바탕으로 하며 당신의 관심사와 완벽하게 일치할 것입니다. 아래 책들을 살펴보세요!"
+                        })
+                
                 st.session_state.app_stage = "show_recommendations"
             else:
                 st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": f"Sorry, no books found for {kdc_type.upper()} code '{kdc_code}' ({kdc_label}). Try a different genre or keyword.\n\n한국어 답변: {kdc_type.upper()} 코드 '{kdc_code}' ({kdc_label})에 해당하는 도서를 찾을 수 없습니다. 다른 장르나 키워드로 시도해 주세요."
+                    "role": "assistant", 
+                    "content": "I couldn't find books in that specific category. Could you try describing your preferences differently? For example, mention specific genres like 'mystery novels', 'self-help books', or 'Korean literature'.\n\n한국어 답변: 해당 카테고리에서 책을 찾을 수 없었습니다. 다른 방식으로 선호도를 설명해 주시겠어요? 예를 들어 '추리소설', '자기계발서', '한국문학'과 같은 구체적인 장르를 언급해 주세요."
                 })
                 st.session_state.app_stage = "awaiting_user_input"
         else:
+            missing_items = []
+            if not dtl_code:
+                missing_items.append("category matching")
+            if not st.session_state.library_api_key:
+                missing_items.append("Library API key")
+            
+            error_msg = f"Unable to process your request due to: {', '.join(missing_items)}. Please check your API configuration in the sidebar."
+            korean_msg = f"다음 이유로 요청을 처리할 수 없습니다: {', '.join(missing_items)}. 사이드바에서 API 설정을 확인해 주세요."
+            
             st.session_state.messages.append({
-                "role": "assistant",
-                "content": "Library API key required. Please check sidebar.\n\n한국어 답변: 라이브러리 API 키가 필요합니다. 사이드바를 확인해 주세요."
+                "role": "assistant", 
+                "content": f"{error_msg}\n\n한국어 답변: {korean_msg}"
             })
             st.session_state.app_stage = "awaiting_user_input"
+        
         st.rerun()
 
     elif st.session_state.app_stage == "show_recommendations":
-        add_vertical_space(2)
-        st.markdown(
-            """
-            <h2 style='text-align: center; font-size: 2.2em; font-weight: bold;'>
-                📚 Recommended Books
-            </h2>
-            """,
-            unsafe_allow_html=True
-        )
-
-        for i, book in enumerate(st.session_state.books_data):
+        st.markdown("### 📖 Recommended Books for You")
+        
+        # Display books
+        for i, book in enumerate(st.session_state.books_data[:10]):  # Show top 10 books
             display_book_card(book, i)
-            
-        follow_up = st.text_input("Ask about these books, or tell me another genre/author (in Korean or English):", key="follow_up_input")
-        if st.button("Send", key="send_follow_up"):
-            if follow_up:
-                st.session_state.messages.append({"role": "user", "content": follow_up})
-                st.session_state.app_stage = "process_user_input"
+        
+        # Chat input for follow-up questions
+        user_followup = st.text_input("Ask me anything about these books or request different recommendations:", key="followup_input")
+        if st.button("Send", key="send_followup"):
+            if user_followup:
+                st.session_state.messages.append({"role": "user", "content": user_followup})
+                
+                # Check if user wants new recommendations
+                if any(keyword in user_followup.lower() for keyword in ['different', 'other', 'new', 'more', '다른', '새로운', '더']):
+                    st.session_state.app_stage = "process_user_input"
+                else:
+                    # Process as follow-up question
+                    if st.session_state.api_key:
+                        response = process_followup_with_hyperclova(user_followup, st.session_state.api_key)
+                        if response:
+                            st.session_state.messages.append({"role": "assistant", "content": response})
+                        else:
+                            st.session_state.messages.append({
+                                "role": "assistant",
+                                "content": "I'd be happy to help you with more information about these books or other recommendations. What specific aspect would you like to know more about?\n\n한국어 답변: 이 책들에 대한 더 많은 정보나 다른 추천에 대해 기꺼이 도와드리겠습니다. 어떤 구체적인 측면에 대해 더 알고 싶으신가요?"
+                            })
+                    else:
+                        st.session_state.messages.append({
+                            "role": "assistant",
+                            "content": "I'd be happy to help! Please provide your HyperCLOVA API key in the sidebar for more detailed responses about these books.\n\n한국어 답변: 기꺼이 도와드리겠습니다! 이 책들에 대한 더 자세한 답변을 위해 사이드바에서 HyperCLOVA API 키를 제공해 주세요."
+                        })
                 st.rerun()
-
-    elif st.session_state.app_stage == "show_liked_books":
-        add_vertical_space(2)  # Adds two lines of vertical space above
-
-        st.markdown(
-            """
-            <h2 style='text-align: center; font-size: 2.2em; font-weight: bold; margin-bottom: 0.5em;'>
-                 ❤️ My Liked Books
-            </h2>
-            """,
-            unsafe_allow_html=True
-        )
-        liked_books = get_liked_books(st.session_state.username)
-        if liked_books:
-            for i, book in enumerate(liked_books):
-                display_liked_book_card(book, i)
-        else:
-            st.info("You have not liked any books yet. Start exploring recommendations to build your library!")
-        if st.button("Back to Recommendations"):
-            st.session_state.app_stage = "show_recommendations"
-            st.rerun()
-
 
     elif st.session_state.app_stage == "discuss_book":
         if st.session_state.selected_book:
             book = st.session_state.selected_book
-            st.subheader(f"📖 About: {book.get('bookname', 'Unknown Title')}")
             
-            # Display detailed book information
-            col1, col2 = st.columns([1, 2])
-            with col1:
-                if book.get("bookImageURL"):
-                    st.image(book["bookImageURL"], width=200)
-            with col2:
-                st.write(f"**Author:** {book.get('authors', 'Unknown')}")
-                st.write(f"**Publisher:** {book.get('publisher', 'Unknown')}")
-                st.write(f"**Year:** {book.get('publication_year', 'Unknown')}")
-                st.write(f"**ISBN:** {book.get('isbn13', book.get('isbn', 'N/A'))}")
+            # Display selected book details
+            st.markdown("### 📖 Let's Talk About This Book")
+            
+            with st.container():
+                cols = st.columns([1, 2])
+                with cols[0]:
+                    image_url = book.get("bookImageURL", "")
+                    if image_url:
+                        st.image(image_url, width=200)
+                    else:
+                        st.markdown("""
+                        <div style="width: 150px; height: 200px; background: linear-gradient(135deg, #2c3040, #363c4e); 
+                                    display: flex; align-items: center; justify-content: center; border-radius: 8px;">
+                            <span style="color: #b3b3cc;">No Image</span>
+                        </div>
+                        """, unsafe_allow_html=True)
                 
-            st.markdown("---")
+                with cols[1]:
+                    title = book.get('bookname') or book.get('bookName', 'Unknown Title')
+                    authors = book.get('authors') or book.get('author', 'Unknown Author')
+                    publisher = book.get('publisher', 'Unknown Publisher')
+                    year = book.get('publication_year') or book.get('publicationYear', 'Unknown Year')
+                    loan_count = book.get('loan_count') or book.get('loanCount', 0)
+                    
+                    st.markdown(f"""
+                    <div style="padding: 20px;">
+                        <h2 style="color: #2c3040; margin-bottom: 15px;">{title}</h2>
+                        <div style="margin-bottom: 8px;"><strong>Author:</strong> {authors}</div>
+                        <div style="margin-bottom: 8px;"><strong>Publisher:</strong> {publisher}</div>
+                        <div style="margin-bottom: 8px;"><strong>Publication Year:</strong> {year}</div>
+                        <div style="margin-bottom: 8px;"><strong>Popularity:</strong> {loan_count} loans</div>
+                    </div>
+                    """, unsafe_allow_html=True)
             
-            # Chat about the book
-            discussion_input = st.text_input("Ask me anything about this book:", key="book_discussion")
+            # Display chat history for this book
+            book_messages = [msg for msg in st.session_state.messages if msg.get("book_context")]
+            for msg in book_messages:
+                display_message(msg)
+            
+            # Chat input for book discussion
+            book_question = st.text_input("Ask me anything about this book (plot, themes, similar books, etc.):", key="book_discussion_input")
             if st.button("Ask", key="ask_about_book"):
-                if discussion_input:
-                    # Here you could integrate with HyperCLOVA for book discussions
-                    response = f"I'd be happy to discuss '{book.get('bookname')}' with you! This book by {book.get('authors')} seems interesting. What specifically would you like to know about it?\n\n한국어 답변: '{book.get('bookname')}'에 대해 기꺼이 이야기해 드리겠습니다! {book.get('authors')}의 이 책은 흥미로워 보입니다. 구체적으로 무엇을 알고 싶으신가요?"
-                    st.write(response)
+                if book_question:
+                    # Add user message
+                    user_msg = {"role": "user", "content": book_question, "book_context": True}
+                    st.session_state.messages.append(user_msg)
+                    
+                    # Generate AI response about the book
+                    if st.session_state.api_key:
+                        book_context = f"Book: {title} by {authors}, published by {publisher} in {year}"
+                        ai_response = call_hyperclova_api([
+                            {"role": "system", "content": "You are a knowledgeable book expert. For EVERY response, answer in BOTH English and Korean. First provide complete English answer, then '한국어 답변:' with Korean translation. Provide detailed, helpful information about books."},
+                            {"role": "user", "content": f"Context: {book_context}\n\nUser question: {book_question}\n\nPlease provide helpful information about this book, including themes, plot elements, similar recommendations, or any other relevant details based on the question."}
+                        ], st.session_state.api_key)
+                        
+                        if ai_response:
+                            assistant_msg = {"role": "assistant", "content": ai_response, "book_context": True}
+                            st.session_state.messages.append(assistant_msg)
+                        else:
+                            fallback_msg = {
+                                "role": "assistant", 
+                                "content": f"I'd love to discuss '{title}' with you! This book by {authors} seems quite popular with {loan_count} loans. What specific aspect interests you most - the plot, characters, themes, or would you like similar book recommendations?\n\n한국어 답변: '{title}'에 대해 함께 이야기하고 싶습니다! {authors}의 이 책은 {loan_count}번의 대출로 꽤 인기가 있는 것 같습니다. 어떤 구체적인 측면에 가장 관심이 있으신가요 - 줄거리, 등장인물, 주제, 아니면 비슷한 책 추천을 원하시나요?",
+                                "book_context": True
+                            }
+                            st.session_state.messages.append(fallback_msg)
+                    else:
+                        fallback_msg = {
+                            "role": "assistant",
+                            "content": f"I'd love to discuss '{title}' by {authors}! To provide detailed insights about this book, please add your HyperCLOVA API key in the sidebar. I can then share information about themes, plot, writing style, and recommend similar books.\n\n한국어 답변: {authors}의 '{title}'에 대해 이야기하고 싶습니다! 이 책에 대한 자세한 통찰을 제공하려면 사이드바에서 HyperCLOVA API 키를 추가해 주세요. 그러면 주제, 줄거리, 문체에 대한 정보를 공유하고 비슷한 책을 추천해 드릴 수 있습니다.",
+                            "book_context": True
+                        }
+                        st.session_state.messages.append(fallback_msg)
+                    
+                    st.rerun()
             
-            if st.button("Back to Recommendations"):
+            # Back to recommendations button
+            if st.button("← Back to Recommendations", key="back_to_recs"):
                 st.session_state.app_stage = "show_recommendations"
                 st.rerun()
 
-    # Footer
-    st.markdown("---")
-    st.markdown("""
-    <div style='text-align:center; color: #888; font-size:0.9em;'>
-        This application provides book recommendations based on your preferences using AI assistance.<br>
-        All recommendations are available in both English and Korean.<br>
-        Powered by Streamlit • Korean Library API • HyperCLOVA X
-    </div>
-    """, unsafe_allow_html=True)
+    elif st.session_state.app_stage == "show_liked_books":
+        st.markdown("### ❤️ My Library")
+        
+        if hasattr(st.session_state, 'username') and st.session_state.username:
+            liked_books = get_liked_books(st.session_state.username)
+            
+            if liked_books:
+                st.markdown(f"You have {len(liked_books)} books in your library:")
+                for i, book in enumerate(liked_books):
+                    display_liked_book_card(book, i)
+            else:
+                st.markdown("Your library is empty. Start exploring books to add them to your collection!")
+                if st.button("Discover Books"):
+                    st.session_state.app_stage = "welcome"
+                    st.rerun()
+        else:
+            st.error("Please ensure you are logged in to view your library.")
+        
+        # Back to main app button
+        if st.button("← Back to Book Discovery", key="back_to_main"):
+            st.session_state.app_stage = "show_recommendations" if st.session_state.books_data else "welcome"
+            st.rerun()
 
 if __name__ == "__main__":
     main()

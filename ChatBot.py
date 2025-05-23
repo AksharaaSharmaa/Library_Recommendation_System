@@ -221,9 +221,9 @@ def fetch_unsplash_image(book_info, unsplash_access_key, api_key):
         return None
 
 def generate_book_tagline(book_info, api_key):
-    """Generate a Korean tagline for the book using HyperCLOVA"""
+    """Generate both English and Korean taglines for the book using HyperCLOVA"""
     if not api_key:
-        return "책과 함께하는 특별한 여행"  # Default tagline
+        return {"english": "A special journey with books", "korean": "책과 함께하는 특별한 여행"}  # Default taglines
     
     title = book_info.get('bookname') or book_info.get('bookName', '알 수 없는 제목')
     authors = book_info.get('authors') or book_info.get('author', '알 수 없는 저자')
@@ -232,11 +232,16 @@ def generate_book_tagline(book_info, api_key):
 책 제목: "{title}"
 저자: {authors}
 
-이 책에 대한 매력적이고 간결한 한국어 태그라인을 만들어주세요.
-태그라인은 10-15자 이내로 작성하고, 책의 분위기나 주제를 잘 표현해야 합니다.
-예시: "사랑이 시작되는 곳", "모험이 기다리는 세상", "진실을 찾는 여행"
+이 책에 대한 매력적이고 간결한 태그라인을 영어와 한국어로 각각 만들어주세요.
+태그라인은 각각 10-15자 이내로 작성하고, 책의 분위기나 주제를 잘 표현해야 합니다.
 
-태그라인만 반환해주세요.
+다음 형식으로 답변해주세요:
+English: [영어 태그라인]
+Korean: [한국어 태그라인]
+
+예시:
+English: Where love begins
+Korean: 사랑이 시작되는 곳
 """
     
     headers = {
@@ -248,14 +253,14 @@ def generate_book_tagline(book_info, api_key):
         "messages": [
             {
                 "role": "system",
-                "content": "당신은 책 마케팅 전문가입니다. 간결하고 매력적인 한국어 태그라인을 만드는 것이 전문입니다."
+                "content": "당신은 책 마케팅 전문가입니다. 간결하고 매력적인 영어와 한국어 태그라인을 만드는 것이 전문입니다."
             },
             {
                 "role": "user",
                 "content": prompt
             }
         ],
-        "maxTokens": 50,
+        "maxTokens": 100,
         "temperature": 0.7,
         "topP": 0.8,
     }
@@ -270,15 +275,29 @@ def generate_book_tagline(book_info, api_key):
         
         if response.status_code == 200:
             result = response.json()
-            tagline = result['result']['message']['content'].strip()
-            # Clean up the tagline
-            tagline = tagline.replace('"', '').replace("'", '').strip()
-            return tagline if len(tagline) <= 20 else "책과 함께하는 특별한 여행"
+            content = result['result']['message']['content'].strip()
+            
+            # Parse the response to extract English and Korean taglines
+            english_tagline = "A special journey with books"
+            korean_tagline = "책과 함께하는 특별한 여행"
+            
+            lines = content.split('\n')
+            for line in lines:
+                if line.startswith('English:'):
+                    english_tagline = line.replace('English:', '').strip().replace('"', '').replace("'", '')
+                elif line.startswith('Korean:'):
+                    korean_tagline = line.replace('Korean:', '').strip().replace('"', '').replace("'", '')
+            
+            return {
+                "english": english_tagline if len(english_tagline) <= 25 else "A special journey with books",
+                "korean": korean_tagline if len(korean_tagline) <= 20 else "책과 함께하는 특별한 여행"
+            }
         else:
-            return "책과 함께하는 특별한 여행"
+            return {"english": "A special journey with books", "korean": "책과 함께하는 특별한 여행"}
     except Exception as e:
         st.error(f"태그라인 생성 중 오류: {e}")
-        return "책과 함께하는 특별한 여행"
+        return {"english": "A special journey with books", "korean": "책과 함께하는 특별한 여행"}
+
 
 def fetch_unsplash_image(book_info, unsplash_access_key, api_key):
     """Fetch a contextually appropriate image from Unsplash based on book information"""
@@ -337,8 +356,8 @@ def fetch_unsplash_image(book_info, unsplash_access_key, api_key):
         st.error(f"이미지 검색 중 오류: {e}")
         return None
 
-def create_book_image_with_tagline(image_url, tagline, book_title):
-    """Create an image with Korean tagline overlay using proper fonts"""
+def create_book_image_with_tagline(image_url, taglines, book_title):
+    """Create an image with English tagline overlay and proper aspect ratio"""
     try:
         # Download the image
         response = requests.get(image_url, timeout=30)
@@ -348,8 +367,8 @@ def create_book_image_with_tagline(image_url, tagline, book_title):
         # Open image with PIL
         img = Image.open(io.BytesIO(response.content))
         
-        # Resize image to standard size
-        img = img.resize((1200, 800), Image.Resampling.LANCZOS)
+        # Resize image to portrait orientation for better display
+        img = img.resize((800, 1000), Image.Resampling.LANCZOS)
         
         # Create a semi-transparent overlay
         overlay = Image.new('RGBA', img.size, (0, 0, 0, 0))
@@ -357,7 +376,7 @@ def create_book_image_with_tagline(image_url, tagline, book_title):
         
         # Create gradient overlay for better text visibility
         for y in range(img.height):
-            alpha = int(180 * (y / img.height))  # Gradient from transparent to semi-opaque
+            alpha = int(120 * (y / img.height))  # Lighter gradient
             for x in range(img.width):
                 overlay.putpixel((x, y), (0, 0, 0, alpha))
         
@@ -365,69 +384,65 @@ def create_book_image_with_tagline(image_url, tagline, book_title):
         img_with_overlay = Image.alpha_composite(img.convert('RGBA'), overlay)
         draw = ImageDraw.Draw(img_with_overlay)
         
-        # Try to load Korean fonts in order of preference
+        # Try to load fonts for English text
         font_title = None
         font_tagline = None
         
-        korean_fonts = [
-            "malgun.ttf",  # Windows
-            "NanumGothic.ttf",  # Common Korean font
-            "AppleGothic.ttf",  # macOS
-            "NotoSansCJK-Regular.ttc",  # Google Noto
-            "DejaVuSans.ttf",  # Fallback
+        english_fonts = [
+            "arial.ttf",  # Windows
+            "Arial.ttf",  # macOS
+            "DejaVuSans.ttf",  # Linux
+            "NotoSans-Regular.ttf",  # Google Noto
         ]
         
-        for font_name in korean_fonts:
+        for font_name in english_fonts:
             try:
-                font_title = ImageFont.truetype(font_name, 60)
-                font_tagline = ImageFont.truetype(font_name, 45)
+                font_title = ImageFont.truetype(font_name, 45)
+                font_tagline = ImageFont.truetype(font_name, 35)
                 break
             except (OSError, IOError):
                 continue
         
-        # If no TrueType font found, use default but larger
+        # If no TrueType font found, use default
         if font_title is None:
             try:
                 font_title = ImageFont.load_default()
                 font_tagline = ImageFont.load_default()
-                # Try to create a larger default font
-                font_title = ImageFont.load_default()
-                font_tagline = ImageFont.load_default()
             except:
-                # Last resort - create basic font
                 font_title = ImageFont.load_default()
                 font_tagline = ImageFont.load_default()
         
-        # Add book title at the top
+        # Add book title at the top (English only)
         title_bbox = draw.textbbox((0, 0), book_title, font=font_title)
         title_width = title_bbox[2] - title_bbox[0]
         title_height = title_bbox[3] - title_bbox[1]
         title_x = (img.width - title_width) // 2
-        title_y = 80
+        title_y = 60
         
         # Add text shadow for better visibility
-        shadow_offset = 3
+        shadow_offset = 2
         draw.text((title_x + shadow_offset, title_y + shadow_offset), book_title, 
                  fill=(0, 0, 0, 200), font=font_title)
         draw.text((title_x, title_y), book_title, fill=(255, 255, 255, 255), font=font_title)
         
-        # Add tagline at the bottom
-        tagline_bbox = draw.textbbox((0, 0), tagline, font=font_tagline)
+        # Add English tagline at the bottom
+        english_tagline = taglines.get("english", "A special journey with books")
+        tagline_bbox = draw.textbbox((0, 0), english_tagline, font=font_tagline)
         tagline_width = tagline_bbox[2] - tagline_bbox[0]
         tagline_height = tagline_bbox[3] - tagline_bbox[1]
         tagline_x = (img.width - tagline_width) // 2
-        tagline_y = img.height - tagline_height - 100
+        tagline_y = img.height - tagline_height - 80
         
         # Add text shadow for tagline
-        draw.text((tagline_x + shadow_offset, tagline_y + shadow_offset), tagline, 
+        draw.text((tagline_x + shadow_offset, tagline_y + shadow_offset), english_tagline, 
                  fill=(0, 0, 0, 200), font=font_tagline)
-        draw.text((tagline_x, tagline_y), tagline, fill=(255, 255, 255, 255), font=font_tagline)
+        draw.text((tagline_x, tagline_y), english_tagline, fill=(255, 255, 255, 255), font=font_tagline)
         
         # Add decorative border
-        border_width = 8
+        border_width = 6
         draw.rectangle([border_width//2, border_width//2, 
                        img.width - border_width//2, img.height - border_width//2], 
-                      outline=(255, 255, 255, 150), width=border_width)
+                      outline=(255, 255, 255, 120), width=border_width)
         
         # Convert back to RGB
         final_img = img_with_overlay.convert('RGB')
@@ -443,26 +458,26 @@ def create_book_image_with_tagline(image_url, tagline, book_title):
         return None
 
 def generate_and_display_book_image(book_info, unsplash_key, hyperclova_key):
-    """Generate and display book image with tagline"""
+    """Generate and display book image with English tagline overlay and Korean text below"""
     with st.spinner('책의 내용을 분석하고 맞춤 이미지를 생성하고 있습니다...'):
-        # Generate tagline
-        tagline = generate_book_tagline(book_info, hyperclova_key)
+        # Generate both English and Korean taglines
+        taglines = generate_book_tagline(book_info, hyperclova_key)
         
         # Fetch contextually appropriate image from Unsplash
         image_url = fetch_unsplash_image(book_info, unsplash_key, hyperclova_key)
         
         if image_url:
-            # Create image with tagline
+            # Create image with English tagline overlay
             book_title = book_info.get('bookname') or book_info.get('bookName', '책')
-            img_base64 = create_book_image_with_tagline(image_url, tagline, book_title)
+            img_base64 = create_book_image_with_tagline(image_url, taglines, book_title)
             
             if img_base64:
                 st.markdown("### 📸 생성된 책 이미지")
-                st.image(f"data:image/jpeg;base64,{img_base64}", caption=f"태그라인: {tagline}")
+                st.image(f"data:image/jpeg;base64,{img_base64}", use_column_width=True)
                 
-                # Show the search context used
-                search_keyword = extract_search_keywords_from_book(book_info, hyperclova_key)
-                st.info(f"이미지 검색 키워드: {search_keyword}")
+                # Show Korean tagline below the image
+                korean_tagline = taglines.get("korean", "책과 함께하는 특별한 여행")
+                st.markdown(f"**한국어 태그라인:** {korean_tagline}")
                 
                 # Download button
                 st.download_button(
@@ -475,7 +490,6 @@ def generate_and_display_book_image(book_info, unsplash_key, hyperclova_key):
                 st.error("이미지 생성에 실패했습니다.")
         else:
             st.error("적절한 이미지를 찾을 수 없습니다.")
-
 
 add_custom_css()
 

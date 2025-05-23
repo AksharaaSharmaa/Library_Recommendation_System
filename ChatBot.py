@@ -153,9 +153,8 @@ def call_hyperclova_api(messages, api_key):
     try:
         endpoint = "https://clovastudio.stream.ntruss.com/testapp/v1/chat-completions/HCX-003"
         headers = {
-            'X-NCP-APIGW-API-KEY-ID': api_key,
-            'X-NCP-APIGW-API-KEY': api_key,
-            'Content-Type': 'application/json'
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
         }
         
         payload = {
@@ -163,10 +162,6 @@ def call_hyperclova_api(messages, api_key):
             "maxTokens": 1024,
             "temperature": 0.7,
             "topP": 0.8,
-            "topK": 0,
-            "repeatPenalty": 1.2,
-            "stopBefore": [],
-            "includeAiFilters": True
         }
         
         response = requests.post(endpoint, headers=headers, json=payload)
@@ -267,9 +262,8 @@ def extract_keywords_with_hyperclova(user_input, api_key, dtl_kdc_dict):
     categories_text = "\n".join(categories_list)
     
     headers = {
-        'X-NCP-APIGW-API-KEY-ID': api_key,
-        'X-NCP-APIGW-API-KEY': api_key,
-        'Content-Type': 'application/json'
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
     }
     
     prompt = f"""
@@ -304,13 +298,9 @@ def extract_keywords_with_hyperclova(user_input, api_key, dtl_kdc_dict):
                 "content": prompt
             }
         ],
-        "topP": 0.7,
-        "topK": 0,
         "maxTokens": 50,
         "temperature": 0.3,
-        "repeatPenalty": 1.2,
-        "stopBefore": [],
-        "includeAiFilters": True
+        "topP": 0.7,
     }
     
     try:

@@ -555,7 +555,86 @@ def process_followup_with_hyperclova(user_input, api_key):
     
     return call_hyperclova_api(messages, api_key)
 
-# --- Main function ---
+def generate_book_introduction(book, api_key):
+    """Generate an introduction about the book when first selected"""
+    title = book.get('bookname') or book.get('bookName', 'Unknown Title')
+    authors = book.get('authors') or book.get('author', 'Unknown Author')
+    publisher = book.get('publisher', 'Unknown Publisher')
+    year = book.get('publication_year') or book.get('publicationYear', 'Unknown Year')
+    loan_count = book.get('loan_count') or book.get('loanCount', 0)
+    
+    if not api_key:
+        return f"Let's discuss '{title}' by {authors}! This book was published by {publisher} in {year} and has been borrowed {loan_count} times, showing its popularity. What would you like to know about this book - its themes, plot, writing style, or would you like similar recommendations?\n\n한국어 답변: {authors}의 '{title}'에 대해 이야기해 봅시다! 이 책은 {year}년에 {publisher}에서 출간되었으며 {loan_count}번 대출되어 인기를 보여줍니다. 이 책에 대해 무엇을 알고 싶으신가요 - 주제, 줄거리, 문체, 아니면 비슷한 추천을 원하시나요?"
+    
+    book_context = f"Book: {title} by {authors}, published by {publisher} in {year}, with {loan_count} loans"
+    
+    messages = [
+        {
+            "role": "system",
+            "content": "You are a knowledgeable book expert. For EVERY response, answer in BOTH English and Korean. First provide complete English answer, then '한국어 답변:' with Korean translation. Provide an engaging introduction about the book."
+        },
+        {
+            "role": "user", 
+            "content": f"Please provide an engaging introduction about this book: {book_context}. Talk about what makes this book interesting, its potential themes, and invite the user to ask questions about it. Keep it conversational and welcoming."
+        }
+    ]
+    
+    response = call_hyperclova_api(messages, api_key)
+    if response:
+        return response
+    else:
+        # Fallback if API fails
+        return f"Let's explore '{title}' by {authors}! This book from {publisher} ({year}) has {loan_count} loans, indicating its appeal to readers. I'm here to discuss anything about this book - from plot details to thematic analysis. What aspect interests you most?\n\n한국어 답변: {authors}의 '{title}'을 탐험해 봅시다! {publisher}({year})의 이 책은 {loan_count}번의 대출로 독자들에게 어필하고 있음을 보여줍니다. 줄거리 세부사항부터 주제 분석까지 이 책에 대한 모든 것을 논의할 준비가 되어 있습니다. 어떤 측면에 가장 관심이 있으신가요?"
+
+def process_book_question(book, question, api_key, conversation_history):
+    """Process specific questions about a book using HyperCLOVA"""
+    if not api_key:
+        return "Please provide your HyperCLOVA API key in the sidebar to get detailed responses about this book.\n\n한국어 답변: 이 책에 대한 자세한 답변을 받으려면 사이드바에서 HyperCLOVA API 키를 제공해 주세요."
+    
+    title = book.get('bookname') or book.get('bookName', 'Unknown Title')
+    authors = book.get('authors') or book.get('author', 'Unknown Author')
+    publisher = book.get('publisher', 'Unknown Publisher')
+    year = book.get('publication_year') or book.get('publicationYear', 'Unknown Year')
+    loan_count = book.get('loan_count') or book.get('loanCount', 0)
+    
+    # Build conversation context from recent messages
+    context_messages = []
+    if conversation_history:
+        # Get last 4 messages for context (2 user + 2 assistant)
+        recent_history = conversation_history[-4:]
+        for msg in recent_history:
+            context_messages.append({
+                "role": msg["role"],
+                "content": msg["content"]
+            })
+    
+    # Add the current question
+    book_info = f"Book: '{title}' by {authors}, published by {publisher} in {year}, popularity: {loan_count} loans"
+    
+    # Create the system message
+    system_message = {
+        "role": "system",
+        "content": f"You are a knowledgeable book expert discussing '{title}' by {authors}. For EVERY response, answer in BOTH English and Korean. First provide complete English answer, then '한국어 답변:' with Korean translation. Provide detailed, insightful information about books including themes, plot elements, character analysis, writing style, cultural context, and similar book recommendations when appropriate."
+    }
+    
+    # Create the user message with context
+    user_message = {
+        "role": "user",
+        "content": f"Book Information: {book_info}\n\nUser Question: {question}\n\nPlease provide a detailed and helpful response about this book based on the question asked."
+    }
+    
+    # Combine all messages
+    messages = [system_message] + context_messages + [user_message]
+    
+    try:
+        response = call_hyperclova_api(messages, api_key)
+        if response:
+            return response
+        else:
+            return f"I'd be happy to discuss '{title}' further, but I'm having trouble connecting to the AI service right now. Could you try asking your question again?\n\n한국어 답변: '{title}'에 대해 더 자세히 논의하고 싶지만 지금 AI 서비스에 연결하는 데 문제가 있습니다. 질문을 다시 해보시겠어요?"
+    except Exception as e:
+        return f"I encountered an error while processing your question about '{title}'. Please try rephrasing your question or check your API connection.\n\n한국어 답변: '{title}'에 대한 질문을 처리하는 중 오류가 발생했습니다. 질문을 다시 표현하거나 API 연결을 확인해 주세요."
+
 def main():
     # --- Initialize all session state variables before use ---
     if "api_key" not in st.session_state:
@@ -586,6 +665,8 @@ def main():
         st.session_state.showing_books = False
     if "book_discussion_messages" not in st.session_state:
         st.session_state.book_discussion_messages = []
+    if "book_intro_shown" not in st.session_state:
+        st.session_state.book_intro_shown = False
 
     setup_sidebar()
 
@@ -734,6 +815,16 @@ def main():
                     </div>
                     """, unsafe_allow_html=True)
             
+            # Show introduction message when first entering book discussion
+            if not st.session_state.book_intro_shown:
+                intro_message = generate_book_introduction(book, st.session_state.api_key)
+                st.session_state.book_discussion_messages.append({
+                    "role": "assistant", 
+                    "content": intro_message
+                })
+                st.session_state.book_intro_shown = True
+                st.rerun()
+            
             # Display chat history for this specific book
             for msg in st.session_state.book_discussion_messages:
                 display_message(msg)
@@ -747,35 +838,23 @@ def main():
                     st.session_state.book_discussion_messages.append(user_msg)
                     
                     # Generate AI response about the book using HyperCLOVA
-                    if st.session_state.api_key:
-                        book_context = f"Book: {title} by {authors}, published by {publisher} in {year}"
-                        ai_response = call_hyperclova_api([
-                            {"role": "system", "content": "You are a knowledgeable book expert. For EVERY response, answer in BOTH English and Korean. First provide complete English answer, then '한국어 답변:' with Korean translation. Provide detailed, helpful information about books."},
-                            {"role": "user", "content": f"Context: {book_context}\n\nUser question: {book_question}\n\nPlease provide helpful information about this book, including themes, plot elements, similar recommendations, or any other relevant details based on the question."}
-                        ], st.session_state.api_key)
-                        
-                        if ai_response:
-                            assistant_msg = {"role": "assistant", "content": ai_response}
-                            st.session_state.book_discussion_messages.append(assistant_msg)
-                        else:
-                            fallback_msg = {
-                                "role": "assistant", 
-                                "content": f"I'd love to discuss '{title}' with you! This book by {authors} seems quite popular with {loan_count} loans. What specific aspect interests you most - the plot, characters, themes, or would you like similar book recommendations?\n\n한국어 답변: '{title}'에 대해 함께 이야기하고 싶습니다! {authors}의 이 책은 {loan_count}번의 대출로 꽤 인기가 있는 것 같습니다. 어떤 구체적인 측면에 가장 관심이 있으신가요 - 줄거리, 등장인물, 주제, 아니면 비슷한 책 추천을 원하시나요?"
-                            }
-                            st.session_state.book_discussion_messages.append(fallback_msg)
-                    else:
-                        fallback_msg = {
-                            "role": "assistant",
-                            "content": f"I'd love to discuss '{title}' by {authors}! To provide detailed insights about this book, please add your HyperCLOVA API key in the sidebar. I can then share information about themes, plot, writing style, and recommend similar books.\n\n한국어 답변: {authors}의 '{title}'에 대해 이야기하고 싶습니다! 이 책에 대한 자세한 통찰을 제공하려면 사이드바에서 HyperCLOVA API 키를 추가해 주세요. 그러면 주제, 줄거리, 문체에 대한 정보를 공유하고 비슷한 책을 추천해 드릴 수 있습니다."
-                        }
-                        st.session_state.book_discussion_messages.append(fallback_msg)
+                    ai_response = process_book_question(
+                        book, 
+                        book_question, 
+                        st.session_state.api_key,
+                        st.session_state.book_discussion_messages
+                    )
+                    
+                    assistant_msg = {"role": "assistant", "content": ai_response}
+                    st.session_state.book_discussion_messages.append(assistant_msg)
                     
                     st.rerun()
             
             # Back to recommendations button
             if st.button("← Back to Recommendations", key="back_to_recs"):
-                # Clear book discussion messages when going back
+                # Clear book discussion messages and intro flag when going back
                 st.session_state.book_discussion_messages = []
+                st.session_state.book_intro_shown = False
                 st.session_state.app_stage = "show_recommendations"
                 st.rerun()
 

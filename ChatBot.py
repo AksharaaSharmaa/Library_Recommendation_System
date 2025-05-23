@@ -449,43 +449,97 @@ def get_books_by_dtl_kdc(dtl_kdc_code, auth_key, page_no=1, page_size=10):
             st.warning(f"No books found for DTL_KDC code: {dtl_kdc_code}")
             return []
         
-        docs = response_section.get("docs", [])
+        # Better handling of API response structure
+        if "docs" not in response_section:
+            st.warning("No 'docs' key found in API response")
+            st.write("Available keys:", list(response_section.keys()))
+            return []
+        
+        docs = response_section["docs"]
+        
+        # Handle single document vs multiple documents
+        if isinstance(docs, dict):
+            # Single document returned
+            docs = [docs]
+        elif isinstance(docs, list):
+            # Multiple documents returned
+            pass
+        else:
+            st.error(f"Unexpected docs format: {type(docs)}")
+            st.write("Docs content:", docs)
+            return []
         
         if not docs:
-            st.warning("No documents found in API response")
+            st.warning("Empty docs list in API response")
             return []
-        
-        # Handle different response formats
-        if isinstance(docs, dict):
-            docs = [docs]
-        elif not isinstance(docs, list):
-            st.error(f"Unexpected docs format: {type(docs)}")
-            return []
+
         
         books = []
         for i, doc in enumerate(docs):
             try:
-                # Handle nested structure
-                if "doc" in doc:
-                    book_data = doc["doc"]
-                else:
-                    book_data = doc
+                # Debug: Show the structure of each document
+                st.write(f"Processing document {i+1}:", doc.keys() if isinstance(doc, dict) else type(doc))
                 
-                # Extract book information with fallbacks
-                book_info = {
-                    "bookname": book_data.get("bookname") or book_data.get("bookName", "Unknown Title"),
-                    "authors": book_data.get("authors") or book_data.get("author", "Unknown Author"),
-                    "publisher": book_data.get("publisher", "Unknown Publisher"),
-                    "publication_year": book_data.get("publication_year") or book_data.get("publicationYear", "Unknown Year"),
-                    "isbn13": book_data.get("isbn13") or book_data.get("isbn", ""),
-                    "loan_count": int(book_data.get("loan_count") or book_data.get("loanCount", 0)),
-                    "bookImageURL": book_data.get("bookImageURL", "")
-                }
+                # The doc itself should contain the book data directly
+                book_data = doc
+                
+                # Extract book information with better error handling
+                book_info = {}
+                
+                # Handle different possible field names
+                book_info["bookname"] = (
+                    book_data.get("bookname") or 
+                    book_data.get("bookName") or 
+                    book_data.get("title") or 
+                    "Unknown Title"
+                )
+                
+                book_info["authors"] = (
+                    book_data.get("authors") or 
+                    book_data.get("author") or 
+                    book_data.get("writer") or 
+                    "Unknown Author"
+                )
+                
+                book_info["publisher"] = book_data.get("publisher", "Unknown Publisher")
+                
+                book_info["publication_year"] = (
+                    book_data.get("publication_year") or 
+                    book_data.get("publicationYear") or 
+                    book_data.get("pubYear") or 
+                    "Unknown Year"
+                )
+                
+                book_info["isbn13"] = (
+                    book_data.get("isbn13") or 
+                    book_data.get("isbn") or 
+                    ""
+                )
+                
+                # Handle loan_count conversion safely
+                loan_count_raw = (
+                    book_data.get("loan_count") or 
+                    book_data.get("loanCount") or 
+                    0
+                )
+                try:
+                    book_info["loan_count"] = int(loan_count_raw)
+                except (ValueError, TypeError):
+                    book_info["loan_count"] = 0
+                    
+                book_info["bookImageURL"] = (
+                    book_data.get("bookImageURL") or 
+                    book_data.get("bookImage") or 
+                    ""
+                )
+                
                 books.append(book_info)
                 
             except Exception as e:
-                st.warning(f"Error processing book {i+1}: {e}")
+                st.error(f"Error processing book {i+1}: {e}")
+                st.write("Document content:", doc)
                 continue
+
         
         if not books:
             st.warning("No valid books could be extracted from API response")

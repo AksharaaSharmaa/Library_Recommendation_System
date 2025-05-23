@@ -14,6 +14,211 @@ import requests
 import os
 from PIL import Image, ImageDraw, ImageFont
 import io
+import hashlib
+import random
+
+def extract_search_keywords_from_book(book_info, api_key):
+    """Extract contextual search keywords from book information using AI without predefined categories"""
+    if not api_key:
+        # Fallback - use basic title analysis without predefined categories
+        title = book_info.get('bookname') or book_info.get('bookName', '')
+        authors = book_info.get('authors') or book_info.get('author', '')
+        
+        # Extract meaningful words from title and author
+        import re
+        words = re.findall(r'\b\w+\b', f"{title} {authors}".lower())
+        # Filter out common words and return a meaningful word
+        common_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', '의', '와', '과', '에', '을', '를', '이', '가'}
+        meaningful_words = [word for word in words if len(word) > 3 and word not in common_words]
+        
+        if meaningful_words:
+            return meaningful_words[0]
+        else:
+            return "books"
+    
+    title = book_info.get('bookname') or book_info.get('bookName', '알 수 없는 제목')
+    authors = book_info.get('authors') or book_info.get('author', '알 수 없는 저자')
+    
+    prompt = f"""
+책 제목: "{title}"
+저자: {authors}
+
+이 책의 제목과 저자 정보를 분석하여, 이미지 검색에 가장 적합한 영어 키워드를 생성해주세요.
+
+다음 지침을 따라주세요:
+1. 책의 내용, 분위기, 주제를 추측하여 관련된 시각적 요소를 생각해보세요
+2. 미리 정의된 카테고리를 사용하지 말고, 책의 고유한 특성을 반영하세요
+3. 구체적이고 시각적인 영어 단어 하나만 반환하세요
+4. 추상적 개념보다는 구체적인 이미지를 연상시키는 단어를 선택하세요
+
+예시:
+- 로맨스 소설 → "romance", "couple", "sunset", "flowers"
+- 전쟁 소설 → "battlefield", "soldier", "ruins", "memorial"
+- 과학 도서 → "laboratory", "research", "microscope", "discovery"
+- 여행 에세이 → "journey", "landscape", "adventure", "exploration"
+- 요리 책 → "kitchen", "ingredients", "cooking", "chef"
+
+책의 특성을 가장 잘 표현하는 영어 키워드 하나만 반환하세요.
+"""
+    
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "messages": [
+            {
+                "role": "system",
+                "content": "당신은 책의 내용을 분석하여 시각적 이미지 검색에 적합한 키워드를 생성하는 전문가입니다. 미리 정의된 카테고리를 사용하지 않고, 각 책의 고유한 특성을 반영한 구체적인 키워드를 생성합니다."
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        "maxTokens": 20,
+        "temperature": 0.7,
+        "topP": 0.8,
+    }
+    
+    try:
+        response = requests.post(
+            "https://clovastudio.stream.ntruss.com/testapp/v1/chat-completions/HCX-003",
+            headers=headers,
+            json=payload,
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            keyword = result['result']['message']['content'].strip().lower()
+            keyword = keyword.replace('"', '').replace("'", '').strip()
+            
+            # Clean up the keyword - extract only the main word
+            import re
+            clean_keyword = re.findall(r'\b[a-zA-Z]+\b', keyword)
+            if clean_keyword:
+                return clean_keyword[0]
+            else:
+                return keyword if keyword else "literature"
+        else:
+            return "literature"
+    except Exception as e:
+        st.error(f"키워드 추출 중 오류: {e}")
+        return "literature"
+
+def fetch_unsplash_image(book_info, unsplash_access_key, api_key):
+    """Fetch a contextually appropriate image from Unsplash based on AI-generated keywords"""
+    if not unsplash_access_key:
+        return None
+    
+    # Extract contextual keywords using AI (no predefined categories)
+    primary_keyword = extract_search_keywords_from_book(book_info, api_key)
+    
+    # Create unique seed for this book to ensure different images
+    title = book_info.get('bookname') or book_info.get('bookName', '')
+    authors = book_info.get('authors') or book_info.get('author', '')
+    isbn = book_info.get('isbn13') or book_info.get('isbn', '')
+    
+    # Create a unique seed based on book details
+    book_seed = hashlib.md5(f"{title}{authors}{isbn}".encode()).hexdigest()[:8]
+    
+    # Generate additional contextual terms using AI
+    additional_terms = []
+    if api_key:
+        try:
+            context_prompt = f"""
+주요 키워드: "{primary_keyword}"
+책 제목: "{title}"
+
+주요 키워드와 관련된 시각적 수식어를 2-3개 생성해주세요.
+예시:
+- "ocean" → "serene", "vast", "blue"
+- "forest" → "mysterious", "green", "peaceful"
+- "city" → "modern", "bustling", "urban"
+
+영어 단어만 쉼표로 구분하여 반환하세요.
+"""
+            
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
+            
+            payload = {
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "시각적 수식어를 생성하는 전문가입니다."
+                    },
+                    {
+                        "role": "user",
+                        "content": context_prompt
+                    }
+                ],
+                "maxTokens": 30,
+                "temperature": 0.6,
+                "topP": 0.7,
+            }
+            
+            response = requests.post(
+                "https://clovastudio.stream.ntruss.com/testapp/v1/chat-completions/HCX-003",
+                headers=headers,
+                json=payload,
+                timeout=20
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                terms_text = result['result']['message']['content'].strip()
+                import re
+                additional_terms = re.findall(r'\b[a-zA-Z]+\b', terms_text)
+                additional_terms = [term for term in additional_terms if len(term) > 2][:3]
+        except:
+            pass
+    
+    # Fallback additional terms if AI fails
+    if not additional_terms:
+        aesthetic_terms = ["beautiful", "artistic", "elegant", "serene", "dramatic", "peaceful", "inspiring", "creative", "atmospheric", "stunning"]
+        # Select terms based on book seed for consistency
+        seed_int = int(book_seed[:4], 16)
+        additional_terms = [aesthetic_terms[seed_int % len(aesthetic_terms)]]
+    
+    # Select additional term based on book seed
+    variety_index = int(book_seed[4:6], 16) % len(additional_terms)
+    variety_term = additional_terms[variety_index] if additional_terms else "beautiful"
+    
+    # Combine primary keyword with AI-generated variety term
+    search_query = f"{primary_keyword} {variety_term}"
+    
+    # Use book seed to determine page number for variety
+    page_num = (int(book_seed[:4], 16) % 10) + 1
+    
+    url = "https://api.unsplash.com/search/photos"
+    params = {
+        "query": search_query,
+        "client_id": unsplash_access_key,
+        "per_page": 5,
+        "page": page_num,
+        "orientation": "landscape",
+        "content_filter": "high",
+        "order_by": "relevant"
+    }
+    
+    try:
+        response = requests.get(url, params=params, timeout=30)
+        if response.status_code == 200:
+            data = response.json()
+            if data['results']:
+                # Select image based on book seed for consistency
+                image_index = int(book_seed[4:6], 16) % len(data['results'])
+                image_url = data['results'][image_index]['urls']['regular']
+                return image_url
+        return None
+    except Exception as e:
+        st.error(f"이미지 검색 중 오류: {e}")
+        return None
 
 def generate_book_tagline(book_info, api_key):
     """Generate a Korean tagline for the book using HyperCLOVA"""
@@ -75,36 +280,47 @@ def generate_book_tagline(book_info, api_key):
         st.error(f"태그라인 생성 중 오류: {e}")
         return "책과 함께하는 특별한 여행"
 
-def fetch_unsplash_image(book_info, unsplash_access_key):
-    """Fetch an appropriate image from Unsplash based on book information"""
+def fetch_unsplash_image(book_info, unsplash_access_key, api_key):
+    """Fetch a contextually appropriate image from Unsplash based on book information"""
     if not unsplash_access_key:
         return None
     
+    # Extract contextual keywords using AI
+    primary_keyword = extract_search_keywords_from_book(book_info, api_key)
+    
+    # Create unique seed for this book to ensure different images for same genre
     title = book_info.get('bookname') or book_info.get('bookName', '')
     authors = book_info.get('authors') or book_info.get('author', '')
+    isbn = book_info.get('isbn13') or book_info.get('isbn', '')
     
-    # Create search query based on book info
-    search_terms = []
-    if 'novel' in title.lower() or '소설' in title:
-        search_terms.append('book reading literature')
-    elif any(word in title.lower() for word in ['history', '역사']):
-        search_terms.append('history ancient books')
-    elif any(word in title.lower() for word in ['science', '과학']):
-        search_terms.append('science research books')
-    elif any(word in title.lower() for word in ['art', '예술']):
-        search_terms.append('art creative books')
-    else:
-        search_terms.append('books library reading')
+    # Create a unique seed based on book details
+    book_seed = hashlib.md5(f"{title}{authors}{isbn}".encode()).hexdigest()[:8]
     
-    query = search_terms[0]
+    # Add variety to search terms based on book seed
+    variety_terms = [
+        "aesthetic", "artistic", "beautiful", "elegant", "serene", 
+        "dramatic", "peaceful", "inspiring", "creative", "atmospheric"
+    ]
+    
+    # Select variety term based on book seed
+    variety_index = int(book_seed, 16) % len(variety_terms)
+    variety_term = variety_terms[variety_index]
+    
+    # Combine primary keyword with variety term
+    search_query = f"{primary_keyword} {variety_term}"
+    
+    # Use book seed to determine page number for variety
+    page_num = (int(book_seed[:4], 16) % 10) + 1
     
     url = "https://api.unsplash.com/search/photos"
     params = {
-        "query": query,
+        "query": search_query,
         "client_id": unsplash_access_key,
-        "per_page": 1,
+        "per_page": 5,
+        "page": page_num,
         "orientation": "landscape",
-        "content_filter": "high"
+        "content_filter": "high",
+        "order_by": "relevant"
     }
     
     try:
@@ -112,7 +328,9 @@ def fetch_unsplash_image(book_info, unsplash_access_key):
         if response.status_code == 200:
             data = response.json()
             if data['results']:
-                image_url = data['results'][0]['urls']['regular']
+                # Select image based on book seed for consistency
+                image_index = int(book_seed[4:6], 16) % len(data['results'])
+                image_url = data['results'][image_index]['urls']['regular']
                 return image_url
         return None
     except Exception as e:
@@ -120,7 +338,7 @@ def fetch_unsplash_image(book_info, unsplash_access_key):
         return None
 
 def create_book_image_with_tagline(image_url, tagline, book_title):
-    """Create an image with tagline overlay"""
+    """Create an image with Korean tagline overlay using proper fonts"""
     try:
         # Download the image
         response = requests.get(image_url, timeout=30)
@@ -131,46 +349,92 @@ def create_book_image_with_tagline(image_url, tagline, book_title):
         img = Image.open(io.BytesIO(response.content))
         
         # Resize image to standard size
-        img = img.resize((800, 600), Image.Resampling.LANCZOS)
+        img = img.resize((1200, 800), Image.Resampling.LANCZOS)
         
-        # Create drawing context
-        draw = ImageDraw.Draw(img)
+        # Create a semi-transparent overlay
+        overlay = Image.new('RGBA', img.size, (0, 0, 0, 0))
+        draw = ImageDraw.Draw(overlay)
         
-        # Try to use a Korean font, fallback to default
-        try:
-            font_title = ImageFont.truetype("malgun.ttf", 40)  # Windows Korean font
-            font_tagline = ImageFont.truetype("malgun.ttf", 30)
-        except:
-            try:
-                font_title = ImageFont.truetype("NanumGothic.ttf", 40)  # Alternative Korean font
-                font_tagline = ImageFont.truetype("NanumGothic.ttf", 30)
-            except:
-                font_title = ImageFont.load_default()
-                font_tagline = ImageFont.load_default()
+        # Create gradient overlay for better text visibility
+        for y in range(img.height):
+            alpha = int(180 * (y / img.height))  # Gradient from transparent to semi-opaque
+            for x in range(img.width):
+                overlay.putpixel((x, y), (0, 0, 0, alpha))
         
-        # Add semi-transparent overlay for text
-        overlay = Image.new('RGBA', img.size, (0, 0, 0, 128))
+        # Composite the overlay onto the image
         img_with_overlay = Image.alpha_composite(img.convert('RGBA'), overlay)
         draw = ImageDraw.Draw(img_with_overlay)
         
-        # Add book title
+        # Try to load Korean fonts in order of preference
+        font_title = None
+        font_tagline = None
+        
+        korean_fonts = [
+            "malgun.ttf",  # Windows
+            "NanumGothic.ttf",  # Common Korean font
+            "AppleGothic.ttf",  # macOS
+            "NotoSansCJK-Regular.ttc",  # Google Noto
+            "DejaVuSans.ttf",  # Fallback
+        ]
+        
+        for font_name in korean_fonts:
+            try:
+                font_title = ImageFont.truetype(font_name, 60)
+                font_tagline = ImageFont.truetype(font_name, 45)
+                break
+            except (OSError, IOError):
+                continue
+        
+        # If no TrueType font found, use default but larger
+        if font_title is None:
+            try:
+                font_title = ImageFont.load_default()
+                font_tagline = ImageFont.load_default()
+                # Try to create a larger default font
+                font_title = ImageFont.load_default()
+                font_tagline = ImageFont.load_default()
+            except:
+                # Last resort - create basic font
+                font_title = ImageFont.load_default()
+                font_tagline = ImageFont.load_default()
+        
+        # Add book title at the top
         title_bbox = draw.textbbox((0, 0), book_title, font=font_title)
         title_width = title_bbox[2] - title_bbox[0]
+        title_height = title_bbox[3] - title_bbox[1]
         title_x = (img.width - title_width) // 2
-        draw.text((title_x, 50), book_title, fill='white', font=font_title)
+        title_y = 80
         
-        # Add tagline
+        # Add text shadow for better visibility
+        shadow_offset = 3
+        draw.text((title_x + shadow_offset, title_y + shadow_offset), book_title, 
+                 fill=(0, 0, 0, 200), font=font_title)
+        draw.text((title_x, title_y), book_title, fill=(255, 255, 255, 255), font=font_title)
+        
+        # Add tagline at the bottom
         tagline_bbox = draw.textbbox((0, 0), tagline, font=font_tagline)
         tagline_width = tagline_bbox[2] - tagline_bbox[0]
+        tagline_height = tagline_bbox[3] - tagline_bbox[1]
         tagline_x = (img.width - tagline_width) // 2
-        draw.text((tagline_x, img.height - 100), tagline, fill='white', font=font_tagline)
+        tagline_y = img.height - tagline_height - 100
+        
+        # Add text shadow for tagline
+        draw.text((tagline_x + shadow_offset, tagline_y + shadow_offset), tagline, 
+                 fill=(0, 0, 0, 200), font=font_tagline)
+        draw.text((tagline_x, tagline_y), tagline, fill=(255, 255, 255, 255), font=font_tagline)
+        
+        # Add decorative border
+        border_width = 8
+        draw.rectangle([border_width//2, border_width//2, 
+                       img.width - border_width//2, img.height - border_width//2], 
+                      outline=(255, 255, 255, 150), width=border_width)
         
         # Convert back to RGB
         final_img = img_with_overlay.convert('RGB')
         
         # Convert to base64 for display in Streamlit
         buffer = io.BytesIO()
-        final_img.save(buffer, format='JPEG', quality=85)
+        final_img.save(buffer, format='JPEG', quality=90)
         img_str = base64.b64encode(buffer.getvalue()).decode()
         
         return img_str
@@ -180,12 +444,12 @@ def create_book_image_with_tagline(image_url, tagline, book_title):
 
 def generate_and_display_book_image(book_info, unsplash_key, hyperclova_key):
     """Generate and display book image with tagline"""
-    with st.spinner('이미지를 생성하고 있습니다...'):
+    with st.spinner('책의 내용을 분석하고 맞춤 이미지를 생성하고 있습니다...'):
         # Generate tagline
         tagline = generate_book_tagline(book_info, hyperclova_key)
         
-        # Fetch image from Unsplash
-        image_url = fetch_unsplash_image(book_info, unsplash_key)
+        # Fetch contextually appropriate image from Unsplash
+        image_url = fetch_unsplash_image(book_info, unsplash_key, hyperclova_key)
         
         if image_url:
             # Create image with tagline
@@ -195,6 +459,10 @@ def generate_and_display_book_image(book_info, unsplash_key, hyperclova_key):
             if img_base64:
                 st.markdown("### 📸 생성된 책 이미지")
                 st.image(f"data:image/jpeg;base64,{img_base64}", caption=f"태그라인: {tagline}")
+                
+                # Show the search context used
+                search_keyword = extract_search_keywords_from_book(book_info, hyperclova_key)
+                st.info(f"이미지 검색 키워드: {search_keyword}")
                 
                 # Download button
                 st.download_button(
@@ -436,8 +704,8 @@ def display_book_card(book, index):
                         st.rerun()
             with btn_col3:
                 # Image generation button
-                if st.button("🖼️", key=f"image_{isbn13}_{index}", help="책 이미지 생성"):
-                    if st.session_state.unsplash_api_key and st.session_state.api_key:
+                if st.button("🖼️", key=f"image_{isbn13}_{index}", help="맞춤 이미지 생성"):
+                    if st.session_state.get('unsplash_api_key') and st.session_state.api_key:
                         generate_and_display_book_image(info, st.session_state.unsplash_api_key, st.session_state.api_key)
                     else:
                         st.error("이미지 생성을 위해 Unsplash API 키와 HyperCLOVA API 키가 필요합니다.")

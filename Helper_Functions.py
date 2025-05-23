@@ -1,4 +1,17 @@
 def display_liked_book_card(book, index):
+    import streamlit as st
+    import requests
+    from streamlit_extras.colored_header import colored_header
+    import base64
+    from Frontend import add_custom_css
+    from pymongo.errors import DuplicateKeyError
+    import streamlit as st
+    import requests
+    import json
+    from datetime import datetime
+    from difflib import SequenceMatcher
+    from streamlit_extras.add_vertical_space import add_vertical_space
+    
     """Display a liked book card with a remove (cross) button using MongoDB."""
     info = book if isinstance(book, dict) else book.get("doc", {})
     with st.container():
@@ -48,11 +61,37 @@ def display_liked_book_card(book, index):
 
 # Add after MongoDB client initialization
 def get_user_library_collection():
+    import streamlit as st
+    import requests
+    from streamlit_extras.colored_header import colored_header
+    import base64
+    from Frontend import add_custom_css
+    from pymongo.errors import DuplicateKeyError
+    import streamlit as st
+    import requests
+    import json
+    from datetime import datetime
+    from difflib import SequenceMatcher
+    from streamlit_extras.add_vertical_space import add_vertical_space
+    
     client = st.session_state.db_client  # Already set in login.py
     db = client["Login_Credentials"]
     return db["user_libraries"]
 
 def like_book_for_user(username, book_info):
+    import streamlit as st
+    import requests
+    from streamlit_extras.colored_header import colored_header
+    import base64
+    from Frontend import add_custom_css
+    from pymongo.errors import DuplicateKeyError
+    import streamlit as st
+    import requests
+    import json
+    from datetime import datetime
+    from difflib import SequenceMatcher
+    from streamlit_extras.add_vertical_space import add_vertical_space
+    
     user_library = get_user_library_collection()
     isbn = book_info.get("isbn13")
     if not isbn:
@@ -72,11 +111,37 @@ def like_book_for_user(username, book_info):
     return True
 
 def get_liked_books(username):
+    import streamlit as st
+    import requests
+    from streamlit_extras.colored_header import colored_header
+    import base64
+    from Frontend import add_custom_css
+    from pymongo.errors import DuplicateKeyError
+    import streamlit as st
+    import requests
+    import json
+    from datetime import datetime
+    from difflib import SequenceMatcher
+    from streamlit_extras.add_vertical_space import add_vertical_space
+    
     user_library = get_user_library_collection()
     doc = user_library.find_one({"username": username})
     return doc.get("liked_books", []) if doc else []
 
 def unlike_book_for_user(username, isbn):
+    import streamlit as st
+    import requests
+    from streamlit_extras.colored_header import colored_header
+    import base64
+    from Frontend import add_custom_css
+    from pymongo.errors import DuplicateKeyError
+    import streamlit as st
+    import requests
+    import json
+    from datetime import datetime
+    from difflib import SequenceMatcher
+    from streamlit_extras.add_vertical_space import add_vertical_space
+
     user_library = get_user_library_collection()
     user_library.update_one(
         {"username": username},
@@ -84,6 +149,19 @@ def unlike_book_for_user(username, isbn):
     )
 
 def display_message(message):
+    import streamlit as st
+    import requests
+    from streamlit_extras.colored_header import colored_header
+    import base64
+    from Frontend import add_custom_css
+    from pymongo.errors import DuplicateKeyError
+    import streamlit as st
+    import requests
+    import json
+    from datetime import datetime
+    from difflib import SequenceMatcher
+    from streamlit_extras.add_vertical_space import add_vertical_space
+    
     if message["role"] != "system":
         if message["role"] == "assistant":
             avatar = "AI"
@@ -134,6 +212,19 @@ def display_message(message):
             """, unsafe_allow_html=True)
 
 def call_hyperclova_api(messages, api_key):
+    import streamlit as st
+    import requests
+    from streamlit_extras.colored_header import colored_header
+    import base64
+    from Frontend import add_custom_css
+    from pymongo.errors import DuplicateKeyError
+    import streamlit as st
+    import requests
+    import json
+    from datetime import datetime
+    from difflib import SequenceMatcher
+    from streamlit_extras.add_vertical_space import add_vertical_space
+
     """Helper function to call HyperCLOVA API"""
     try:
         endpoint = "https://clovastudio.stream.ntruss.com/testapp/v1/chat-completions/HCX-003"
@@ -162,6 +253,19 @@ def call_hyperclova_api(messages, api_key):
         return None
 
 def display_book_card(book, index):
+    import streamlit as st
+    import requests
+    from streamlit_extras.colored_header import colored_header
+    import base64
+    from Frontend import add_custom_css
+    from pymongo.errors import DuplicateKeyError
+    import streamlit as st
+    import requests
+    import json
+    from datetime import datetime
+    from difflib import SequenceMatcher
+    from streamlit_extras.add_vertical_space import add_vertical_space
+
     """Display a book card with like functionality, using MongoDB for liked books."""
     # Handle both old format (direct keys) and new format (nested in 'doc')
     if "doc" in book:
@@ -226,6 +330,19 @@ def display_book_card(book, index):
 # --- Load JSON files ---
 @st.cache_resource
 def load_kdc_jsons():
+    import streamlit as st
+    import requests
+    from streamlit_extras.colored_header import colored_header
+    import base64
+    from Frontend import add_custom_css
+    from pymongo.errors import DuplicateKeyError
+    import streamlit as st
+    import requests
+    import json
+    from datetime import datetime
+    from difflib import SequenceMatcher
+    from streamlit_extras.add_vertical_space import add_vertical_space
+
     with open("kdc.json", encoding="utf-8") as f:
         kdc_dict = json.load(f)
     with open("dtl_kdc.json", encoding="utf-8") as f:

@@ -238,69 +238,71 @@ def display_book_card(book, index):
                         st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
-# --- Load JSON files ---
+# --- Load only DTL_KDC JSON file ---
 @st.cache_resource
-def load_kdc_jsons():
-    with open("kdc.json", encoding="utf-8") as f:
-        kdc_dict = json.load(f)
+def load_dtl_kdc_json():
     with open("dtl_kdc.json", encoding="utf-8") as f:
         dtl_kdc_dict = json.load(f)
-    return kdc_dict, dtl_kdc_dict
+    return dtl_kdc_dict
 
-# --- HyperCLOVA API Integration ---
-def extract_keywords_with_hyperclova(user_input, api_key):
-    """Extract genre/topic keywords from user input using HyperCLOVA"""
+# --- Enhanced HyperCLOVA API Integration for Korean prompts ---
+def extract_keywords_and_find_code_with_hyperclova(user_input, api_key):
+    """Extract keywords and find best matching DTL_KDC code using HyperCLOVA for Korean prompts"""
     if not api_key:
-        return user_input  # Fallback to original input
+        return None, None, None
     
-    headers = {
-        'X-NCP-APIGW-API-KEY-ID': api_key,
-        'X-NCP-APIGW-API-KEY': api_key,
-        'Content-Type': 'application/json'
-    }
+    # Load DTL_KDC dictionary
+    dtl_kdc_dict = load_dtl_kdc_json()
     
-    # Enhanced prompt for better keyword extraction
+    # Create a formatted list of available categories for the prompt
+    categories_text = "\n".join([f"- {label}" for label in dtl_kdc_dict.values()])
+    
     prompt = f"""
-사용자의 입력에서 도서 장르나 주제와 관련된 핵심 키워드를 추출해주세요.
+사용자의 도서 요청을 분석하여 가장 적합한 도서 분류를 찾아주세요.
 
 사용자 입력: "{user_input}"
 
-다음 중에서 가장 관련있는 키워드들을 찾아서 나열해주세요:
-- 문학, 소설, 시, 에세이
-- 철학, 종교, 심리학
-- 역사, 전기, 정치
-- 과학, 기술, 의학
-- 예술, 음악, 영화
-- 경제, 경영, 자기계발
-- 교육, 아동, 청소년
-- 요리, 여행, 취미
-- 추리, 스릴러, 로맨스, 판타지, SF
+다음은 사용할 수 있는 도서 분류 목록입니다:
+{categories_text}
 
-답변은 관련 키워드만 간단히 나열해주세요 (예: "소설, 문학" 또는 "과학, 기술"):
+사용자가 요청한 내용을 분석하여:
+1. 핵심 키워드를 추출하고
+2. 위 분류 목록에서 가장 적합한 분류를 하나만 선택해주세요
+
+답변 형식:
+키워드: [추출된 핵심 키워드들]
+분류: [선택된 분류명]
+
+예시:
+- "추리소설 추천해주세요" → 키워드: 추리, 소설 / 분류: 추리소설
+- "역사에 관한 책이 궁금해요" → 키워드: 역사 / 분류: 한국사
+- "아이들이 읽을 만한 책" → 키워드: 아동, 어린이 / 분류: 아동문학
+
+정확히 위 형식으로만 답변해주세요.
 """
+    
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
     
     data = {
         "messages": [
             {
                 "role": "system",
-                "content": "당신은 도서 추천을 위한 키워드 추출 전문가입니다. 사용자의 입력에서 도서 장르나 주제 관련 핵심 키워드만 추출합니다."
+                "content": "당신은 한국어 도서 분류 전문가입니다. 사용자의 자연스러운 한국어 요청을 분석하여 가장 적합한 도서 분류를 찾아주는 역할을 합니다. 주어진 분류 목록에서만 선택하고, 정확한 형식으로 답변해야 합니다."
             },
             {
                 "role": "user", 
                 "content": prompt
             }
         ],
-        "topP": 0.8,
-        "topK": 0,
-        "maxTokens": 100,
+        "maxTokens": 200,
         "temperature": 0.3,
-        "repeatPenalty": 1.2,
-        "stopBefore": [],
-        "includeAiFilters": True
+        "topP": 0.8,
     }
     
     try:
-        # Replace with your actual HyperCLOVA endpoint
         response = requests.post(
             "https://clovastudio.stream.ntruss.com/testapp/v1/chat-completions/HCX-003",
             headers=headers,
@@ -310,62 +312,83 @@ def extract_keywords_with_hyperclova(user_input, api_key):
         
         if response.status_code == 200:
             result = response.json()
-            extracted_keywords = result['result']['message']['content'].strip()
-            return extracted_keywords if extracted_keywords else user_input
+            ai_response = result['result']['message']['content'].strip()
+            
+            # Parse the AI response
+            keywords = ""
+            selected_category = ""
+            
+            lines = ai_response.split('\n')
+            for line in lines:
+                if line.startswith('키워드:'):
+                    keywords = line.replace('키워드:', '').strip()
+                elif line.startswith('분류:'):
+                    selected_category = line.replace('분류:', '').strip()
+            
+            # Find the DTL_KDC code for the selected category
+            dtl_code = None
+            for code, label in dtl_kdc_dict.items():
+                if selected_category in label or label in selected_category:
+                    dtl_code = code
+                    break
+            
+            # If exact match not found, try fuzzy matching
+            if not dtl_code:
+                best_score = 0
+                for code, label in dtl_kdc_dict.items():
+                    score = SequenceMatcher(None, selected_category.lower(), label.lower()).ratio()
+                    if score > best_score and score > 0.5:
+                        best_score = score
+                        dtl_code = code
+                        selected_category = label
+            
+            return keywords, dtl_code, selected_category
+            
         else:
             st.warning(f"HyperCLOVA API error: {response.status_code}")
-            return user_input
+            return None, None, None
             
     except Exception as e:
         st.warning(f"Keyword extraction failed: {e}")
-        return user_input
+        return None, None, None
 
-# --- Find best matching code from JSON ---
-def find_best_code(user_query, code_dict):
+# --- Modified function to use only DTL_KDC ---
+def get_dtl_kdc_code(user_query, api_key=None):
+    """Get DTL_KDC code using HyperCLOVA for natural language understanding"""
+    
+    if api_key:
+        keywords, dtl_code, dtl_label = extract_keywords_and_find_code_with_hyperclova(user_query, api_key)
+        
+        if dtl_code and dtl_label:
+            # Display extracted information without showing the code number
+            st.info(f"추출된 키워드: {keywords}")
+            st.info(f"선택된 분류: {dtl_label}")
+            return dtl_code, dtl_label
+        else:
+            st.warning("적절한 도서 분류를 찾지 못했습니다. 다른 키워드로 시도해보세요.")
+            return None, None
+    
+    # Fallback: direct matching with DTL_KDC if no API key
+    dtl_kdc_dict = load_dtl_kdc_json()
     best_score = 0
     best_code = None
     best_label = ""
-    for code, label in code_dict.items():
+    
+    for code, label in dtl_kdc_dict.items():
         score = SequenceMatcher(None, user_query.lower(), label.lower()).ratio()
         if score > best_score:
             best_score = score
             best_code = code
             best_label = label
-    return best_code, best_label, best_score
+    
+    if best_score > 0.3:
+        return best_code, best_label
+    else:
+        return None, None
 
-def get_kdc_or_dtl_kdc(user_query, api_key=None):
-    # Load the dictionaries
-    kdc_dict, dtl_kdc_dict = load_kdc_jsons()
-    
-    # First try to extract keywords using HyperCLOVA
-    if api_key:
-        extracted_keywords = extract_keywords_with_hyperclova(user_query, api_key)
-        st.info(f"Extracted keywords: {extracted_keywords}")
-        search_query = extracted_keywords
-    else:
-        search_query = user_query
-    
-    dtl_code, dtl_label, dtl_score = find_best_code(search_query, dtl_kdc_dict)
-    kdc_code, kdc_label, kdc_score = find_best_code(search_query, kdc_dict)
-    
-    # Lower threshold and prefer more specific DTL codes
-    if dtl_score >= kdc_score and dtl_score > 0.3:
-        return "dtl_kdc", dtl_code, dtl_label
-    elif kdc_score > 0.3:
-        return "kdc", kdc_code, kdc_label
-    else:
-        # If no good match found, try with original user query
-        if search_query != user_query:
-            dtl_code, dtl_label, dtl_score = find_best_code(user_query, dtl_kdc_dict)
-            kdc_code, kdc_label, kdc_score = find_best_code(user_query, kdc_dict)
-            if dtl_score >= kdc_score and dtl_score > 0.2:
-                return "dtl_kdc", dtl_code, dtl_label
-            elif kdc_score > 0.2:
-                return "kdc", kdc_code, kdc_label
-        return None, None, None
-        
-# --- Query library API for books by KDC code ---
-def get_books_by_kdc(kdc_type, kdc_code, auth_key, page_no=1, page_size=10):
+# --- Modified API call function ---
+def get_books_by_dtl_kdc(dtl_kdc_code, auth_key, page_no=1, page_size=10):
+    """Get books using only DTL_KDC code"""
     url = "http://data4library.kr/api/loanItemSrch"
     params = {
         "authKey": auth_key,
@@ -373,47 +396,41 @@ def get_books_by_kdc(kdc_type, kdc_code, auth_key, page_no=1, page_size=10):
         "endDt": datetime.now().strftime("%Y-%m-%d"),
         "format": "json",
         "pageNo": page_no,
-        "pageSize": page_size
+        "pageSize": page_size,
+        "dtl_kdc": dtl_kdc_code  # Only use DTL_KDC
     }
-    params[kdc_type] = kdc_code
     
     try:
         r = requests.get(url, params=params)
         if r.status_code == 200:
             response_data = r.json()
             
-            # Check if response has the expected structure
             if "response" in response_data:
                 docs = response_data["response"].get("docs", [])
                 
-                # Handle case where docs might be a single dict instead of list
                 if isinstance(docs, dict):
                     docs = [docs]
                 elif not isinstance(docs, list):
                     return []
                 
-                # Extract and clean book data
                 books = []
                 for doc in docs:
-                    # Handle nested 'doc' structure if it exists
                     if "doc" in doc:
                         book_data = doc["doc"]
                     else:
                         book_data = doc
                     
-                    # Extract book information with fallback values
                     book_info = {
                         "bookname": book_data.get("bookname", book_data.get("bookName", "Unknown Title")),
                         "authors": book_data.get("authors", book_data.get("author", "Unknown Author")),
                         "publisher": book_data.get("publisher", "Unknown Publisher"),
                         "publication_year": book_data.get("publication_year", book_data.get("publicationYear", "Unknown Year")),
-                        "isbn13": book_data.get("isbn13", book_data.get("isbn", "")),  # ← Change "isbn" to "isbn13"
+                        "isbn13": book_data.get("isbn13", book_data.get("isbn", "")),
                         "loan_count": int(book_data.get("loan_count", book_data.get("loanCount", 0))),
                         "bookImageURL": book_data.get("bookImageURL", "")
                     }
                     books.append(book_info)
                 
-                # Sort by loan count (descending)
                 books = sorted(books, key=lambda x: x["loan_count"], reverse=True)
                 return books
             else:
@@ -549,7 +566,7 @@ def main():
 
     elif st.session_state.app_stage == "process_user_input":
         user_query = st.session_state.messages[-1]["content"]
-        kdc_type, kdc_code, kdc_label = get_kdc_or_dtl_kdc(user_query, st.session_state.api_key)
+        dtl_code, dtl_label = get_dtl_kdc_code(user_query, st.session_state.api_key)
         if not kdc_code:
             st.session_state.messages.append({
                 "role": "assistant",
@@ -558,11 +575,11 @@ def main():
             st.session_state.app_stage = "awaiting_user_input"
             st.rerun()
         if st.session_state.library_api_key:
-            books = get_books_by_kdc(kdc_type, kdc_code, st.session_state.library_api_key)
+            books = get_books_by_dtl_kdc(dtl_code, st.session_state.library_api_key)
             if books:
                 st.session_state.books_data = books
-                intro_msg = (f"I found these books for {kdc_type.upper()} code '{kdc_code}' ({kdc_label}), sorted by popularity.\n\n"
-                             f"한국어 답변: {kdc_type.upper()} 코드 '{kdc_code}' ({kdc_label})에 해당하는 도서를 인기순으로 찾았습니다.")
+                intro_msg = (f"선택하신 '{dtl_label}' 분류의 인기 도서를 찾았습니다.\n\n"
+                             f"I found popular books for the '{dtl_label}' category.")
                 st.session_state.messages.append({"role": "assistant", "content": intro_msg})
                 st.session_state.app_stage = "show_recommendations"
             else:

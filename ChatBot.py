@@ -10,6 +10,204 @@ import json
 from datetime import datetime
 from difflib import SequenceMatcher
 from streamlit_extras.add_vertical_space import add_vertical_space
+import requests
+import os
+from PIL import Image, ImageDraw, ImageFont
+import io
+
+def generate_book_tagline(book_info, api_key):
+    """Generate a Korean tagline for the book using HyperCLOVA"""
+    if not api_key:
+        return "책과 함께하는 특별한 여행"  # Default tagline
+    
+    title = book_info.get('bookname') or book_info.get('bookName', '알 수 없는 제목')
+    authors = book_info.get('authors') or book_info.get('author', '알 수 없는 저자')
+    
+    prompt = f"""
+책 제목: "{title}"
+저자: {authors}
+
+이 책에 대한 매력적이고 간결한 한국어 태그라인을 만들어주세요.
+태그라인은 10-15자 이내로 작성하고, 책의 분위기나 주제를 잘 표현해야 합니다.
+예시: "사랑이 시작되는 곳", "모험이 기다리는 세상", "진실을 찾는 여행"
+
+태그라인만 반환해주세요.
+"""
+    
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "messages": [
+            {
+                "role": "system",
+                "content": "당신은 책 마케팅 전문가입니다. 간결하고 매력적인 한국어 태그라인을 만드는 것이 전문입니다."
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        "maxTokens": 50,
+        "temperature": 0.7,
+        "topP": 0.8,
+    }
+    
+    try:
+        response = requests.post(
+            "https://clovastudio.stream.ntruss.com/testapp/v1/chat-completions/HCX-003",
+            headers=headers,
+            json=payload,
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            tagline = result['result']['message']['content'].strip()
+            # Clean up the tagline
+            tagline = tagline.replace('"', '').replace("'", '').strip()
+            return tagline if len(tagline) <= 20 else "책과 함께하는 특별한 여행"
+        else:
+            return "책과 함께하는 특별한 여행"
+    except Exception as e:
+        st.error(f"태그라인 생성 중 오류: {e}")
+        return "책과 함께하는 특별한 여행"
+
+def fetch_unsplash_image(book_info, unsplash_access_key):
+    """Fetch an appropriate image from Unsplash based on book information"""
+    if not unsplash_access_key:
+        return None
+    
+    title = book_info.get('bookname') or book_info.get('bookName', '')
+    authors = book_info.get('authors') or book_info.get('author', '')
+    
+    # Create search query based on book info
+    search_terms = []
+    if 'novel' in title.lower() or '소설' in title:
+        search_terms.append('book reading literature')
+    elif any(word in title.lower() for word in ['history', '역사']):
+        search_terms.append('history ancient books')
+    elif any(word in title.lower() for word in ['science', '과학']):
+        search_terms.append('science research books')
+    elif any(word in title.lower() for word in ['art', '예술']):
+        search_terms.append('art creative books')
+    else:
+        search_terms.append('books library reading')
+    
+    query = search_terms[0]
+    
+    url = "https://api.unsplash.com/search/photos"
+    params = {
+        "query": query,
+        "client_id": unsplash_access_key,
+        "per_page": 1,
+        "orientation": "landscape",
+        "content_filter": "high"
+    }
+    
+    try:
+        response = requests.get(url, params=params, timeout=30)
+        if response.status_code == 200:
+            data = response.json()
+            if data['results']:
+                image_url = data['results'][0]['urls']['regular']
+                return image_url
+        return None
+    except Exception as e:
+        st.error(f"이미지 검색 중 오류: {e}")
+        return None
+
+def create_book_image_with_tagline(image_url, tagline, book_title):
+    """Create an image with tagline overlay"""
+    try:
+        # Download the image
+        response = requests.get(image_url, timeout=30)
+        if response.status_code != 200:
+            return None
+        
+        # Open image with PIL
+        img = Image.open(io.BytesIO(response.content))
+        
+        # Resize image to standard size
+        img = img.resize((800, 600), Image.Resampling.LANCZOS)
+        
+        # Create drawing context
+        draw = ImageDraw.Draw(img)
+        
+        # Try to use a Korean font, fallback to default
+        try:
+            font_title = ImageFont.truetype("malgun.ttf", 40)  # Windows Korean font
+            font_tagline = ImageFont.truetype("malgun.ttf", 30)
+        except:
+            try:
+                font_title = ImageFont.truetype("NanumGothic.ttf", 40)  # Alternative Korean font
+                font_tagline = ImageFont.truetype("NanumGothic.ttf", 30)
+            except:
+                font_title = ImageFont.load_default()
+                font_tagline = ImageFont.load_default()
+        
+        # Add semi-transparent overlay for text
+        overlay = Image.new('RGBA', img.size, (0, 0, 0, 128))
+        img_with_overlay = Image.alpha_composite(img.convert('RGBA'), overlay)
+        draw = ImageDraw.Draw(img_with_overlay)
+        
+        # Add book title
+        title_bbox = draw.textbbox((0, 0), book_title, font=font_title)
+        title_width = title_bbox[2] - title_bbox[0]
+        title_x = (img.width - title_width) // 2
+        draw.text((title_x, 50), book_title, fill='white', font=font_title)
+        
+        # Add tagline
+        tagline_bbox = draw.textbbox((0, 0), tagline, font=font_tagline)
+        tagline_width = tagline_bbox[2] - tagline_bbox[0]
+        tagline_x = (img.width - tagline_width) // 2
+        draw.text((tagline_x, img.height - 100), tagline, fill='white', font=font_tagline)
+        
+        # Convert back to RGB
+        final_img = img_with_overlay.convert('RGB')
+        
+        # Convert to base64 for display in Streamlit
+        buffer = io.BytesIO()
+        final_img.save(buffer, format='JPEG', quality=85)
+        img_str = base64.b64encode(buffer.getvalue()).decode()
+        
+        return img_str
+    except Exception as e:
+        st.error(f"이미지 생성 중 오류: {e}")
+        return None
+
+def generate_and_display_book_image(book_info, unsplash_key, hyperclova_key):
+    """Generate and display book image with tagline"""
+    with st.spinner('이미지를 생성하고 있습니다...'):
+        # Generate tagline
+        tagline = generate_book_tagline(book_info, hyperclova_key)
+        
+        # Fetch image from Unsplash
+        image_url = fetch_unsplash_image(book_info, unsplash_key)
+        
+        if image_url:
+            # Create image with tagline
+            book_title = book_info.get('bookname') or book_info.get('bookName', '책')
+            img_base64 = create_book_image_with_tagline(image_url, tagline, book_title)
+            
+            if img_base64:
+                st.markdown("### 📸 생성된 책 이미지")
+                st.image(f"data:image/jpeg;base64,{img_base64}", caption=f"태그라인: {tagline}")
+                
+                # Download button
+                st.download_button(
+                    label="이미지 다운로드",
+                    data=base64.b64decode(img_base64),
+                    file_name=f"{book_title}_image.jpg",
+                    mime="image/jpeg"
+                )
+            else:
+                st.error("이미지 생성에 실패했습니다.")
+        else:
+            st.error("적절한 이미지를 찾을 수 없습니다.")
+
 
 add_custom_css()
 
@@ -177,7 +375,7 @@ def call_hyperclova_api(messages, api_key):
         return None
 
 def display_book_card(book, index):
-    """Display a book card with like functionality, using MongoDB for liked books."""
+    """Display a book card with like and image functionality, using MongoDB for liked books."""
     # Handle both old format (direct keys) and new format (nested in 'doc')
     if "doc" in book:
         info = book["doc"]
@@ -209,16 +407,16 @@ def display_book_card(book, index):
             st.markdown(f"""
             <div style="padding-left: 10px;">
                 <div style="font-size: 1.2em; font-weight: bold; color: #333; margin-bottom: 8px;">{title}</div>
-                <div style="margin-bottom: 4px;"><strong>Author:</strong> {authors}</div>
-                <div style="margin-bottom: 4px;"><strong>Publisher:</strong> {publisher}</div>
-                <div style="margin-bottom: 4px;"><strong>Year:</strong> {year}</div>
-                <div style="margin-bottom: 8px;"><strong>Loan Count:</strong> {loan_count}</div>
+                <div style="margin-bottom: 4px;"><strong>저자:</strong> {authors}</div>
+                <div style="margin-bottom: 4px;"><strong>출판사:</strong> {publisher}</div>
+                <div style="margin-bottom: 4px;"><strong>출간년도:</strong> {year}</div>
+                <div style="margin-bottom: 8px;"><strong>대출 횟수:</strong> {loan_count}</div>
             </div>
             """, unsafe_allow_html=True)
 
-            btn_col1, btn_col2 = st.columns([3, 1])
+            btn_col1, btn_col2, btn_col3 = st.columns([2, 1, 1])
             with btn_col1:
-                if st.button(f"Tell me more about this book", key=f"details_{isbn13}_{index}"):
+                if st.button(f"이 책에 대해 더 알아보기", key=f"details_{isbn13}_{index}"):
                     st.session_state.selected_book = info
                     st.session_state.app_stage = "discuss_book"
                     st.rerun()
@@ -227,15 +425,22 @@ def display_book_card(book, index):
                 liked_books = get_liked_books(st.session_state.username)
                 already_liked = any((b.get("isbn13") or b.get("isbn")) == isbn13 for b in liked_books)
                 if already_liked:
-                    st.button("❤️", key=f"liked_{isbn13}_{index}", help="Already in My Library", disabled=True)
+                    st.button("❤️", key=f"liked_{isbn13}_{index}", help="내 서재에 추가됨", disabled=True)
                 else:
-                    if st.button("❤️", key=f"like_{isbn13}_{index}", help="Add to My Library"):
+                    if st.button("❤️", key=f"like_{isbn13}_{index}", help="내 서재에 추가"):
                         # Store the book in MongoDB with consistent ISBN field
                         book_data = info.copy()
                         book_data['isbn13'] = isbn13
                         like_book_for_user(st.session_state.username, book_data)
-                        st.success("Added to your library!")
+                        st.success("서재에 추가되었습니다!")
                         st.rerun()
+            with btn_col3:
+                # Image generation button
+                if st.button("🖼️", key=f"image_{isbn13}_{index}", help="책 이미지 생성"):
+                    if st.session_state.unsplash_api_key and st.session_state.api_key:
+                        generate_and_display_book_image(info, st.session_state.unsplash_api_key, st.session_state.api_key)
+                    else:
+                        st.error("이미지 생성을 위해 Unsplash API 키와 HyperCLOVA API 키가 필요합니다.")
         st.markdown('</div>', unsafe_allow_html=True)
 
 # --- Load JSON files ---
@@ -500,7 +705,7 @@ def get_books_by_dtl_kdc(dtl_kdc_code, auth_key, page_no=1, page_size=10):
 # --- Sidebar (as provided) ---
 def setup_sidebar():
     with st.sidebar:
-        if st.button("My Liked Books"):
+        if st.button("좋아하는 책들"):
             st.session_state.app_stage = "show_liked_books"
             st.rerun()
 
@@ -510,7 +715,7 @@ def setup_sidebar():
                       -webkit-background-clip: text;
                       -webkit-text-fill-color: transparent;
                       font-weight: 700;">
-                API Configuration
+                API 설정
             </h3>
         </div>
         """, unsafe_allow_html=True)
@@ -520,21 +725,27 @@ def setup_sidebar():
             st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
             
             # HyperCLOVA API Key
-            hyperclova_api_key = st.text_input("Enter your HyperCLOVA API Key", 
+            hyperclova_api_key = st.text_input("HyperCLOVA API 키를 입력하세요", 
                                               type="password", 
                                               value=st.session_state.api_key)
             st.session_state.api_key = hyperclova_api_key
             
             # Library API Key
-            library_api_key = st.text_input("Enter Library API Key", 
+            library_api_key = st.text_input("도서관 API 키를 입력하세요", 
                                             type="password", 
                                             value=st.session_state.library_api_key)
             st.session_state.library_api_key = library_api_key
             
+            # Unsplash API Key
+            unsplash_api_key = st.text_input("Unsplash API 키를 입력하세요", 
+                                            type="password", 
+                                            value=st.session_state.get('unsplash_api_key', ''))
+            st.session_state.unsplash_api_key = unsplash_api_key
+            
             st.markdown('</div>', unsafe_allow_html=True)
         
         # Reset button
-        if st.button("Start Over 💫"):
+        if st.button("다시 시작하기 💫"):
             st.session_state.messages = [
                 {"role": "system", "content": "You are a helpful AI assistant specializing in book recommendations. For EVERY response, you must answer in BOTH English and Korean. First provide the complete answer in English, then provide '한국어 답변:' followed by the complete Korean translation of your answer."}
             ]
@@ -548,7 +759,7 @@ def setup_sidebar():
         st.markdown("""
         <div style="text-align: center; margin-top: 30px; padding: 10px;">
             <p style="color: #b3b3cc; font-size: 0.8rem;">
-                Powered by HyperCLOVA X & Korean Library API
+                HyperCLOVA X, 한국 도서관 API & Unsplash로 구동
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -689,6 +900,8 @@ def process_book_question(book, question, api_key, conversation_history):
 
 def main():
     # --- Initialize all session state variables before use ---
+    if "unsplash_api_key" not in st.session_state:
+        st.session_state.unsplash_api_key = ""
     if "api_key" not in st.session_state:
         st.session_state.api_key = ""
     if "library_api_key" not in st.session_state:

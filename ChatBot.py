@@ -565,36 +565,41 @@ def main():
                 st.rerun()
 
     elif st.session_state.app_stage == "process_user_input":
-        user_query = st.session_state.messages[-1]["content"]
-        dtl_code, dtl_label = get_dtl_kdc_code(user_query, st.session_state.api_key)
-        if not kdc_code:
-            st.session_state.messages.append({
-                "role": "assistant",
-                "content": "Sorry, I could not find a matching KDC code for your query. Please try describing your preferred genre more specifically (e.g., '소설', '역사', '과학', '자기계발').\n\n한국어 답변: 죄송합니다. 입력하신 내용과 일치하는 KDC 코드를 찾지 못했습니다. 원하시는 장르를 더 구체적으로 설명해 주세요 (예: '소설', '역사', '과학', '자기계발')."
-            })
-            st.session_state.app_stage = "awaiting_user_input"
-            st.rerun()
-        if st.session_state.library_api_key:
-            books = get_books_by_dtl_kdc(dtl_code, st.session_state.library_api_key)
-            if books:
-                st.session_state.books_data = books
-                intro_msg = (f"선택하신 '{dtl_label}' 분류의 인기 도서를 찾았습니다.\n\n"
-                             f"I found popular books for the '{dtl_label}' category.")
-                st.session_state.messages.append({"role": "assistant", "content": intro_msg})
-                st.session_state.app_stage = "show_recommendations"
+            user_query = st.session_state.messages[-1]["content"]
+            dtl_code, dtl_label = get_dtl_kdc_code(user_query, st.session_state.api_key)
+            
+            # Fix 1: Change 'kdc_code' to 'dtl_code'
+            if not dtl_code:
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": "Sorry, I could not find a matching DTL_KDC code for your query. Please try describing your preferred genre more specifically (e.g., '소설', '역사', '과학', '자기계발').\n\n한국어 답변: 죄송합니다. 입력하신 내용과 일치하는 DTL_KDC 코드를 찾지 못했습니다. 원하시는 장르를 더 구체적으로 설명해 주세요 (예: '소설', '역사', '과학', '자기계발')."
+                })
+                st.session_state.app_stage = "awaiting_user_input"
+                st.rerun()
+                
+            # Fix 2: Add 'return' after the error message or use 'elif' for the next condition
+            elif st.session_state.library_api_key:
+                books = get_books_by_dtl_kdc(dtl_code, st.session_state.library_api_key)
+                if books:
+                    st.session_state.books_data = books
+                    intro_msg = (f"선택하신 '{dtl_label}' 분류의 인기 도서를 찾았습니다.\n\n"
+                                 f"I found popular books for the '{dtl_label}' category.")
+                    st.session_state.messages.append({"role": "assistant", "content": intro_msg})
+                    st.session_state.app_stage = "show_recommendations"
+                else:
+                    # Fix 3: Update variable names in error message
+                    st.session_state.messages.append({
+                        "role": "assistant",
+                        "content": f"Sorry, no books found for DTL_KDC code '{dtl_code}' ({dtl_label}). Try a different genre or keyword.\n\n한국어 답변: DTL_KDC 코드 '{dtl_code}' ({dtl_label})에 해당하는 도서를 찾을 수 없습니다. 다른 장르나 키워드로 시도해 주세요."
+                    })
+                    st.session_state.app_stage = "awaiting_user_input"
             else:
                 st.session_state.messages.append({
                     "role": "assistant",
-                    "content": f"Sorry, no books found for {kdc_type.upper()} code '{kdc_code}' ({kdc_label}). Try a different genre or keyword.\n\n한국어 답변: {kdc_type.upper()} 코드 '{kdc_code}' ({kdc_label})에 해당하는 도서를 찾을 수 없습니다. 다른 장르나 키워드로 시도해 주세요."
+                    "content": "Library API key required. Please check sidebar.\n\n한국어 답변: 라이브러리 API 키가 필요합니다. 사이드바를 확인해 주세요."
                 })
                 st.session_state.app_stage = "awaiting_user_input"
-        else:
-            st.session_state.messages.append({
-                "role": "assistant",
-                "content": "Library API key required. Please check sidebar.\n\n한국어 답변: 라이브러리 API 키가 필요합니다. 사이드바를 확인해 주세요."
-            })
-            st.session_state.app_stage = "awaiting_user_input"
-        st.rerun()
+            st.rerun()
 
     elif st.session_state.app_stage == "show_recommendations":
         add_vertical_space(2)

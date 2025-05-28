@@ -259,21 +259,88 @@ dtl_kdc_dict = load_dtl_kdc_json()
 
 # --- Enhanced HyperCLOVA API Integration ---
 def extract_keywords_with_hyperclova(user_input, api_key, dtl_kdc_dict):
-    """Extract and match the most appropriate DTL KDC code using HyperCLOVA with two-step process"""
+    """Extract and match the most appropriate DTL KDC code or detect author name using HyperCLOVA"""
     if not api_key:
         return find_best_dtl_code_fallback(user_input, dtl_kdc_dict)
     
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    
+    # First check if user is asking for books by a specific author
+    author_detection_prompt = f"""
+사용자 입력: "{user_input}"
+
+다음 중 어떤 유형의 요청인지 판단해주세요:
+1. 특정 작가의 책을 찾는 요청 (예: "박경리 작품", "김영하 소설", "하루키 책", "Stephen King books")
+2. 특정 장르나 주제의 책을 찾는 요청 (예: "로맨스 소설", "역사책", "철학서")
+
+만약 특정 작가의 책을 찾는 요청이라면 "AUTHOR:" 뒤에 작가 이름을 반환하세요.
+만약 장르/주제 요청이라면 "GENRE"를 반환하세요.
+
+예시:
+- "무라카미 하루키 소설" → AUTHOR:무라카미 하루키
+- "로맨스 소설 추천" → GENRE
+- "김영하 작품" → AUTHOR:김영하
+- "역사 관련 책" → GENRE
+"""
+    
+    data_detection = {
+        "messages": [
+            {
+                "role": "system",
+                "content": "당신은 사용자 요청을 분석하여 작가 검색인지 장르 검색인지 구분하는 전문가입니다."
+            },
+            {
+                "role": "user", 
+                "content": author_detection_prompt
+            }
+        ],
+        "maxTokens": 100,
+        "temperature": 0.1,
+        "topP": 0.5,
+    }
+    
+    try:
+        # API call for request type detection
+        response = requests.post(
+            "https://clovastudio.stream.ntruss.com/testapp/v1/chat-completions/HCX-003",
+            headers=headers,
+            json=data_detection,
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            detection_result = result['result']['message']['content'].strip()
+            
+            # Check if it's an author request
+            if detection_result.startswith("AUTHOR:"):
+                author_name = detection_result.replace("AUTHOR:", "").strip()
+                return ("AUTHOR", author_name)
+            elif detection_result == "GENRE":
+                # Proceed with existing genre/category detection logic
+                return extract_genre_keywords(user_input, api_key, dtl_kdc_dict, headers)
+            else:
+                # Fallback to genre detection if unclear
+                return extract_genre_keywords(user_input, api_key, dtl_kdc_dict, headers)
+        else:
+            # If detection fails, fallback to genre detection
+            return extract_genre_keywords(user_input, api_key, dtl_kdc_dict, headers)
+            
+    except Exception as e:
+        st.warning(f"Request type detection failed: {e}")
+        return extract_genre_keywords(user_input, api_key, dtl_kdc_dict, headers)
+
+def extract_genre_keywords(user_input, api_key, dtl_kdc_dict, headers):
+    """Original genre-based keyword extraction logic"""
     # First attempt - exact keyword matching
     categories_list = []
     for code, label in dtl_kdc_dict.items():
         categories_list.append(f"- {code}: {label}")
     
     categories_text = "\n".join(categories_list)
-    
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
     
     # First prompt - look for exact keywords
     prompt_exact = f"""
@@ -389,6 +456,73 @@ def extract_keywords_with_hyperclova(user_input, api_key, dtl_kdc_dict):
         st.warning(f"Keyword extraction failed: {e}")
         return find_best_dtl_code_fallback(user_input, dtl_kdc_dict)
 
+# --- New function to get books by author ---
+def get_books_by_author(author_name, auth_key, page_no=1, page_size=10):
+    """Get books by specific author using Library API"""
+    url = "http://data4library.kr/api/srchBooks"
+    params = {
+        "authKey": auth_key,
+        "author": author_name,
+        "pageNo": page_no,
+        "pageSize": page_size,
+        "format": "json"
+    }
+    
+    try:
+        r = requests.get(url, params=params)
+        if r.status_code == 200:
+            response_data = r.json()
+            
+            # Check if response has the expected structure
+            if "response" in response_data and "docs" in response_data["response"]:
+                docs = response_data["response"]["docs"]
+                
+                # Handle case where docs might be a single dict instead of list
+                if isinstance(docs, dict):
+                    docs = [docs]
+                elif not isinstance(docs, list):
+                    return []
+                
+                # Extract and clean book data
+                books = []
+                for doc in docs:
+                    # Handle nested 'doc' structure if it exists
+                    if "doc" in doc:
+                        book_data = doc["doc"]
+                    else:
+                        book_data = doc
+                    
+                    # Extract book information with fallback values
+                    book_info = {
+                        "bookname": book_data.get("bookname", book_data.get("bookName", "Unknown Title")),
+                        "authors": book_data.get("authors", book_data.get("author", "Unknown Author")),
+                        "publisher": book_data.get("publisher", "Unknown Publisher"),
+                        "publication_year": book_data.get("publication_year", book_data.get("publicationYear", "Unknown Year")),
+                        "isbn13": book_data.get("isbn13", book_data.get("isbn", "")),
+                        "loan_count": int(book_data.get("loan_count", book_data.get("loanCount", 0))),
+                        "bookImageURL": book_data.get("bookImageURL", ""),
+                        "bookDtlUrl": book_data.get("bookDtlUrl", "")
+                    }
+                    books.append(book_info)
+                
+                # Sort by publication year (descending) and then by loan count
+                books = sorted(books, key=lambda x: (x.get("publication_year", "0"), x["loan_count"]), reverse=True)
+                return books
+            else:
+                st.error(f"No books found for author: {author_name}")
+                return []
+    except requests.exceptions.RequestException as e:
+        st.error(f"API request failed: {e}")
+        return []
+    except json.JSONDecodeError as e:
+        st.error(f"Failed to parse API response: {e}")
+        return []
+    except Exception as e:
+        st.error(f"Error processing API response: {e}")
+        return []
+    
+    return []
+    
 def find_best_dtl_code_fallback(user_query, dtl_kdc_dict, ai_suggested_code=None):
     """Fallback method to find the best matching DTL KDC code"""
     best_score = 0
@@ -420,17 +554,27 @@ def find_best_dtl_code_fallback(user_query, dtl_kdc_dict, ai_suggested_code=None
     return best_code, best_label if best_score > 0.2 else (None, None)
 
 def get_dtl_kdc_code(user_query, api_key=None):
-    """Get DTL KDC code using HyperCLOVA or fallback method"""
+    """Get DTL KDC code using HyperCLOVA or detect if it's an author request"""
     if api_key:
         try:
-            code, label = extract_keywords_with_hyperclova(user_query, api_key, dtl_kdc_dict)
-            if code and label:
-                st.info(f"Found category: {label} (Code: {code})")
-                return code, label
+            result = extract_keywords_with_hyperclova(user_query, api_key, dtl_kdc_dict)
+            
+            # Check if it's an author request
+            if isinstance(result, tuple) and len(result) == 2 and result[0] == "AUTHOR":
+                author_name = result[1]
+                st.info(f"Searching for books by author: {author_name}")
+                return "AUTHOR", author_name
+            
+            # Otherwise it's a genre request
+            elif isinstance(result, tuple) and len(result) == 2:
+                code, label = result
+                if code and label:
+                    st.info(f"Found category: {label} (Code: {code})")
+                    return code, label
         except Exception as e:
             st.warning(f"HyperCLOVA extraction failed, using fallback: {e}")
     
-    # Fallback to similarity matching
+    # Fallback to similarity matching for genre
     code, label = find_best_dtl_code_fallback(user_query, dtl_kdc_dict)
     if code and label:
         st.info(f"Found category: {label} (Code: {code})")
@@ -732,43 +876,74 @@ def main():
 
     elif st.session_state.app_stage == "process_user_input":
         user_input = st.session_state.messages[-1]["content"]
-        
-        # Only use Library API for book fetching, HyperCLOVA only for category matching
+    
+        # Detect if it's author or genre request
         dtl_code, dtl_label = get_dtl_kdc_code(user_input, HYPERCLOVA_API_KEY)
         
         if dtl_code and LIBRARY_API_KEY:
-            # Fetch books using the DTL KDC code (Library API only)
-            books = get_books_by_dtl_kdc(dtl_code, LIBRARY_API_KEY, page_no=1, page_size=20)
-            
-            if books:
-                st.session_state.books_data = books
+            if dtl_code == "AUTHOR":
+                # Author-based search
+                author_name = dtl_label
+                books = get_books_by_author(author_name, LIBRARY_API_KEY, page_no=1, page_size=20)
                 
-                # Generate AI response about the recommendations using HyperCLOVA
-                if HYPERCLOVA_API_KEY:
-                    ai_response = call_hyperclova_api([
-                        {"role": "system", "content": "You are a helpful book recommendation assistant. For EVERY response, answer in BOTH English and Korean. First provide complete English answer, then '한국어 답변:' with Korean translation."},
-                        {"role": "user", "content": f"I found {len(books)} books in the {dtl_label} category. Tell me about this category and encourage me to explore these recommendations."}
-                    ], HYPERCLOVA_API_KEY)
+                if books:
+                    st.session_state.books_data = books
                     
-                    if ai_response:
-                        st.session_state.messages.append({"role": "assistant", "content": ai_response})
-                    else:
-                        st.session_state.messages.append({
-                            "role": "assistant", 
-                            "content": f"Great! I found {len(books)} excellent books in the {dtl_label} category. These recommendations are based on popularity and should match your interests perfectly. Take a look at the books below!\n\n한국어 답변: 좋습니다! {dtl_label} 카테고리에서 {len(books)}권의 훌륭한 책을 찾았습니다. 이 추천은 인기도를 바탕으로 하며 당신의 관심사와 완벽하게 일치할 것입니다. 아래 책들을 살펴보세요!"
-                        })
-                
-                st.session_state.app_stage = "show_recommendations"
+                    # Generate AI response about the author's books
+                    if HYPERCLOVA_API_KEY:
+                        ai_response = call_hyperclova_api([
+                            {"role": "system", "content": "You are a helpful book recommendation assistant. For EVERY response, answer in BOTH English and Korean. First provide complete English answer, then '한국어 답변:' with Korean translation."},
+                            {"role": "user", "content": f"I found {len(books)} books by {author_name}. Tell me about this author and encourage me to explore their works."}
+                        ], HYPERCLOVA_API_KEY)
+                        
+                        if ai_response:
+                            st.session_state.messages.append({"role": "assistant", "content": ai_response})
+                        else:
+                            st.session_state.messages.append({
+                                "role": "assistant", 
+                                "content": f"Excellent! I found {len(books)} books by {author_name}. This author has created diverse works that showcase their unique writing style and perspective. Take a look at their collection below!\n\n한국어 답변: 훌륭합니다! {author_name}의 책 {len(books)}권을 찾았습니다. 이 작가는 독특한 글쓰기 스타일과 관점을 보여주는 다양한 작품을 창작했습니다. 아래에서 그들의 컬렉션을 살펴보세요!"
+                            })
+                    
+                    st.session_state.app_stage = "show_recommendations"
+                else:
+                    st.session_state.messages.append({
+                        "role": "assistant", 
+                        "content": f"I couldn't find books by '{author_name}' in the library database. Could you try with a different spelling or another author? You can also try genre-based searches like 'mystery novels' or 'romance books'.\n\n한국어 답변: 도서관 데이터베이스에서 '{author_name}'의 책을 찾을 수 없었습니다. 다른 철자나 다른 작가로 시도해 보시겠어요? '추리소설'이나 '로맨스 소설' 같은 장르 기반 검색도 시도해 볼 수 있습니다."
+                    })
+                    st.session_state.app_stage = "awaiting_user_input"
             else:
-                st.session_state.messages.append({
-                    "role": "assistant", 
-                    "content": "I couldn't find books in that specific category. Could you try describing your preferences differently? For example, mention specific genres like 'mystery novels', 'self-help books', or 'Korean literature'.\n\n한국어 답변: 해당 카테고리에서 책을 찾을 수 없었습니다. 다른 방식으로 선호도를 설명해 주시겠어요? 예를 들어 '추리소설', '자기계발서', '한국문학'과 같은 구체적인 장르를 언급해 주세요."
-                })
-                st.session_state.app_stage = "awaiting_user_input"
+                # Genre-based search (existing functionality)
+                books = get_books_by_dtl_kdc(dtl_code, LIBRARY_API_KEY, page_no=1, page_size=20)
+                
+                if books:
+                    st.session_state.books_data = books
+                    
+                    # Generate AI response about the recommendations using HyperCLOVA
+                    if HYPERCLOVA_API_KEY:
+                        ai_response = call_hyperclova_api([
+                            {"role": "system", "content": "You are a helpful book recommendation assistant. For EVERY response, answer in BOTH English and Korean. First provide complete English answer, then '한국어 답변:' with Korean translation."},
+                            {"role": "user", "content": f"I found {len(books)} books in the {dtl_label} category. Tell me about this category and encourage me to explore these recommendations."}
+                        ], HYPERCLOVA_API_KEY)
+                        
+                        if ai_response:
+                            st.session_state.messages.append({"role": "assistant", "content": ai_response})
+                        else:
+                            st.session_state.messages.append({
+                                "role": "assistant", 
+                                "content": f"Great! I found {len(books)} excellent books in the {dtl_label} category. These recommendations are based on popularity and should match your interests perfectly. Take a look at the books below!\n\n한국어 답변: 좋습니다! {dtl_label} 카테고리에서 {len(books)}권의 훌륭한 책을 찾았습니다. 이 추천은 인기도를 바탕으로 하며 당신의 관심사와 완벽하게 일치할 것입니다. 아래 책들을 살펴보세요!"
+                            })
+                    
+                    st.session_state.app_stage = "show_recommendations"
+                else:
+                    st.session_state.messages.append({
+                        "role": "assistant", 
+                        "content": "I couldn't find books in that specific category. Could you try describing your preferences differently? For example, mention specific genres like 'mystery novels', 'self-help books', or 'Korean literature', or try searching by author name.\n\n한국어 답변: 해당 카테고리에서 책을 찾을 수 없었습니다. 다른 방식으로 선호도를 설명해 주시겠어요? 예를 들어 '추리소설', '자기계발서', '한국문학'과 같은 구체적인 장르를 언급하거나 작가 이름으로 검색해 보세요."
+                    })
+                    st.session_state.app_stage = "awaiting_user_input"
         else:
             missing_items = []
             if not dtl_code:
-                missing_items.append("category matching")
+                missing_items.append("category/author matching")
             if not LIBRARY_API_KEY:
                 missing_items.append("Library API key")
             

@@ -5,8 +5,8 @@ from datetime import datetime
 from difflib import SequenceMatcher
 
 # --- API KEYS ---
-HYPERCLOVA_API_KEY = "YOUR_HYPERCLOVA_API_KEY"
-LIBRARY_API_KEY = "YOUR_LIBRARY_API_KEY"
+HYPERCLOVA_API_KEY = "nv-270db94eb8bf42108110b22f551e655axCwf"
+LIBRARY_API_KEY = "70b5336f9e785c681d5ff58906e6416124f80f59faa834164d297dcd8db63036"
 
 # --- Utility Functions ---
 

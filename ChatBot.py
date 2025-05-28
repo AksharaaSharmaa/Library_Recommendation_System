@@ -571,23 +571,37 @@ def get_dtl_kdc_code(user_query, api_key=None):
                 st.info(f"Found category: {label} (Code: {code})")
                 return code, label
             
-            # If HyperCLOVA couldn't determine the type, return None
+            # If HyperCLOVA couldn't determine the type, fall back to similarity matching
             else:
-                st.warning("Could not determine if this is an author or genre request. Please be more specific.")
-                return None, None
+                st.warning("HyperCLOVA couldn't categorize your request. Trying fallback search...")
+                code, label = find_best_dtl_code_fallback(user_query, dtl_kdc_dict)
+                if code and label:
+                    st.info(f"Found category using fallback: {label} (Code: {code})")
+                    return code, label
+                else:
+                    st.warning("Could not find a matching category. Please try being more specific with genres like 'romance novels', 'mystery books', or author names.")
+                    return None, None
                 
         except Exception as e:
-            st.warning(f"HyperCLOVA extraction failed: {e}")
-            return None, None
+            st.warning(f"HyperCLOVA extraction failed: {e}. Trying fallback search...")
+            # Fall back to similarity matching if API fails
+            code, label = find_best_dtl_code_fallback(user_query, dtl_kdc_dict)
+            if code and label:
+                st.info(f"Found category using fallback: {label} (Code: {code})")
+                return code, label
+            else:
+                st.warning("Could not find a matching category. Please try being more specific with genres like 'romance novels', 'mystery books', or author names.")
+                return None, None
     
-    # If no API key, try fallback similarity matching only for genre detection
-    # Don't attempt author detection without API
+    # If no API key, try fallback similarity matching for genre detection
+    st.info("Using fallback search without AI assistance...")
     code, label = find_best_dtl_code_fallback(user_query, dtl_kdc_dict)
     if code and label:
         st.info(f"Found category: {label} (Code: {code})")
         return code, label
-    
-    return None, None
+    else:
+        st.warning("Could not find a matching category. Please try being more specific with genres like 'romance novels', 'mystery books', or author names.")
+        return None, None
 # --- Query library API for books by DTL KDC code ---
 def get_books_by_dtl_kdc(dtl_kdc_code, auth_key, page_no=1, page_size=10):
     """Get books using DTL KDC code"""

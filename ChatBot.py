@@ -333,42 +333,6 @@ def extract_keywords_with_hyperclova(user_input, api_key, dtl_kdc_dict):
         st.warning(f"Request type detection failed: {e}")
         return None, None
 
-def get_dtl_kdc_code(user_query, api_key=None):
-    """Get DTL KDC code using HyperCLOVA or detect if it's an author request"""
-    if api_key:
-        try:
-            result = extract_keywords_with_hyperclova(user_query, api_key, dtl_kdc_dict)
-            
-            # Check if it's an author request
-            if isinstance(result, tuple) and len(result) == 2 and result[0] == "AUTHOR":
-                author_name = result[1]
-                st.info(f"Searching for books by author: {author_name}")
-                return "AUTHOR", author_name
-            
-            # Check if it's a genre request with valid results
-            elif isinstance(result, tuple) and len(result) == 2 and result[0] and result[1]:
-                code, label = result
-                st.info(f"Found category: {label} (Code: {code})")
-                return code, label
-            
-            # If HyperCLOVA couldn't determine the type, return None
-            else:
-                st.warning("Could not determine if this is an author or genre request. Please be more specific.")
-                return None, None
-                
-        except Exception as e:
-            st.warning(f"HyperCLOVA extraction failed: {e}")
-            return None, None
-    
-    # If no API key, try fallback similarity matching only for genre detection
-    # Don't attempt author detection without API
-    code, label = find_best_dtl_code_fallback(user_query, dtl_kdc_dict)
-    if code and label:
-        st.info(f"Found category: {label} (Code: {code})")
-        return code, label
-    
-    return None, None
-
 def extract_genre_keywords(user_input, api_key, dtl_kdc_dict, headers):
     """Original genre-based keyword extraction logic"""
     # First attempt - exact keyword matching
@@ -601,23 +565,29 @@ def get_dtl_kdc_code(user_query, api_key=None):
                 st.info(f"Searching for books by author: {author_name}")
                 return "AUTHOR", author_name
             
-            # Otherwise it's a genre request
-            elif isinstance(result, tuple) and len(result) == 2:
+            # Check if it's a genre request with valid results
+            elif isinstance(result, tuple) and len(result) == 2 and result[0] and result[1]:
                 code, label = result
-                if code and label:
-                    st.info(f"Found category: {label} (Code: {code})")
-                    return code, label
+                st.info(f"Found category: {label} (Code: {code})")
+                return code, label
+            
+            # If HyperCLOVA couldn't determine the type, return None
+            else:
+                st.warning("Could not determine if this is an author or genre request. Please be more specific.")
+                return None, None
+                
         except Exception as e:
-            st.warning(f"HyperCLOVA extraction failed, using fallback: {e}")
+            st.warning(f"HyperCLOVA extraction failed: {e}")
+            return None, None
     
-    # Fallback to similarity matching for genre
+    # If no API key, try fallback similarity matching only for genre detection
+    # Don't attempt author detection without API
     code, label = find_best_dtl_code_fallback(user_query, dtl_kdc_dict)
     if code and label:
         st.info(f"Found category: {label} (Code: {code})")
         return code, label
     
     return None, None
-
 # --- Query library API for books by DTL KDC code ---
 def get_books_by_dtl_kdc(dtl_kdc_code, auth_key, page_no=1, page_size=10):
     """Get books using DTL KDC code"""

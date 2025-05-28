@@ -17,6 +17,11 @@ import io
 import hashlib
 import random
 
+# --- EMBEDDED API KEYS ---
+HYPERCLOVA_API_KEY = "nv-270db94eb8bf42108110b22f551e655axCwf"
+LIBRARY_API_KEY = "70b5336f9e785c681d5ff58906e6416124f80f59faa834164d297dcd8db63036"
+UNSPLASH_API_KEY = "-nQHRvkZvI_xTTvtotG1hliBXL0laOhcUViQdgxajW0"
+
 def extract_search_keywords_from_book(book_info, api_key):
     """Extract contextual search keywords from book information using AI without predefined categories"""
     if not api_key:
@@ -705,8 +710,8 @@ def display_book_card(book, index):
             with btn_col3:
                 # Image generation button
                 if st.button("🖼️", key=f"image_{isbn13}_{index}", help="맞춤 이미지 생성"):
-                    if st.session_state.get('unsplash_api_key') and st.session_state.api_key:
-                        generate_and_display_book_image(info, st.session_state.unsplash_api_key, st.session_state.api_key)
+                    if st.session_state.get('unsplash_api_key') and HYPERCLOVA_API_KEY:
+                        generate_and_display_book_image(info, UNSPLASH_API_KEY, HYPERCLOVA_API_KEY)
                     else:
                         st.error("이미지 생성을 위해 Unsplash API 키와 HyperCLOVA API 키가 필요합니다.")
         st.markdown('</div>', unsafe_allow_html=True)
@@ -976,41 +981,6 @@ def setup_sidebar():
         if st.button("좋아하는 책들"):
             st.session_state.app_stage = "show_liked_books"
             st.rerun()
-
-        st.markdown("""
-        <div style="text-align: center; margin-bottom: 20px;">
-            <h3 style="background: linear-gradient(90deg, #3b2314, #221409);
-                      -webkit-background-clip: text;
-                      -webkit-text-fill-color: transparent;
-                      font-weight: 700;">
-                API 설정
-            </h3>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # API Keys section
-        with st.container():
-            st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
-            
-            # HyperCLOVA API Key
-            hyperclova_api_key = st.text_input("HyperCLOVA API 키를 입력하세요", 
-                                              type="password", 
-                                              value=st.session_state.api_key)
-            st.session_state.api_key = hyperclova_api_key
-            
-            # Library API Key
-            library_api_key = st.text_input("도서관 API 키를 입력하세요", 
-                                            type="password", 
-                                            value=st.session_state.library_api_key)
-            st.session_state.library_api_key = library_api_key
-            
-            # Unsplash API Key
-            unsplash_api_key = st.text_input("Unsplash API 키를 입력하세요", 
-                                            type="password", 
-                                            value=st.session_state.get('unsplash_api_key', ''))
-            st.session_state.unsplash_api_key = unsplash_api_key
-            
-            st.markdown('</div>', unsafe_allow_html=True)
         
         # Reset button
         if st.button("다시 시작하기 💫"):
@@ -1169,11 +1139,11 @@ def process_book_question(book, question, api_key, conversation_history):
 def main():
     # --- Initialize all session state variables before use ---
     if "unsplash_api_key" not in st.session_state:
-        st.session_state.unsplash_api_key = ""
+        UNSPLASH_API_KEY = ""
     if "api_key" not in st.session_state:
-        st.session_state.api_key = ""
+        HYPERCLOVA_API_KEY = ""
     if "library_api_key" not in st.session_state:
-        st.session_state.library_api_key = ""
+        LIBRARY_API_KEY = ""
     if "messages" not in st.session_state:
         st.session_state.messages = [{
             "role": "system",
@@ -1233,21 +1203,21 @@ def main():
         user_input = st.session_state.messages[-1]["content"]
         
         # Only use Library API for book fetching, HyperCLOVA only for category matching
-        dtl_code, dtl_label = get_dtl_kdc_code(user_input, st.session_state.api_key)
+        dtl_code, dtl_label = get_dtl_kdc_code(user_input, HYPERCLOVA_API_KEY)
         
-        if dtl_code and st.session_state.library_api_key:
+        if dtl_code and LIBRARY_API_KEY:
             # Fetch books using the DTL KDC code (Library API only)
-            books = get_books_by_dtl_kdc(dtl_code, st.session_state.library_api_key, page_no=1, page_size=20)
+            books = get_books_by_dtl_kdc(dtl_code, LIBRARY_API_KEY, page_no=1, page_size=20)
             
             if books:
                 st.session_state.books_data = books
                 
                 # Generate AI response about the recommendations using HyperCLOVA
-                if st.session_state.api_key:
+                if HYPERCLOVA_API_KEY:
                     ai_response = call_hyperclova_api([
                         {"role": "system", "content": "You are a helpful book recommendation assistant. For EVERY response, answer in BOTH English and Korean. First provide complete English answer, then '한국어 답변:' with Korean translation."},
                         {"role": "user", "content": f"I found {len(books)} books in the {dtl_label} category. Tell me about this category and encourage me to explore these recommendations."}
-                    ], st.session_state.api_key)
+                    ], HYPERCLOVA_API_KEY)
                     
                     if ai_response:
                         st.session_state.messages.append({"role": "assistant", "content": ai_response})
@@ -1268,7 +1238,7 @@ def main():
             missing_items = []
             if not dtl_code:
                 missing_items.append("category matching")
-            if not st.session_state.library_api_key:
+            if not LIBRARY_API_KEY:
                 missing_items.append("Library API key")
             
             error_msg = f"Unable to process your request due to: {', '.join(missing_items)}. Please check your API configuration in the sidebar."
@@ -1300,7 +1270,7 @@ def main():
                     st.session_state.app_stage = "process_user_input"
                 else:
                     # Process as follow-up question using HyperCLOVA
-                    response = process_followup_with_hyperclova(user_followup, st.session_state.api_key)
+                    response = process_followup_with_hyperclova(user_followup, HYPERCLOVA_API_KEY)
                     if response:
                         st.session_state.messages.append({"role": "assistant", "content": response})
                     else:
@@ -1350,7 +1320,7 @@ def main():
             
             # Show introduction message when first entering book discussion
             if not st.session_state.book_intro_shown:
-                intro_message = generate_book_introduction(book, st.session_state.api_key)
+                intro_message = generate_book_introduction(book, HYPERCLOVA_API_KEY)
                 st.session_state.book_discussion_messages.append({
                     "role": "assistant", 
                     "content": intro_message
@@ -1378,7 +1348,7 @@ def main():
                     ai_response = process_book_question(
                         book, 
                         book_question, 
-                        st.session_state.api_key,
+                        HYPERCLOVA_API_KEY,
                         st.session_state.book_discussion_messages
                     )
                     

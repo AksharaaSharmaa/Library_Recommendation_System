@@ -670,11 +670,11 @@ def process_book_question(book, question, api_key, conversation_history):
 def main():
     # --- Initialize all session state variables before use ---
     if "unsplash_api_key" not in st.session_state:
-        UNSPLASH_API_KEY = ""
+        st.session_state.unsplash_api_key = ""
     if "api_key" not in st.session_state:
-        HYPERCLOVA_API_KEY = ""
+        st.session_state.api_key = HYPERCLOVA_API_KEY
     if "library_api_key" not in st.session_state:
-        LIBRARY_API_KEY = ""
+        st.session_state.library_api_key = LIBRARY_API_KEY
     if "messages" not in st.session_state:
         st.session_state.messages = [{
             "role": "system",
@@ -918,6 +918,3 @@ def main():
         if st.button("← Back to Book Discovery", key="back_to_main"):
             st.session_state.app_stage = "show_recommendations" if st.session_state.books_data else "welcome"
             st.rerun()
-
-if __name__ == "__main__":
-    main()

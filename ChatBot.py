@@ -258,48 +258,63 @@ def load_dtl_kdc_json():
 dtl_kdc_dict = load_dtl_kdc_json()
 
 # --- Enhanced HyperCLOVA API Integration ---
-def extract_keywords_with_hyperclova(user_input, api_key, dtl_kdc_dict):
-    """Extract and match the most appropriate DTL KDC code or detect author name using HyperCLOVA"""
+def extract_keywords_with_hyperclova(user_input, api_key):
+    """Extract and detect if the user is asking for books by a specific author or a genre"""
     if not api_key:
-        return find_best_dtl_code_fallback(user_input, dtl_kdc_dict)
+        return detect_author_or_genre_fallback(user_input)
     
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
     
-    # First check if user is asking for books by a specific author
+    # Enhanced multi-language author detection prompt
     author_detection_prompt = f"""
-사용자 입력: "{user_input}"
+사용자 입력 분석: "{user_input}"
 
-다음 중 어떤 유형의 요청인지 판단해주세요:
-1. 특정 작가의 책을 찾는 요청 (예: "박경리 작품", "김영하 소설", "하루키 책", "Stephen King books")
-2. 특정 장르나 주제의 책을 찾는 요청 (예: "로맨스 소설", "역사책", "철학서")
+다음 기준으로 요청 유형을 정확히 판단해주세요:
 
-만약 특정 작가의 책을 찾는 요청이라면 "AUTHOR:" 뒤에 작가 이름을 반환하세요.
-만약 장르/주제 요청이라면 "GENRE"를 반환하세요.
+**작가 검색 패턴:**
+- 한국 작가: "박경리", "김영하", "무라카미 하루키", "황석영 작품", "이문열 소설"
+- 외국 작가: "Stephen King", "J.K. Rowling", "Agatha Christie", "셰익스피어", "헤밍웨이"
+- 작가 관련 표현: "~의 작품", "~가 쓴", "~저자", "~작가의 책", "books by ~"
+
+**장르/주제 검색 패턴:**
+- 문학 장르: "로맨스", "추리소설", "판타지", "SF", "호러", "스릴러"
+- 주제 분야: "역사책", "철학서", "과학도서", "경제학", "자기계발"
+- 일반적 표현: "~에 관한 책", "~분야", "~관련 도서"
+
+**판단 규칙:**
+1. 사람의 이름(성+이름 또는 단일명)이 포함 → 작가 검색
+2. 문학 장르나 학문 분야명만 포함 → 장르 검색
+3. 애매한 경우 문맥으로 판단
+
+응답 형식:
+- 작가 검색: "AUTHOR:작가이름"
+- 장르 검색: "GENRE"
 
 예시:
-- "무라카미 하루키 소설" → AUTHOR:무라카미 하루키
-- "로맨스 소설 추천" → GENRE
-- "김영하 작품" → AUTHOR:김영하
-- "역사 관련 책" → GENRE
+"무라카미 하루키 신작" → AUTHOR:무라카미 하루키
+"미스터리 소설 추천해줘" → GENRE
+"스티븐 킹" → AUTHOR:스티븐 킹
+"철학 관련 서적" → GENRE
+"해리포터 작가 책" → AUTHOR:J.K. Rowling
 """
     
     data_detection = {
         "messages": [
             {
                 "role": "system",
-                "content": "당신은 사용자 요청을 분석하여 작가 검색인지 장르 검색인지 구분하는 전문가입니다."
+                "content": "당신은 도서 검색 요청을 정확히 분석하는 전문가입니다. 사용자가 특정 작가의 책을 찾는지, 아니면 특정 장르나 주제의 책을 찾는지 명확하게 구분해야 합니다. 작가 이름이 포함되면 작가 검색, 장르나 주제만 언급되면 장르 검색으로 판단합니다."
             },
             {
                 "role": "user", 
                 "content": author_detection_prompt
             }
         ],
-        "maxTokens": 100,
+        "maxTokens": 150,
         "temperature": 0.1,
-        "topP": 0.5,
+        "topP": 0.3,
     }
     
     try:
@@ -315,23 +330,95 @@ def extract_keywords_with_hyperclova(user_input, api_key, dtl_kdc_dict):
             result = response.json()
             detection_result = result['result']['message']['content'].strip()
             
-            # Check if it's an author request
-            if detection_result.startswith("AUTHOR:"):
-                author_name = detection_result.replace("AUTHOR:", "").strip()
-                return ("AUTHOR", author_name)
-            elif detection_result == "GENRE":
-                # Proceed with existing genre/category detection logic
-                return extract_genre_keywords(user_input, api_key, dtl_kdc_dict, headers)
-            else:
-                # If unclear, return None instead of falling back to genre
-                return None, None
+            # Parse the response more robustly
+            if "AUTHOR:" in detection_result:
+                author_name = detection_result.split("AUTHOR:")[-1].strip()
+                # Clean up the author name
+                author_name = author_name.replace('"', '').replace("'", '').strip()
+                if author_name:
+                    return ("AUTHOR", author_name)
+            elif "GENRE" in detection_result:
+                return ("GENRE", user_input)
+            
+            # If response format is unexpected, try fallback
+            return detect_author_or_genre_fallback(user_input)
         else:
-            # If detection fails, return None instead of falling back
-            return None, None
+            st.warning(f"HyperCLOVA API error: {response.status_code}")
+            return detect_author_or_genre_fallback(user_input)
             
     except Exception as e:
         st.warning(f"Request type detection failed: {e}")
-        return None, None
+        return detect_author_or_genre_fallback(user_input)
+
+def detect_author_or_genre_fallback(user_input):
+    """Enhanced fallback method to detect if input is author name or genre without API"""
+    import re
+    
+    # Normalize input for better matching
+    normalized_input = user_input.lower().strip()
+    
+    # Common author-related keywords in multiple languages
+    author_keywords = [
+        '작가', '저자', '작품', '소설가', '시인', '문학가',
+        'author', 'writer', 'books by', 'novels by', 'works by',
+        '가 쓴', '의 작품', '의 책', '의 소설'
+    ]
+    
+    # Common genre keywords
+    genre_keywords = [
+        '소설', '로맨스', '추리', '미스터리', '판타지', 'sf', '공상과학',
+        '역사', '철학', '경제', '과학', '자기계발', '에세이', '시집',
+        'romance', 'mystery', 'fantasy', 'thriller', 'horror', 
+        'philosophy', 'history', 'economics', 'science'
+    ]
+    
+    # Check for explicit author indicators
+    for keyword in author_keywords:
+        if keyword in normalized_input:
+            # Extract potential author name by removing keywords
+            clean_name = user_input
+            for remove_word in ['작가', '저자', '작품', '소설', '책', 'author', 'writer', 'books by']:
+                clean_name = re.sub(rf'\b{re.escape(remove_word)}\b', '', clean_name, flags=re.IGNORECASE)
+            clean_name = clean_name.strip()
+            if clean_name:
+                return ("AUTHOR", clean_name)
+    
+    # Enhanced Korean name detection
+    korean_surnames = ['김', '박', '이', '최', '정', '강', '조', '윤', '장', '임', '한', '오', '서', '신', '권', '황', '안', '송', '류', '전']
+    has_korean_surname = any(surname in user_input for surname in korean_surnames)
+    
+    # Check for Western name patterns (Title case words)
+    words = user_input.split()
+    has_western_name_pattern = len(words) >= 2 and any(word[0].isupper() and len(word) > 1 for word in words)
+    
+    # Famous author name patterns (partial matching)
+    famous_authors = [
+        '하루키', '헤밍웨이', '톨스토이', '도스토옙스키', '카프카', '조이스',
+        'king', 'rowling', 'christie', 'shakespeare', 'hemingway'
+    ]
+    has_famous_author = any(author.lower() in normalized_input for author in famous_authors)
+    
+    # If it looks like a person's name
+    if has_korean_surname or has_western_name_pattern or has_famous_author:
+        # But check if it's clearly a genre request
+        genre_indicators = ['추천', '소개', '목록', '리스트', '종류', '분야', '관련']
+        is_genre_request = any(indicator in normalized_input for indicator in genre_indicators) and \
+                          any(genre in normalized_input for genre in genre_keywords)
+        
+        if not is_genre_request:
+            return ("AUTHOR", user_input.strip())
+    
+    # Check for clear genre indicators
+    if any(genre in normalized_input for genre in genre_keywords):
+        return ("GENRE", user_input)
+    
+    # Default fallback logic
+    # If input is very short and looks like a name, assume author
+    if len(words) <= 3 and (has_korean_surname or has_western_name_pattern):
+        return ("AUTHOR", user_input.strip())
+    
+    # Otherwise, assume genre request
+    return ("GENRE", user_input)
 
 def extract_genre_keywords(user_input, api_key, dtl_kdc_dict, headers):
     """Original genre-based keyword extraction logic"""
@@ -554,54 +641,71 @@ def find_best_dtl_code_fallback(user_query, dtl_kdc_dict, ai_suggested_code=None
     return best_code, best_label if best_score > 0.2 else (None, None)
 
 def get_dtl_kdc_code(user_query, api_key=None):
-    """Get DTL KDC code using HyperCLOVA or detect if it's an author request"""
+    """Enhanced DTL KDC code detection with better author/genre classification"""
     if api_key:
         try:
-            result = extract_keywords_with_hyperclova(user_query, api_key, dtl_kdc_dict)
+            # Use HyperCLOVA for classification
+            result = extract_keywords_with_hyperclova(user_query, api_key)
             
-            # Check if it's an author request
+            # Handle author requests
             if isinstance(result, tuple) and len(result) == 2 and result[0] == "AUTHOR":
                 author_name = result[1]
-                st.info(f"Searching for books by author: {author_name}")
+                st.info(f"🔍 Searching for books by author: **{author_name}**")
                 return "AUTHOR", author_name
             
-            # Check if it's a genre request with valid results
-            elif isinstance(result, tuple) and len(result) == 2 and result[0] and result[1]:
-                code, label = result
-                st.info(f"Found category: {label} (Code: {code})")
-                return code, label
-            
-            # If HyperCLOVA couldn't determine the type, fall back to similarity matching
-            else:
-                st.warning("HyperCLOVA couldn't categorize your request. Trying fallback search...")
-                code, label = find_best_dtl_code_fallback(user_query, dtl_kdc_dict)
+            # Handle genre requests
+            elif isinstance(result, tuple) and len(result) == 2 and result[0] == "GENRE":
+                user_input = result[1]
+                st.info(f"📚 Searching for books in genre/topic: **{user_input}**")
+                
+                # Use the existing genre extraction logic
+                code, label = extract_genre_keywords(user_input, api_key, dtl_kdc_dict, {
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                })
+                
                 if code and label:
-                    st.info(f"Found category using fallback: {label} (Code: {code})")
+                    st.success(f"✅ Found category: **{label}** (Code: {code})")
                     return code, label
                 else:
-                    st.warning("Could not find a matching category. Please try being more specific with genres like 'romance novels', 'mystery books', or author names.")
+                    st.warning("⚠️ Could not find a matching category. Please try being more specific with genres like 'romance novels', 'mystery books', or 'philosophy books'.")
                     return None, None
+            
+            # Fallback if HyperCLOVA result is unexpected
+            else:
+                st.info("🔄 HyperCLOVA response unclear, using fallback analysis...")
+                return handle_fallback_classification(user_query)
                 
         except Exception as e:
-            st.warning(f"HyperCLOVA extraction failed: {e}. Trying fallback search...")
-            # Fall back to similarity matching if API fails
-            code, label = find_best_dtl_code_fallback(user_query, dtl_kdc_dict)
-            if code and label:
-                st.info(f"Found category using fallback: {label} (Code: {code})")
-                return code, label
-            else:
-                st.warning("Could not find a matching category. Please try being more specific with genres like 'romance novels', 'mystery books', or author names.")
-                return None, None
+            st.warning(f"❌ HyperCLOVA processing failed: {e}. Using fallback search...")
+            return handle_fallback_classification(user_query)
     
-    # If no API key, try fallback similarity matching for genre detection
-    st.info("Using fallback search without AI assistance...")
-    code, label = find_best_dtl_code_fallback(user_query, dtl_kdc_dict)
-    if code and label:
-        st.info(f"Found category: {label} (Code: {code})")
-        return code, label
+    # No API key available
     else:
-        st.warning("Could not find a matching category. Please try being more specific with genres like 'romance novels', 'mystery books', or author names.")
-        return None, None
+        st.info("🔍 Using fallback search without AI assistance...")
+        return handle_fallback_classification(user_query)
+
+def handle_fallback_classification(user_query):
+    """Handle classification when HyperCLOVA is not available or fails"""
+    fallback_result = detect_author_or_genre_fallback(user_query)
+    
+    if fallback_result[0] == "AUTHOR":
+        author_name = fallback_result[1]
+        st.info(f"👤 Detected author search: **{author_name}**")
+        return "AUTHOR", author_name
+    else:
+        # Try genre matching with dtl_kdc_dict
+        code, label = find_best_dtl_code_fallback(user_query, dtl_kdc_dict)
+        if code and label:
+            st.success(f"📖 Found category: **{label}** (Code: {code})")
+            return code, label
+        else:
+            st.warning("⚠️ Could not find a matching category. Please try being more specific with:\n"
+                      "- **Author names**: 'Stephen King', '무라카미 하루키', 'J.K. Rowling'\n"
+                      "- **Genres**: 'romance novels', 'mystery books', 'philosophy', 'history'")
+            return None, None
+
+            
 # --- Query library API for books by DTL KDC code ---
 def get_books_by_dtl_kdc(dtl_kdc_code, auth_key, page_no=1, page_size=10):
     """Get books using DTL KDC code"""

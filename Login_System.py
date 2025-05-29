@@ -722,28 +722,14 @@ def display_sidebar_user_panel():
         </div>
         """, unsafe_allow_html=True)
         
-        # Alternative approach - add inline style as backup
+        # Add logout button with full width in sidebar
         st.markdown('<div class="sidebar-logout-button">', unsafe_allow_html=True)
-        col1, col2, col3 = st.columns([0.1, 0.8, 0.1])
-        with col2:
-            if st.button("Logout", key="sidebar_logout_btn", help="Sign out of your account"):
-                st.session_state.logged_in = False
-                st.session_state.username = ''
-                st.session_state.is_admin = False
-                st.rerun()
+        if st.button("Logout", key="sidebar_logout_btn", help="Sign out of your account"):
+            st.session_state.logged_in = False
+            st.session_state.username = ''
+            st.session_state.is_admin = False
+            st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
-        
-        # Add this additional CSS targeting the specific button key
-        st.markdown("""
-        <style>
-        button[data-testid="baseButton-secondary"][aria-label="Sign out of your account"] {
-            background-color: #f5f1e8 !important;
-            color: #6b5b47 !important;
-            border: 2px solid #8b7355 !important;
-            width: 100% !important;
-        }
-        </style>
-        """, unsafe_allow_html=True)
         
         # Add divider
         st.markdown('<hr class="sidebar-divider">', unsafe_allow_html=True)

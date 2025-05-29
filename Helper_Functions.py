@@ -245,15 +245,7 @@ def display_book_card(book, index):
                         st.success("서재에 추가되었습니다!")
                         st.rerun()
                         
-# --- Load JSON files ---
-@st.cache_resource
-def load_dtl_kdc_json():
-    """Load only the detailed KDC JSON file"""
-    with open("dtl_kdc.json", encoding="utf-8") as f:
-        dtl_kdc_dict = json.load(f)
-    return dtl_kdc_dict
 
-dtl_kdc_dict = load_dtl_kdc_json()
 
 # --- Enhanced HyperCLOVA API Integration ---
 def extract_keywords_with_hyperclova(user_input, api_key):

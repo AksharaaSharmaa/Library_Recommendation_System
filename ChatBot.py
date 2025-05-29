@@ -937,8 +937,6 @@ def process_book_question(book, question, api_key, conversation_history):
 
 def main():
     # --- Initialize all session state variables before use ---
-    if "unsplash_api_key" not in st.session_state:
-        st.session_state.unsplash_api_key = ""
     if "api_key" not in st.session_state:
         st.session_state.api_key = HYPERCLOVA_API_KEY
     if "library_api_key" not in st.session_state:

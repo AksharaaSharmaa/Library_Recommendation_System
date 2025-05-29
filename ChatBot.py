@@ -995,7 +995,8 @@ def main():
         with col1:
             user_input = st.text_input("Tell me about your favorite genre, author, or book (in Korean or English):", key="user_open_input")
         with col2:
-            if st.button("Send", key="send_open_input"):
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("✈️", key="send_open_input"):
                 if user_input:
                     st.session_state.messages.append({"role": "user", "content": user_input})
                     st.session_state.app_stage = "process_user_input"
@@ -1098,7 +1099,8 @@ def main():
         with col1:
             user_followup = st.text_input("Ask me anything about these books or request different recommendations:", key="followup_input")
         with col2:
-            if st.button("Send", key="send_followup"):
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("✈️", key="send_followup"):
                 if user_followup:
                     st.session_state.messages.append({"role": "user", "content": user_followup})
                     

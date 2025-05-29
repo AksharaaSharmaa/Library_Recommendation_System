@@ -145,7 +145,6 @@ def load_app(filepath):
         st.error(f"Failed to load {filepath}: {e}")
         st.info("Make sure all required Python files are present in your Streamlit app directory.")
 
-# Function to set custom CSS
 def set_custom_theme():
     # Define refined color palette with stronger contrast
     primary_dark = "#2A1F1A"       # Darker brown for better readability
@@ -315,8 +314,8 @@ def set_custom_theme():
             margin-bottom: 0.5rem !important;
         }}
         
-        /* Buttons */
-        .stButton > button {{
+        /* Main buttons (not sidebar logout) */
+        .stButton:not(.sidebar-logout-button) > button {{
             background: linear-gradient(145deg, {accent_light} 0%, {accent_dark} 100%) !important;
             color: {primary_dark} !important;
             border: 2px solid {primary_dark} !important;
@@ -336,7 +335,7 @@ def set_custom_theme():
             overflow: hidden;
         }}
         
-        .stButton > button::after {{
+        .stButton:not(.sidebar-logout-button) > button::after {{
             content: "";
             position: absolute;
             top: 0;
@@ -351,17 +350,17 @@ def set_custom_theme():
             transition: transform 0.6s ease;
         }}
         
-        .stButton > button:hover {{
+        .stButton:not(.sidebar-logout-button) > button:hover {{
             box-shadow: 0 10px 25px rgba(42, 31, 26, 0.3) !important;
             transform: translateY(-3px);
             background: linear-gradient(145deg, {accent_dark} 0%, {accent_light} 100%) !important;
         }}
         
-        .stButton > button:hover::after {{
+        .stButton:not(.sidebar-logout-button) > button:hover::after {{
             transform: translateX(100%);
         }}
         
-        .stButton > button:active {{
+        .stButton:not(.sidebar-logout-button) > button:active {{
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(42, 31, 26, 0.2) !important;
         }}
@@ -473,70 +472,107 @@ def set_custom_theme():
             text-transform: uppercase;
         }}
         
-        /* Sidebar logout button */
-        .sidebar-logout-button {
-            width: 100%;
-            margin-top: 0.8rem;
-        }
-        
-        .sidebar-logout-button button {
+        /* FIXED: Sidebar logout button with higher specificity */
+        div.sidebar-logout-button .stButton > button,
+        .sidebar-logout-button .stButton > button,
+        .stSidebar .sidebar-logout-button button,
+        section[data-testid="stSidebar"] .sidebar-logout-button button {{
             width: 100% !important;
             min-width: auto !important;
             padding: 0.7rem 1rem !important;
             font-size: 0.95rem !important;
             border-radius: 20px !important;
             
-            /* Styling to match the image */
+            /* Main styling */
             background-color: #f5f1e8 !important;
+            background: #f5f1e8 !important;
+            background-image: none !important;
             color: #6b5b47 !important;
             border: 2px solid #8b7355 !important;
             font-weight: 500 !important;
             letter-spacing: 0.02em !important;
             
-            /* Smooth transitions for hover effects */
+            /* Override any transform/uppercase from main buttons */
+            text-transform: none !important;
+            
+            /* Smooth transitions */
             transition: all 0.3s ease !important;
             cursor: pointer !important;
             
             /* Text styling */
             text-align: center !important;
             font-family: inherit !important;
-        }
+            display: block !important;
+            
+            /* Remove any pseudo-elements from main buttons */
+            position: relative !important;
+            overflow: visible !important;
+        }}
         
-        /* Hover effects */
-        .sidebar-logout-button button:hover {
+        /* Remove pseudo-element from logout button */
+        div.sidebar-logout-button .stButton > button::after,
+        .sidebar-logout-button .stButton > button::after,
+        .stSidebar .sidebar-logout-button button::after,
+        section[data-testid="stSidebar"] .sidebar-logout-button button::after {{
+            display: none !important;
+            content: none !important;
+        }}
+        
+        /* Hover effects for logout button */
+        div.sidebar-logout-button .stButton > button:hover,
+        .sidebar-logout-button .stButton > button:hover,
+        .stSidebar .sidebar-logout-button button:hover,
+        section[data-testid="stSidebar"] .sidebar-logout-button button:hover {{
             background-color: #ede6d7 !important;
+            background: #ede6d7 !important;
+            background-image: none !important;
             border-color: #7a6649 !important;
             color: #5a4d3a !important;
             transform: translateY(-1px) !important;
             box-shadow: 0 4px 12px rgba(139, 115, 85, 0.2) !important;
-        }
+        }}
         
-        /* Active/pressed state */
-        .sidebar-logout-button button:active {
+        /* Active/pressed state for logout button */
+        div.sidebar-logout-button .stButton > button:active,
+        .sidebar-logout-button .stButton > button:active,
+        .stSidebar .sidebar-logout-button button:active,
+        section[data-testid="stSidebar"] .sidebar-logout-button button:active {{
             transform: translateY(0) !important;
             box-shadow: 0 2px 6px rgba(139, 115, 85, 0.15) !important;
             background-color: #e8dcc8 !important;
-        }
+            background: #e8dcc8 !important;
+            background-image: none !important;
+        }}
         
-        /* Focus state for accessibility */
-        .sidebar-logout-button button:focus {
+        /* Focus state for logout button */
+        div.sidebar-logout-button .stButton > button:focus,
+        .sidebar-logout-button .stButton > button:focus,
+        .stSidebar .sidebar-logout-button button:focus,
+        section[data-testid="stSidebar"] .sidebar-logout-button button:focus {{
             outline: none !important;
             box-shadow: 0 0 0 3px rgba(139, 115, 85, 0.3) !important;
-        }
+        }}
         
-        /* Additional styling for better visual consistency */
-        .sidebar-logout-button button:disabled {
+        /* Disabled state for logout button */
+        div.sidebar-logout-button .stButton > button:disabled,
+        .sidebar-logout-button .stButton > button:disabled,
+        .stSidebar .sidebar-logout-button button:disabled,
+        section[data-testid="stSidebar"] .sidebar-logout-button button:disabled {{
             opacity: 0.6 !important;
             cursor: not-allowed !important;
             transform: none !important;
-        }
+        }}
         
-        .sidebar-logout-button button:disabled:hover {
+        div.sidebar-logout-button .stButton > button:disabled:hover,
+        .sidebar-logout-button .stButton > button:disabled:hover,
+        .stSidebar .sidebar-logout-button button:disabled:hover,
+        section[data-testid="stSidebar"] .sidebar-logout-button button:disabled:hover {{
             background-color: #f5f1e8 !important;
+            background: #f5f1e8 !important;
             border-color: #8b7355 !important;
             transform: none !important;
             box-shadow: none !important;
-        }
+        }}
         
         /* Database connection status */
         .db-status {{
@@ -594,7 +630,7 @@ def set_custom_theme():
         }}
         
         /* Sidebar general styling */
-        .css-1d391kg, .css-163ttbj, section[data-testid="stSidebar"] {{
+        .css-1d391kg, .css-1rsyhoq, .css-163ttbj, section[data-testid="stSidebar"] {{
             background: linear-gradient(180deg, rgba(249, 246, 242, 0.95) 0%, rgba(255, 255, 255, 0.95) 100%);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
@@ -634,7 +670,7 @@ def set_custom_theme():
                 font-size: 2rem !important;
             }}
             
-            .stButton > button {{
+            .stButton:not(.sidebar-logout-button) > button {{
                 min-width: 150px !important;
                 padding: 0.8rem 2rem !important;
             }}

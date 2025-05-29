@@ -5,3 +5,4 @@ pybase64
 pymongo
 plotly
 Pillow
+pandas

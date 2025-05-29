@@ -996,7 +996,7 @@ def main():
             user_input = st.text_input("Tell me about your favorite genre, author, or book (in Korean or English):", key="user_open_input")
         with col2:
             st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("✈️", key="send_open_input"):
+            if st.button("✈", key="send_open_input"):
                 if user_input:
                     st.session_state.messages.append({"role": "user", "content": user_input})
                     st.session_state.app_stage = "process_user_input"

@@ -1083,7 +1083,8 @@ def main():
         st.rerun()
 
     elif st.session_state.app_stage == "show_recommendations":
-        st.markdown("### 📖 Recommended Books for You")
+        add_vertical_space(2)
+        st.markdown("<h3 style='text-align:center;'>📖 Recommended Books for You</h3>", unsafe_allow_html=True)
         
         # Display books
         for i, book in enumerate(st.session_state.books_data[:10]):  # Show top 10 books
@@ -1115,7 +1116,8 @@ def main():
             book = st.session_state.selected_book
             
             # Display selected book details
-            st.markdown("### 📖 Let's Talk About This Book")
+            add_vertical_space(2)
+            st.markdown("<h3 style='text-align:center;'>📖 Let's Talk About This Book</h3>", unsafe_allow_html=True)
             
             with st.container():
                 cols = st.columns([1, 2])
@@ -1196,7 +1198,8 @@ def main():
                 st.rerun()
 
     elif st.session_state.app_stage == "show_liked_books":
-        st.markdown("### ❤️ My Library")
+        add_vertical_space(2)
+        st.markdown("<h3 style='text-align:center;'>❤️ My Library</h3>", unsafe_allow_html=True)
         
         if hasattr(st.session_state, 'username') and st.session_state.username:
             liked_books = get_liked_books(st.session_state.username)

@@ -474,18 +474,69 @@ def set_custom_theme():
         }}
         
         /* Sidebar logout button */
-        .sidebar-logout-button {{
+        .sidebar-logout-button {
             width: 100%;
             margin-top: 0.8rem;
-        }}
+        }
         
-        .sidebar-logout-button button {{
+        .sidebar-logout-button button {
             width: 100% !important;
             min-width: auto !important;
             padding: 0.7rem 1rem !important;
             font-size: 0.95rem !important;
-            border-radius: 10px !important;
-        }}
+            border-radius: 20px !important;
+            
+            /* Styling to match the image */
+            background-color: #f5f1e8 !important;
+            color: #6b5b47 !important;
+            border: 2px solid #8b7355 !important;
+            font-weight: 500 !important;
+            letter-spacing: 0.02em !important;
+            
+            /* Smooth transitions for hover effects */
+            transition: all 0.3s ease !important;
+            cursor: pointer !important;
+            
+            /* Text styling */
+            text-align: center !important;
+            font-family: inherit !important;
+        }
+        
+        /* Hover effects */
+        .sidebar-logout-button button:hover {
+            background-color: #ede6d7 !important;
+            border-color: #7a6649 !important;
+            color: #5a4d3a !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 12px rgba(139, 115, 85, 0.2) !important;
+        }
+        
+        /* Active/pressed state */
+        .sidebar-logout-button button:active {
+            transform: translateY(0) !important;
+            box-shadow: 0 2px 6px rgba(139, 115, 85, 0.15) !important;
+            background-color: #e8dcc8 !important;
+        }
+        
+        /* Focus state for accessibility */
+        .sidebar-logout-button button:focus {
+            outline: none !important;
+            box-shadow: 0 0 0 3px rgba(139, 115, 85, 0.3) !important;
+        }
+        
+        /* Additional styling for better visual consistency */
+        .sidebar-logout-button button:disabled {
+            opacity: 0.6 !important;
+            cursor: not-allowed !important;
+            transform: none !important;
+        }
+        
+        .sidebar-logout-button button:disabled:hover {
+            background-color: #f5f1e8 !important;
+            border-color: #8b7355 !important;
+            transform: none !important;
+            box-shadow: none !important;
+        }
         
         /* Database connection status */
         .db-status {{

@@ -777,12 +777,12 @@ def get_books_by_dtl_kdc(dtl_kdc_code, auth_key, page_no=1, page_size=10):
 # --- Sidebar (as provided) ---
 def setup_sidebar():
     with st.sidebar:
-        if st.button("좋아하는 책들"):
+        if st.button("좋아하는 책들 🪶📜"):
             st.session_state.app_stage = "show_liked_books"
             st.rerun()
         
         # Reset button
-        if st.button("다시 시작하기 💫"):
+        if st.button("다시 시작하기 ↻"):
             st.session_state.messages = [
                 {"role": "system", "content": "You are a helpful AI assistant specializing in book recommendations. For EVERY response, you must answer in BOTH English and Korean. First provide the complete answer in English, then provide '한국어 답변:' followed by the complete Korean translation of your answer."}
             ]
@@ -796,7 +796,7 @@ def setup_sidebar():
         st.markdown("""
         <div style="text-align: center; margin-top: 30px; padding: 10px;">
             <p style="color: #b3b3cc; font-size: 0.8rem;">
-                HyperCLOVA X, 한국 도서관 API & Unsplash로 구동
+                HyperCLOVA X 🙵 한국 도서관 API
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -994,7 +994,7 @@ def main():
             user_input = st.text_input("", key="user_open_input")
         with col2:
             st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("보내다", key="send_open_input"):
+            if st.button("보내다 ᯓ➤", key="send_open_input"):
                 if user_input:
                     st.session_state.messages.append({"role": "user", "content": user_input})
                     st.session_state.app_stage = "process_user_input"

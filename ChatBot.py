@@ -783,7 +783,8 @@ def setup_sidebar():
         
         # Calendar button
         if st.button("캘린더 | CALENDAR"):
-            exec(open(r"calendar.py", encoding="utf-8").read())
+            st.session_state.app_stage = "calendar"
+            st.rerun()
         
         # Reset button
         if st.button("다시 시작하기 | REFRESH PAGE"):
@@ -1234,3 +1235,6 @@ def main():
         if st.button("← Back to Book Discovery", key="back_to_main"):
             st.session_state.app_stage = "show_recommendations" if st.session_state.books_data else "welcome"
             st.rerun()
+
+    elif st.session_state.app_stage == "calendar":
+        exec(open(r"calendar.py", encoding="utf-8").read())

@@ -24,16 +24,6 @@ LIBRARY_API_KEY = "70b5336f9e785c681d5ff58906e6416124f80f59faa834164d297dcd8db63
 
 add_custom_css()
 
-# --- Load JSON files ---
-@st.cache_resource
-def load_dtl_kdc_json():
-    """Load only the detailed KDC JSON file"""
-    with open("dtl_kdc.json", encoding="utf-8") as f:
-        dtl_kdc_dict = json.load(f)
-    return dtl_kdc_dict
-
-dtl_kdc_dict = load_dtl_kdc_json()
-
 def main():
     # --- Initialize all session state variables before use ---
     if "api_key" not in st.session_state:

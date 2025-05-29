@@ -781,6 +781,10 @@ def setup_sidebar():
             st.session_state.app_stage = "show_liked_books"
             st.rerun()
         
+        # Calendar button
+        if st.button("캘린더 | CALENDAR"):
+            exec(open(r"calendar.py", encoding="utf-8").read())
+        
         # Reset button
         if st.button("다시 시작하기 | REFRESH PAGE"):
             st.session_state.messages = [

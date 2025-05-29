@@ -993,7 +993,7 @@ def main():
     elif st.session_state.app_stage == "awaiting_user_input":
         col1, col2 = st.columns([4, 1])
         with col1:
-            user_input = st.text_input("Tell me about your favorite genre, author, or book (in Korean or English):", key="user_open_input")
+            user_input = st.text_input("", key="user_open_input")
         with col2:
             st.markdown("<br>", unsafe_allow_html=True)
             if st.button("보내다", key="send_open_input"):

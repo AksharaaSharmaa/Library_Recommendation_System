@@ -13,14 +13,6 @@ st.set_page_config(
     layout="wide",
 )
 
-st.markdown("""
-    <style>
-        .stButton button, .stButton button * {
-            color: #fff !important;
-        }
-    </style>
-""", unsafe_allow_html=True)
-
 def load_page_based_on_role():
     """Load different pages based on user role"""
     if st.session_state.is_admin:

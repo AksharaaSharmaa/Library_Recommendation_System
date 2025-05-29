@@ -17,47 +17,13 @@ import io
 import hashlib
 import random
 from Helper_Functions import *
+import calendar
 
 # --- EMBEDDED API KEYS ---
 HYPERCLOVA_API_KEY = "nv-270db94eb8bf42108110b22f551e655axCwf"
 LIBRARY_API_KEY = "70b5336f9e785c681d5ff58906e6416124f80f59faa834164d297dcd8db63036"
 
 add_custom_css()
-
-import datetime
-import streamlit as st
-import calendar
-
-def calculate_reading_streak():
-    """Calculate current reading streak in days"""
-    if not st.session_state.reading_schedule:
-        return 0
-    
-    today = datetime.date.today()
-    streak = 0
-    current_date = today
-    
-    # Check backwards from today
-    for _ in range(365):  # Max check 1 year back
-        date_str = current_date.strftime("%Y-%m-%d")
-        
-        # Check if there are any completed books on this date
-        if date_str in st.session_state.reading_schedule:
-            completed_today = any(
-                entry['status'] == 'completed' 
-                for entry in st.session_state.reading_schedule[date_str]
-            )
-            if completed_today:
-                streak += 1
-            else:
-                break
-        else:
-            # No books scheduled/completed on this date
-            break
-        
-        current_date -= datetime.timedelta(days=1)
-    
-    return streak
 
 def main():
     # --- Initialize all session state variables before use ---
@@ -91,18 +57,6 @@ def main():
         st.session_state.book_discussion_messages = []
     if "book_intro_shown" not in st.session_state:
         st.session_state.book_intro_shown = False
-    if "reading_schedule" not in st.session_state:
-        st.session_state.reading_schedule = {}
-    if "reading_goals" not in st.session_state:
-        st.session_state.reading_goals = {}
-    if "liked_books" not in st.session_state:
-        st.session_state.liked_books = []
-    if "username" not in st.session_state:
-        st.session_state.username = "user"
-    if "calendar_month" not in st.session_state:
-        today = datetime.date.today()
-        st.session_state.calendar_month = today.month
-        st.session_state.calendar_year = today.year
 
     setup_sidebar()
 
@@ -343,315 +297,26 @@ def main():
                 st.session_state.app_stage = "show_recommendations"
                 st.rerun()
 
-    # Fixed Library and Calendar Stage - SINGLE POINT OF ENTRY
-    elif st.session_state.app_stage in ["show_library_and_calendar", "calendar", "show_liked_books"]:
-        # Load liked books when entering this stage
-        if hasattr(st.session_state, 'username') and st.session_state.username:
-            try:
-                # Refresh liked books from database
-                fresh_liked_books = get_liked_books(st.session_state.username)
-                st.session_state.liked_books = fresh_liked_books
-            except Exception as e:
-                st.error(f"Error loading liked books: {e}")
-                st.session_state.liked_books = []
-        
+    elif st.session_state.app_stage == "show_liked_books":
         add_vertical_space(2)
-        st.markdown("<h3 style='text-align:center;'>📚 My Library & Reading Calendar</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 style='text-align:center;'>❤️ My Library</h3>", unsafe_allow_html=True)
         
-        # Create tabs for Library and Calendar
-        lib_tab, cal_tab, goals_tab = st.tabs(["📚 My Library", "📅 Reading Calendar", "🎯 Reading Goals"])
-        
-        with lib_tab:
-            st.markdown("### ❤️ My Favorite Books")
+        if hasattr(st.session_state, 'username') and st.session_state.username:
+            liked_books = get_liked_books(st.session_state.username)
             
-            if st.session_state.liked_books:
-                st.markdown(f"**You have {len(st.session_state.liked_books)} books in your library:**")
-                
-                for i, book in enumerate(st.session_state.liked_books):
-                    # Use the improved display function from paste-2.txt
+            if liked_books:
+                st.markdown(f"You have {len(liked_books)} books in your library:")
+                for i, book in enumerate(liked_books):
                     display_liked_book_card(book, i)
-                
-                # Scheduling form
-                if st.session_state.get('show_scheduling_form', False):
-                    selected_book = st.session_state.get('selected_book_for_scheduling')
-                    if selected_book:
-                        st.markdown("### 📅 Schedule Reading")
-                        
-                        col1, col2, col3 = st.columns([2, 2, 1])
-                        with col1:
-                            target_date = st.date_input("Target completion date:", key="schedule_date")
-                        
-                        with col2:
-                            reading_status = st.selectbox(
-                                "Reading status:", 
-                                ['planned', 'reading', 'completed', 'paused'],
-                                key="schedule_status"
-                            )
-                        
-                        with col3:
-                            st.markdown("<br>", unsafe_allow_html=True)
-                            if st.button("Add to Calendar", key="add_to_calendar"):
-                                schedule_key = target_date.strftime("%Y-%m-%d")
-                                if schedule_key not in st.session_state.reading_schedule:
-                                    st.session_state.reading_schedule[schedule_key] = []
-                                
-                                # Check if book is already scheduled for this date
-                                book_exists = False
-                                for entry in st.session_state.reading_schedule[schedule_key]:
-                                    if (entry['book'].get('bookname') == selected_book.get('bookname') or 
-                                        entry['book'].get('bookName') == selected_book.get('bookName')):
-                                        book_exists = True
-                                        break
-                                
-                                if not book_exists:
-                                    st.session_state.reading_schedule[schedule_key].append({
-                                        'book': selected_book,
-                                        'status': reading_status,
-                                        'added_date': datetime.date.today().strftime("%Y-%m-%d")
-                                    })
-                                    st.success(f"✅ Added to your reading schedule for {target_date}")
-                                else:
-                                    st.warning("📚 This book is already scheduled for this date")
-                                
-                                st.session_state.show_scheduling_form = False
-                                st.session_state.selected_book_for_scheduling = None
-                                st.rerun()
-                        
-                        if st.button("Cancel", key="cancel_scheduling"):
-                            st.session_state.show_scheduling_form = False
-                            st.session_state.selected_book_for_scheduling = None
-                            st.rerun()
             else:
-                st.info("📚 Your library is empty. Start exploring books and add them to your favorites!")
-                if st.button("🔍 Discover Books"):
+                st.markdown("Your library is empty. Start exploring books to add them to your collection!")
+                if st.button("Discover Books"):
                     st.session_state.app_stage = "welcome"
                     st.rerun()
+        else:
+            st.error("Please ensure you are logged in to view your library.")
         
-        with cal_tab:
-            st.markdown("### 📅 Your Reading Calendar")
-            
-            # Display calendar view
-            today = datetime.date.today()
-            
-            # Month navigation
-            col1, col2, col3 = st.columns([1, 2, 1])
-            with col1:
-                if st.button("◀ Previous Month", key="prev_month"):
-                    st.session_state.calendar_month -= 1
-                    if st.session_state.calendar_month < 1:
-                        st.session_state.calendar_month = 12
-                        st.session_state.calendar_year -= 1
-                    st.rerun()
-            
-            with col2:
-                st.markdown(f"<h4 style='text-align:center;'>{calendar.month_name[st.session_state.calendar_month]} {st.session_state.calendar_year}</h4>", unsafe_allow_html=True)
-            
-            with col3:
-                if st.button("Next Month ▶", key="next_month"):
-                    st.session_state.calendar_month += 1
-                    if st.session_state.calendar_month > 12:
-                        st.session_state.calendar_month = 1
-                        st.session_state.calendar_year += 1
-                    st.rerun()
-            
-            # Generate calendar
-            cal = calendar.monthcalendar(st.session_state.calendar_year, st.session_state.calendar_month)
-            
-            # Days of week header
-            days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-            cols = st.columns(7)
-            for i, day in enumerate(days):
-                with cols[i]:
-                    st.markdown(f"<div style='text-align:center; font-weight:bold; padding: 10px;'>{day}</div>", unsafe_allow_html=True)
-            
-            # Calendar days
-            for week in cal:
-                cols = st.columns(7)
-                for i, day in enumerate(week):
-                    with cols[i]:
-                        if day == 0:
-                            st.markdown("<div style='height: 80px;'></div>", unsafe_allow_html=True)
-                        else:
-                            # Check if this date has scheduled books
-                            date_str = f"{st.session_state.calendar_year}-{st.session_state.calendar_month:02d}-{day:02d}"
-                            scheduled_books = st.session_state.reading_schedule.get(date_str, [])
-                            
-                            # Determine if this is today
-                            is_today = (day == today.day and 
-                                       st.session_state.calendar_month == today.month and 
-                                       st.session_state.calendar_year == today.year)
-                            
-                            # Create day cell
-                            if scheduled_books:
-                                book_count = len(scheduled_books)
-                                completed_count = sum(1 for entry in scheduled_books if entry['status'] == 'completed')
-                                
-                                color = "#4CAF50" if completed_count == book_count else "#2196F3"
-                                border = "3px solid #FF9800" if is_today else "1px solid #ddd"
-                                
-                                st.markdown(f"""
-                                <div style="height: 80px; border: {border}; border-radius: 4px; padding: 5px; 
-                                           background-color: {color}; color: white; text-align: center;">
-                                    <div style="font-weight: bold;">{day}</div>
-                                    <div style="font-size: 12px;">📚 {book_count} book{'s' if book_count > 1 else ''}</div>
-                                    <div style="font-size: 10px;">✅ {completed_count} done</div>
-                                </div>
-                                """, unsafe_allow_html=True)
-                            else:
-                                border = "3px solid #FF9800" if is_today else "1px solid #ddd"
-                                background = "#f5f5f5" if is_today else "white"
-                                
-                                st.markdown(f"""
-                                <div style="height: 80px; border: {border}; border-radius: 4px; padding: 5px; 
-                                           background-color: {background}; text-align: center;">
-                                    <div style="font-weight: bold; color: #333;">{day}</div>
-                                </div>
-                                """, unsafe_allow_html=True)
-            
-            # Schedule summary
-            if st.session_state.reading_schedule:
-                st.markdown("### 📋 Reading Schedule Summary")
-                
-                for date_str, books in sorted(st.session_state.reading_schedule.items()):
-                    with st.expander(f"📅 {date_str} ({len(books)} book{'s' if len(books) > 1 else ''})"):
-                        for i, entry in enumerate(books):
-                            book = entry['book']
-                            status = entry['status']
-                            
-                            col1, col2, col3 = st.columns([3, 1, 1])
-                            with col1:
-                                title = book.get('bookname') or book.get('bookName', 'Unknown Title')
-                                authors = book.get('authors') or book.get('author', 'Unknown Author')
-                                st.write(f"**{title}**")
-                                st.write(f"*by {authors}*")
-                            
-                            with col2:
-                                status_options = ['planned', 'reading', 'completed', 'paused']
-                                status_emoji = {'planned': '📋', 'reading': '📖', 'completed': '✅', 'paused': '⏸️'}
-                                
-                                current_status = st.selectbox(
-                                    "Status", 
-                                    status_options, 
-                                    index=status_options.index(status),
-                                    key=f"status_{date_str}_{i}",
-                                    format_func=lambda x: f"{status_emoji[x]} {x.title()}"
-                                )
-                                if current_status != status:
-                                    st.session_state.reading_schedule[date_str][i]['status'] = current_status
-                                    st.rerun()
-                            
-                            with col3:
-                                if st.button("🗑️ Remove", key=f"remove_{date_str}_{i}"):
-                                    st.session_state.reading_schedule[date_str].pop(i)
-                                    if not st.session_state.reading_schedule[date_str]:
-                                        del st.session_state.reading_schedule[date_str]
-                                    st.rerun()
-            else:
-                st.info("📅 No books scheduled yet. Add books from your library to your reading schedule!")
-        
-        with goals_tab:
-            st.markdown("### 🎯 Set Your Reading Goals")
-            
-            # Get current date info
-            current_month = datetime.date.today().strftime("%Y-%m")
-            current_year = datetime.date.today().year
-            
-            # Monthly reading goal
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown("#### 📅 Monthly Goal")
-                monthly_goal = st.number_input(
-                    f"Books to read this month ({current_month}):", 
-                    min_value=0, 
-                    max_value=50, 
-                    value=st.session_state.reading_goals.get(f"monthly_{current_month}", 3)
-                )
-                
-                if st.button("Set Monthly Goal"):
-                    st.session_state.reading_goals[f"monthly_{current_month}"] = monthly_goal
-                    st.success(f"📅 Monthly goal set to {monthly_goal} books!")
-                    st.rerun()
-            
-            with col2:
-                st.markdown("#### 📊 Monthly Progress")
-                # Calculate progress
-                completed_this_month = 0
-                current_month_start = datetime.date.today().replace(day=1)
-                for date_str, books in st.session_state.reading_schedule.items():
-                    try:
-                        schedule_date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
-                        if (schedule_date.year == current_month_start.year and 
-                            schedule_date.month == current_month_start.month):
-                            for entry in books:
-                                if entry['status'] == 'completed':
-                                    completed_this_month += 1
-                    except ValueError:
-                        continue
-                
-                current_goal = st.session_state.reading_goals.get(f"monthly_{current_month}", 3)
-                progress_percentage = (completed_this_month / current_goal * 100) if current_goal > 0 else 0
-                
-                st.metric(
-                    label="Books Completed This Month",
-                    value=f"{completed_this_month} / {current_goal}",
-                    delta=f"{progress_percentage:.1f}% complete"
-                )
-                
-                # Progress bar
-                st.progress(min(progress_percentage / 100, 1.0))
-            
-            # Yearly reading goal
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown("#### 🗓️ Yearly Goal")
-                yearly_goal = st.number_input(
-                    f"Books to read in {current_year}:", 
-                    min_value=0, 
-                    max_value=365, 
-                    value=st.session_state.reading_goals.get(f"yearly_{current_year}", 12)
-                )
-                
-                if st.button("Set Yearly Goal"):
-                    st.session_state.reading_goals[f"yearly_{current_year}"] = yearly_goal
-                    st.success(f"🗓️ Yearly goal set to {yearly_goal} books!")
-                    st.rerun()
-            
-            with col2:
-                st.markdown("#### 📈 Yearly Progress")
-                # Calculate yearly progress
-                completed_this_year = 0
-                for date_str, books in st.session_state.reading_schedule.items():
-                    try:
-                        schedule_date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
-                        if schedule_date.year == current_year:
-                            for entry in books:
-                                if entry['status'] == 'completed':
-                                    completed_this_year += 1
-                    except ValueError:
-                        continue
-                
-                current_yearly_goal = st.session_state.reading_goals.get(f"yearly_{current_year}", 12)
-                yearly_progress = (completed_this_year / current_yearly_goal * 100) if current_yearly_goal > 0 else 0
-                
-                st.metric(
-                    label=f"Books Completed in {current_year}",
-                    value=f"{completed_this_year} / {current_yearly_goal}",
-                    delta=f"{yearly_progress:.1f}% complete"
-                )
-                
-                # Yearly progress bar
-                st.progress(min(yearly_progress / 100, 1.0))
-            
-            # Reading streak
-            st.markdown("#### 🔥 Reading Streak")
-            streak_days = calculate_reading_streak()
-            st.metric(
-                label="Current Reading Streak",
-                value=f"{streak_days} days",
-                delta="Keep it up!" if streak_days > 0 else "Start your streak today!"
-            )
-        
-        # Navigation back to main
-        if st.button("🔍 Discover More Books"):
-            st.session_state.app_stage = "welcome"
+        # Back to main app button
+        if st.button("← Back to Book Discovery", key="back_to_main"):
+            st.session_state.app_stage = "show_recommendations" if st.session_state.books_data else "welcome"
             st.rerun()

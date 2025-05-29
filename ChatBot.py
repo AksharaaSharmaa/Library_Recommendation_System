@@ -972,6 +972,10 @@ def main():
         st.session_state.book_discussion_messages = []
     if "book_intro_shown" not in st.session_state:
         st.session_state.book_intro_shown = False
+    if "reading_schedule" not in st.session_state:
+        st.session_state.reading_schedule = {}
+    if "reading_goals" not in st.session_state:
+        st.session_state.reading_goals = {}
 
     setup_sidebar()
 
@@ -1237,4 +1241,165 @@ def main():
             st.rerun()
 
     elif st.session_state.app_stage == "calendar":
-        exec(open(r"calendar.py", encoding="utf-8").read())
+        # Reading Calendar and Goals Feature
+        add_vertical_space(2)
+        st.markdown("<h3 style='text-align:center;'>📅 Reading Calendar & Goals</h3>", unsafe_allow_html=True)
+        
+        # Navigation tabs
+        cal_tab1, cal_tab2 = st.tabs(["📅 Reading Schedule", "🎯 Reading Goals"])
+        
+        with cal_tab1:
+            st.markdown("### Plan Your Reading Journey")
+            
+            # Add book to schedule
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                if st.session_state.books_data:
+                    book_options = [f"{book.get('bookname', 'Unknown')} - {book.get('authors', 'Unknown Author')}" 
+                                  for book in st.session_state.books_data[:10]]
+                    selected_book_idx = st.selectbox("Select a book to schedule:", 
+                                                   range(len(book_options)), 
+                                                   format_func=lambda x: book_options[x])
+                else:
+                    st.info("No books available. Please search for books first.")
+                    selected_book_idx = None
+            
+            with col2:
+                target_date = st.date_input("Target completion date:")
+            
+            if st.button("Add to Schedule") and selected_book_idx is not None:
+                book = st.session_state.books_data[selected_book_idx]
+                schedule_key = str(target_date)
+                if schedule_key not in st.session_state.reading_schedule:
+                    st.session_state.reading_schedule[schedule_key] = []
+                st.session_state.reading_schedule[schedule_key].append({
+                    'book': book,
+                    'status': 'planned',
+                    'added_date': str(datetime.date.today())
+                })
+                st.success(f"Added to your reading schedule for {target_date}")
+                st.rerun()
+            
+            # Display current schedule
+            if st.session_state.reading_schedule:
+                st.markdown("### Your Reading Schedule")
+                
+                for date_str, books in sorted(st.session_state.reading_schedule.items()):
+                    with st.expander(f"📅 {date_str} ({len(books)} books)"):
+                        for i, entry in enumerate(books):
+                            book = entry['book']
+                            status = entry['status']
+                            
+                            col1, col2, col3 = st.columns([3, 1, 1])
+                            with col1:
+                                st.write(f"**{book.get('bookname', 'Unknown')}**")
+                                st.write(f"*by {book.get('authors', 'Unknown Author')}*")
+                            
+                            with col2:
+                                status_options = ['planned', 'reading', 'completed', 'paused']
+                                current_status = st.selectbox(
+                                    "Status", 
+                                    status_options, 
+                                    index=status_options.index(status),
+                                    key=f"status_{date_str}_{i}"
+                                )
+                                if current_status != status:
+                                    st.session_state.reading_schedule[date_str][i]['status'] = current_status
+                                    st.rerun()
+                            
+                            with col3:
+                                if st.button("Remove", key=f"remove_{date_str}_{i}"):
+                                    st.session_state.reading_schedule[date_str].pop(i)
+                                    if not st.session_state.reading_schedule[date_str]:
+                                        del st.session_state.reading_schedule[date_str]
+                                    st.rerun()
+            else:
+                st.info("No books scheduled yet. Add some books to your reading schedule!")
+        
+        with cal_tab2:
+            st.markdown("### Set Your Reading Goals")
+            
+            # Monthly reading goal
+            col1, col2 = st.columns(2)
+            with col1:
+                current_month = datetime.date.today().strftime("%Y-%m")
+                monthly_goal = st.number_input(
+                    f"Books to read this month ({current_month}):", 
+                    min_value=0, 
+                    max_value=50, 
+                    value=st.session_state.reading_goals.get(f"monthly_{current_month}", 3)
+                )
+                
+                if st.button("Set Monthly Goal"):
+                    st.session_state.reading_goals[f"monthly_{current_month}"] = monthly_goal
+                    st.success(f"Monthly goal set to {monthly_goal} books!")
+                    st.rerun()
+            
+            with col2:
+                # Calculate progress
+                completed_this_month = 0
+                for date_str, books in st.session_state.reading_schedule.items():
+                    if date_str.startswith(current_month):
+                        completed_this_month += sum(1 for entry in books if entry['status'] == 'completed')
+                
+                current_goal = st.session_state.reading_goals.get(f"monthly_{current_month}", 3)
+                progress = min(completed_this_month / current_goal * 100, 100) if current_goal > 0 else 0
+                
+                st.metric("This Month's Progress", f"{completed_this_month}/{current_goal}", f"{progress:.1f}%")
+                st.progress(progress / 100)
+            
+            # Yearly reading goal
+            current_year = datetime.date.today().year
+            yearly_goal = st.number_input(
+                f"Books to read in {current_year}:", 
+                min_value=0, 
+                max_value=365, 
+                value=st.session_state.reading_goals.get(f"yearly_{current_year}", 24)
+            )
+            
+            if st.button("Set Yearly Goal"):
+                st.session_state.reading_goals[f"yearly_{current_year}"] = yearly_goal
+                st.success(f"Yearly goal set to {yearly_goal} books!")
+                st.rerun()
+            
+            # Yearly progress
+            completed_this_year = 0
+            for date_str, books in st.session_state.reading_schedule.items():
+                if date_str.startswith(str(current_year)):
+                    completed_this_year += sum(1 for entry in books if entry['status'] == 'completed')
+            
+            yearly_current_goal = st.session_state.reading_goals.get(f"yearly_{current_year}", 24)
+            yearly_progress = min(completed_this_year / yearly_current_goal * 100, 100) if yearly_current_goal > 0 else 0
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("This Year's Progress", f"{completed_this_year}/{yearly_current_goal}", f"{yearly_progress:.1f}%")
+            with col2:
+                st.progress(yearly_progress / 100)
+            
+            # Reading statistics
+            if st.session_state.reading_schedule:
+                st.markdown("### Reading Statistics")
+                
+                total_books = sum(len(books) for books in st.session_state.reading_schedule.values())
+                completed_books = sum(sum(1 for entry in books if entry['status'] == 'completed') 
+                                    for books in st.session_state.reading_schedule.values())
+                reading_books = sum(sum(1 for entry in books if entry['status'] == 'reading') 
+                                  for books in st.session_state.reading_schedule.values())
+                planned_books = sum(sum(1 for entry in books if entry['status'] == 'planned') 
+                                  for books in st.session_state.reading_schedule.values())
+                
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.metric("Total Scheduled", total_books)
+                with col2:
+                    st.metric("Completed", completed_books)
+                with col3:
+                    st.metric("Currently Reading", reading_books)
+                with col4:
+                    st.metric("Planned", planned_books)
+        
+        # Back to main app button
+        if st.button("← Back to Book Discovery", key="back_to_main_from_calendar"):
+            st.session_state.app_stage = "show_recommendations" if st.session_state.books_data else "welcome"
+            st.rerun()

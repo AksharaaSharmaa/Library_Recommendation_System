@@ -801,13 +801,10 @@ def setup_sidebar():
             st.session_state.app_stage = "show_liked_books"
             st.rerun()
         
-        # Reading Schedule button
+        # Reading Schedule button - Navigate to calendar page
         if st.button("📅 내 독서 일정 (My Reading Schedule)", use_container_width=True):
-            try:
-                # Run the calendar.py script
-                run_location_script("calendar")
-            except Exception as e:
-                st.error(f"Error loading reading schedule: {str(e)}")
+            st.session_state.app_stage = "calendar"
+            st.rerun()
         
         # Back to Book Discovery button (show only when not on main page)
         if st.session_state.get("app_stage") not in ["welcome", "awaiting_user_input", "process_user_input"]:
@@ -916,6 +913,7 @@ def setup_sidebar():
         </div>
         """, unsafe_allow_html=True)
 
+        
 # --- Process follow-up questions with HyperCLOVA ---
 def process_followup_with_hyperclova(user_input, api_key):
     """Process follow-up questions using HyperCLOVA API"""

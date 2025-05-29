@@ -996,16 +996,6 @@ def main():
             user_input = st.text_input("Tell me about your favorite genre, author, or book (in Korean or English):", key="user_open_input")
         with col2:
             st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown("""
-            <style>
-            div.stButton > button[key="send_open_input"] {
-                width: 50px !important;
-                height: 40px !important;
-                padding: 0 !important;
-                font-size: 18px !important;
-            }
-            </style>
-            """, unsafe_allow_html=True)
             if st.button("✈️", key="send_open_input"):
                 if user_input:
                     st.session_state.messages.append({"role": "user", "content": user_input})
@@ -1110,16 +1100,6 @@ def main():
             user_followup = st.text_input("Ask me anything about these books or request different recommendations:", key="followup_input")
         with col2:
             st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown("""
-            <style>
-            div.stButton > button[key="send_followup"] {
-                width: 50px !important;
-                height: 40px !important;
-                padding: 0 !important;
-                font-size: 18px !important;
-            }
-            </style>
-            """, unsafe_allow_html=True)
             if st.button("✈️", key="send_followup"):
                 if user_followup:
                     st.session_state.messages.append({"role": "user", "content": user_followup})

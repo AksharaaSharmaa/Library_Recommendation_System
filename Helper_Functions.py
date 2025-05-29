@@ -21,6 +21,16 @@ import random
 HYPERCLOVA_API_KEY = "nv-270db94eb8bf42108110b22f551e655axCwf"
 LIBRARY_API_KEY = "70b5336f9e785c681d5ff58906e6416124f80f59faa834164d297dcd8db63036"
 
+# --- Load JSON files ---
+@st.cache_resource
+def load_dtl_kdc_json():
+    """Load only the detailed KDC JSON file"""
+    with open("dtl_kdc.json", encoding="utf-8") as f:
+        dtl_kdc_dict = json.load(f)
+    return dtl_kdc_dict
+
+dtl_kdc_dict = load_dtl_kdc_json()
+
 def display_liked_book_card(book, index):
     """Display a liked book card with a remove (cross) button using MongoDB."""
     info = book if isinstance(book, dict) else book.get("doc", {})

@@ -991,12 +991,15 @@ def main():
         st.rerun()
 
     elif st.session_state.app_stage == "awaiting_user_input":
-        user_input = st.text_input("Tell me about your favorite genre, author, or book (in Korean or English):", key="user_open_input")
-        if st.button("Send", key="send_open_input"):
-            if user_input:
-                st.session_state.messages.append({"role": "user", "content": user_input})
-                st.session_state.app_stage = "process_user_input"
-                st.rerun()
+        col1, col2 = st.columns([4, 1])
+        with col1:
+            user_input = st.text_input("Tell me about your favorite genre, author, or book (in Korean or English):", key="user_open_input")
+        with col2:
+            if st.button("Send", key="send_open_input"):
+                if user_input:
+                    st.session_state.messages.append({"role": "user", "content": user_input})
+                    st.session_state.app_stage = "process_user_input"
+                    st.rerun()
 
     elif st.session_state.app_stage == "process_user_input":
         user_input = st.session_state.messages[-1]["content"]
@@ -1091,25 +1094,28 @@ def main():
             display_book_card(book, i)
         
         # Chat input for follow-up questions
-        user_followup = st.text_input("Ask me anything about these books or request different recommendations:", key="followup_input")
-        if st.button("Send", key="send_followup"):
-            if user_followup:
-                st.session_state.messages.append({"role": "user", "content": user_followup})
-                
-                # Check if user wants new recommendations
-                if any(keyword in user_followup.lower() for keyword in ['different', 'other', 'new', 'more', '다른', '새로운', '더']):
-                    st.session_state.app_stage = "process_user_input"
-                else:
-                    # Process as follow-up question using HyperCLOVA
-                    response = process_followup_with_hyperclova(user_followup, HYPERCLOVA_API_KEY)
-                    if response:
-                        st.session_state.messages.append({"role": "assistant", "content": response})
+        col1, col2 = st.columns([4, 1])
+        with col1:
+            user_followup = st.text_input("Ask me anything about these books or request different recommendations:", key="followup_input")
+        with col2:
+            if st.button("Send", key="send_followup"):
+                if user_followup:
+                    st.session_state.messages.append({"role": "user", "content": user_followup})
+                    
+                    # Check if user wants new recommendations
+                    if any(keyword in user_followup.lower() for keyword in ['different', 'other', 'new', 'more', '다른', '새로운', '더']):
+                        st.session_state.app_stage = "process_user_input"
                     else:
-                        st.session_state.messages.append({
-                            "role": "assistant",
-                            "content": "I'd be happy to help you with more information about these books or other recommendations. What specific aspect would you like to know more about?\n\n한국어 답변: 이 책들에 대한 더 많은 정보나 다른 추천에 대해 기꺼이 도와드리겠습니다. 어떤 구체적인 측면에 대해 더 알고 싶으신가요?"
-                        })
-                st.rerun()
+                        # Process as follow-up question using HyperCLOVA
+                        response = process_followup_with_hyperclova(user_followup, HYPERCLOVA_API_KEY)
+                        if response:
+                            st.session_state.messages.append({"role": "assistant", "content": response})
+                        else:
+                            st.session_state.messages.append({
+                                "role": "assistant",
+                                "content": "I'd be happy to help you with more information about these books or other recommendations. What specific aspect would you like to know more about?\n\n한국어 답변: 이 책들에 대한 더 많은 정보나 다른 추천에 대해 기꺼이 도와드리겠습니다. 어떤 구체적인 측면에 대해 더 알고 싶으신가요?"
+                            })
+                    st.rerun()
 
     elif st.session_state.app_stage == "discuss_book":
         if st.session_state.selected_book:
@@ -1165,29 +1171,32 @@ def main():
                 display_message(msg)
             
             # Chat input for book discussion with improved key management
-            book_question = st.text_input(
-                "Ask me anything about this book (plot, themes, similar books, etc.):", 
-                key=f"book_discussion_input_{len(st.session_state.book_discussion_messages)}"
-            )
+            col1, col2 = st.columns([4, 1])
+            with col1:
+                book_question = st.text_input(
+                    "Ask me anything about this book (plot, themes, similar books, etc.):", 
+                    key=f"book_discussion_input_{len(st.session_state.book_discussion_messages)}"
+                )
             
-            if st.button("Ask", key=f"ask_about_book_{len(st.session_state.book_discussion_messages)}"):
-                if book_question:
-                    # Add user message to book discussion
-                    user_msg = {"role": "user", "content": book_question}
-                    st.session_state.book_discussion_messages.append(user_msg)
-                    
-                    # Generate AI response about the book using HyperCLOVA
-                    ai_response = process_book_question(
-                        book, 
-                        book_question, 
-                        HYPERCLOVA_API_KEY,
-                        st.session_state.book_discussion_messages
-                    )
-                    
-                    assistant_msg = {"role": "assistant", "content": ai_response}
-                    st.session_state.book_discussion_messages.append(assistant_msg)
-                    
-                    st.rerun()
+            with col2:
+                if st.button("Ask", key=f"ask_about_book_{len(st.session_state.book_discussion_messages)}"):
+                    if book_question:
+                        # Add user message to book discussion
+                        user_msg = {"role": "user", "content": book_question}
+                        st.session_state.book_discussion_messages.append(user_msg)
+                        
+                        # Generate AI response about the book using HyperCLOVA
+                        ai_response = process_book_question(
+                            book, 
+                            book_question, 
+                            HYPERCLOVA_API_KEY,
+                            st.session_state.book_discussion_messages
+                        )
+                        
+                        assistant_msg = {"role": "assistant", "content": ai_response}
+                        st.session_state.book_discussion_messages.append(assistant_msg)
+                        
+                        st.rerun()
             
             # Back to recommendations button
             if st.button("← Back to Recommendations", key="back_to_recs"):

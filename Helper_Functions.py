@@ -781,14 +781,14 @@ def setup_sidebar():
             st.session_state.app_stage = "show_liked_books"
             st.rerun()
 
-            # Statistics
-            st.markdown("### 📊 Quick Stats")
-            
-            total_liked = len(st.session_state.get('liked_books', []))
-            total_scheduled = sum(len(books) for books in st.session_state.get('reading_schedule', {}).values())
-            
-            st.metric("Liked Books", total_liked)
-            st.metric("Scheduled Books", total_scheduled)
+        # Statistics
+        st.markdown("### 📊 Quick Stats")
+        
+        total_liked = len(st.session_state.get('liked_books', []))
+        total_scheduled = sum(len(books) for books in st.session_state.get('reading_schedule', {}).values())
+        
+        st.metric("Liked Books", total_liked)
+        st.metric("Scheduled Books", total_scheduled)
         
         # Reset button
         if st.button("다시 시작하기 | REFRESH PAGE"):

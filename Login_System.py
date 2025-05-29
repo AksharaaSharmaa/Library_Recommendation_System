@@ -325,9 +325,9 @@ def set_custom_theme():
         
         /* Buttons */
         .stButton > button {{
-            background: linear-gradient(145deg, {primary_medium} 0%, {primary_dark} 100%) !important;
-            color: {text_light} !important;
-            border: none !important;
+            background: linear-gradient(145deg, {accent_light} 0%, {accent_dark} 100%) !important;
+            color: {primary_dark} !important;
+            border: 2px solid {primary_dark} !important;
             padding: 0.9rem 2.5rem !important;
             font-size: 1.15rem !important;
             font-weight: 600 !important;
@@ -362,6 +362,7 @@ def set_custom_theme():
         .stButton > button:hover {{
             box-shadow: 0 10px 25px rgba(42, 31, 26, 0.3) !important;
             transform: translateY(-3px);
+            background: linear-gradient(145deg, {accent_dark} 0%, {accent_light} 100%) !important;
         }}
         
         .stButton > button:hover::after {{

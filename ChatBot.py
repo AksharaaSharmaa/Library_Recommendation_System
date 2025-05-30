@@ -375,218 +375,75 @@ def main():
             st.warning("Please log in to view your library.")
 
     elif st.session_state.app_stage == "discussion_page":
-        # Header Section with better spacing
-        st.markdown("""
-            <div style='text-align: center; margin-bottom: 2rem;'>
-                <h1 style='font-size: 2.5rem; margin-bottom: 0.5rem;'>💬 커뮤니티 토론 / Community Discussion</h1>
-                <p style='font-size: 1.1rem; opacity: 0.8; margin-bottom: 0;'>
-                    동료 독자들과 책에 대한 생각을 공유하세요<br>
-                    Share your thoughts about books with fellow readers
-                </p>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown("<hr style='margin: 2rem 0;'>", unsafe_allow_html=True)
+        add_vertical_space(2)
+        st.markdown("<h1 style='text-align:center;'>💬 Community Discussion</h1>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:center;'>책에 대한 생각을 동료 독자들과 공유하세요</div>", unsafe_allow_html=True)
+        st.markdown("---")
         
         # Check if user is logged in
         if hasattr(st.session_state, 'username') and st.session_state.username:
-            # New post section with improved styling
-            st.markdown("""
-                <div style='background: rgba(0,0,0,0.02); padding: 1.5rem; border-radius: 10px; margin-bottom: 2rem;'>
-                    <h3 style='margin-top: 0; margin-bottom: 1rem;'>📝 생각 공유하기 / Share Your Thoughts</h3>
-                </div>
-            """, unsafe_allow_html=True)
-            
+            # New post section
+            st.markdown("### 📝 Share Your Thoughts")
             with st.form("new_discussion_post"):
                 post_content = st.text_area(
-                    "",
-                    placeholder="책에 대한 생각, 추천, 토론을 공유해보세요... / Share your book thoughts, recommendations, or start a discussion...",
-                    height=120,
-                    label_visibility="collapsed"
+                    "What's on your mind about books? (책에 대해 무슨 생각을 하고 있나요?)",
+                    placeholder="Share your book thoughts, recommendations, or start a discussion...",
+                    height=100
                 )
-                
-                # Center the submit button
-                col1, col2, col3 = st.columns([2, 1, 2])
-                with col2:
-                    submitted = st.form_submit_button("📤 토론 게시 / Post Discussion", use_container_width=True)
+                submitted = st.form_submit_button("Post Discussion")
                 
                 if submitted and post_content.strip():
                     if save_discussion_post(st.session_state.username, post_content.strip()):
-                        st.success("✅ 게시물이 공유되었습니다! / Your post has been shared!")
+                        st.success("Your post has been shared!")
                         st.rerun()
                     else:
-                        st.error("❌ 토론 게시에 실패했습니다. / Failed to post discussion.")
+                        st.error("Failed to post discussion.")
                 elif submitted:
-                    st.warning("⚠️ 게시하기 전에 내용을 입력해주세요. / Please enter some content before posting.")
+                    st.warning("Please enter some content before posting.")
             
-            st.markdown("<hr style='margin: 2rem 0;'>", unsafe_allow_html=True)
+            st.markdown("---")
             
             # Display all discussion posts
-            st.markdown("""
-                <h3 style='margin-bottom: 1.5rem;'>📚 커뮤니티 게시물 / Community Posts</h3>
-            """, unsafe_allow_html=True)
-            
+            st.markdown("### 📚 Community Posts")
             posts = get_all_discussion_posts()
             
             if posts:
                 for i, post in enumerate(posts):
-                    # Enhanced post display with better container styling
-                    with st.container():
-                        st.markdown(f"""
-                            <div style='
-                                border: 1px solid rgba(0,0,0,0.1); 
-                                border-radius: 12px; 
-                                padding: 1.5rem; 
-                                margin-bottom: 1.5rem;
-                                background: rgba(255,255,255,0.5);
-                            '>
-                        """, unsafe_allow_html=True)
-                        
-                        # Post header with better alignment
-                        header_col1, header_col2 = st.columns([3, 1])
-                        with header_col1:
-                            st.markdown(f"**👤 {post['username']}**")
-                        with header_col2:
-                            timestamp = datetime.fromisoformat(post['timestamp'])
-                            st.markdown(f"*🕐 {timestamp.strftime('%Y-%m-%d %H:%M')}*")
-                        
-                        # Post content with better spacing
-                        st.markdown(f"""
-                            <div style='margin: 1rem 0; line-height: 1.6; font-size: 1rem;'>
-                                {post['content']}
-                            </div>
-                        """, unsafe_allow_html=True)
-                        
-                        # Display replies with improved nesting
-                        if post.get('replies'):
-                            st.markdown("**💬 답글 / Replies:**")
-                            for reply in post['replies']:
-                                reply_timestamp = datetime.fromisoformat(reply['timestamp'])
-                                st.markdown(f"""
-                                    <div style='
-                                        margin-left: 1.5rem; 
-                                        padding: 0.8rem; 
-                                        border-left: 3px solid rgba(0,0,0,0.1);
-                                        background: rgba(0,0,0,0.02);
-                                        margin-top: 0.5rem;
-                                        border-radius: 0 8px 8px 0;
-                                    '>
-                                        <strong>↳ {reply['username']}</strong> 
-                                        <em style='font-size: 0.9rem; opacity: 0.7;'>
-                                            ({reply_timestamp.strftime('%Y-%m-%d %H:%M')})
-                                        </em>
-                                        <br>
-                                        <span style='margin-top: 0.5rem; display: block;'>{reply['content']}</span>
-                                    </div>
-                                """, unsafe_allow_html=True)
-                        
-                        display_discussion_post(post, i)
-                        
-                        st.markdown("</div>", unsafe_allow_html=True)
+                    display_discussion_post(post, i)
+                    st.markdown("---")
             else:
-                st.markdown("""
-                    <div style='
-                        text-align: center; 
-                        padding: 3rem; 
-                        background: rgba(0,0,0,0.02); 
-                        border-radius: 12px;
-                        border: 2px dashed rgba(0,0,0,0.1);
-                    '>
-                        <h4>📖 아직 토론이 없습니다 / No discussions yet</h4>
-                        <p>책에 대한 대화를 시작해보세요! / Be the first to start a conversation about books!</p>
-                    </div>
-                """, unsafe_allow_html=True)
+                st.info("No discussions yet. Be the first to start a conversation!")
         
         else:
-            # Not logged in section with better styling
-            st.markdown("""
-                <div style='
-                    background: rgba(255,193,7,0.1); 
-                    padding: 1.5rem; 
-                    border-radius: 10px; 
-                    border-left: 4px solid rgba(255,193,7,0.8);
-                    margin-bottom: 2rem;
-                '>
-                    <h4 style='margin-top: 0;'>🔐 로그인 필요 / Login Required</h4>
-                    <p style='margin-bottom: 0;'>
-                        토론에 참여하려면 로그인해주세요. / Please log in to participate in discussions.<br>
-                        아래 토론을 볼 수 있지만, 게시하거나 답글을 달려면 로그인이 필요합니다. / You can view discussions below, but you need to log in to post or reply.
-                    </p>
-                </div>
-            """, unsafe_allow_html=True)
+            st.warning("Please log in to participate in discussions.")
+            st.info("You can view discussions, but you need to log in to post or reply.")
             
-            # Show discussions in read-only mode with improved layout
-            st.markdown("""
-                <h3 style='margin-bottom: 1.5rem;'>📚 커뮤니티 게시물 / Community Posts</h3>
-            """, unsafe_allow_html=True)
-            
+            # Show discussions in read-only mode
+            st.markdown("### 📚 Community Posts")
             posts = get_all_discussion_posts()
             
             if posts:
                 for i, post in enumerate(posts):
-                    # Display post without reply functionality but with same styling
-                    st.markdown(f"""
-                        <div style='
-                            border: 1px solid rgba(0,0,0,0.1); 
-                            border-radius: 12px; 
-                            padding: 1.5rem; 
-                            margin-bottom: 1.5rem;
-                            background: rgba(255,255,255,0.3);
-                            opacity: 0.9;
-                        '>
-                    """, unsafe_allow_html=True)
-                    
-                    # Post header
-                    col1, col2 = st.columns([3, 1])
-                    with col1:
-                        st.markdown(f"**👤 {post['username']}**")
-                    with col2:
-                        timestamp = datetime.fromisoformat(post['timestamp'])
-                        st.markdown(f"*🕐 {timestamp.strftime('%Y-%m-%d %H:%M')}*")
-                    
-                    # Post content
-                    st.markdown(f"""
-                        <div style='margin: 1rem 0; line-height: 1.6; font-size: 1rem;'>
-                            {post['content']}
-                        </div>
-                    """, unsafe_allow_html=True)
-                    
-                    # Display replies
-                    if post.get('replies'):
-                        st.markdown("**💬 답글 / Replies:**")
-                        for reply in post['replies']:
-                            reply_timestamp = datetime.fromisoformat(reply['timestamp'])
-                            st.markdown(f"""
-                                <div style='
-                                    margin-left: 1.5rem; 
-                                    padding: 0.8rem; 
-                                    border-left: 3px solid rgba(0,0,0,0.1);
-                                    background: rgba(0,0,0,0.02);
-                                    margin-top: 0.5rem;
-                                    border-radius: 0 8px 8px 0;
-                                '>
-                                    <strong>↳ {reply['username']}</strong> 
-                                    <em style='font-size: 0.9rem; opacity: 0.7;'>
-                                        ({reply_timestamp.strftime('%Y-%m-%d %H:%M')})
-                                    </em>
-                                    <br>
-                                    <span style='margin-top: 0.5rem; display: block;'>{reply['content']}</span>
-                                </div>
-                            """, unsafe_allow_html=True)
-                    
-                    st.markdown("</div>", unsafe_allow_html=True)
+                    # Display post without reply functionality
+                    with st.container():
+                        col1, col2 = st.columns([3, 1])
+                        with col1:
+                            st.markdown(f"**{post['username']}**")
+                        with col2:
+                            timestamp = datetime.fromisoformat(post['timestamp'])
+                            st.markdown(f"*{timestamp.strftime('%Y-%m-%d %H:%M')}*")
+                        
+                        st.markdown(f"{post['content']}")
+                        
+                        if post.get('replies'):
+                            st.markdown("**Replies:**")
+                            for reply in post['replies']:
+                                reply_timestamp = datetime.fromisoformat(reply['timestamp'])
+                                st.markdown(f"↳ **{reply['username']}** ({reply_timestamp.strftime('%Y-%m-%d %H:%M')}): {reply['content']}")
+                        
+                        st.markdown("---")
             else:
-                st.markdown("""
-                    <div style='
-                        text-align: center; 
-                        padding: 3rem; 
-                        background: rgba(0,0,0,0.02); 
-                        border-radius: 12px;
-                        border: 2px dashed rgba(0,0,0,0.1);
-                    '>
-                        <h4>📖 아직 토론이 없습니다 / No discussions yet</h4>
-                    </div>
-                """, unsafe_allow_html=True)
+                st.info("No discussions yet.")
         
         # Back to recommendations button
         if st.button("← Back to Recommendations", key="back_to_recs_from_library"):

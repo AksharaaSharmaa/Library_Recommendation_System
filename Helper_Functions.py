@@ -45,30 +45,26 @@ def display_liked_book_card(book, index):
     current_category = info.get('category', 'To Read')
     image_url = info.get("bookImageURL", "")
     
+    # Define category colors
+    category_colors = {
+        "To Read": "#ff6b6b",      # Red
+        "Currently Reading": "#4ecdc4",  # Teal
+        "Finished": "#45b7d1"      # Blue
+    }
+    
     with st.container():
-        # Simple card container
-        st.markdown("""
-        <div style="
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            margin: 15px 0;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        ">
-        """, unsafe_allow_html=True)
-        
-        # Category badge
+        # Category badge with colored background
         st.markdown(f"""
         <div style="
             text-align: right;
-            margin-bottom: 15px;
+            margin-bottom: 5px;
         ">
             <span style="
-                background: #007bff;
+                background: {category_colors.get(current_category, '#007bff')};
                 color: white;
-                padding: 5px 10px;
+                padding: 4px 12px;
                 border-radius: 15px;
-                font-size: 0.8em;
+                font-size: 0.75em;
                 font-weight: 600;
             ">
                 {current_category}
@@ -94,25 +90,26 @@ def display_liked_book_card(book, index):
                     align-items: center;
                     justify-content: center;
                     color: #666;
+                    margin: 0;
                 ">
                     📚 No Image
                 </div>
                 """, unsafe_allow_html=True)
         
         with cols[1]:
-            # Book details
+            # Book details with reduced spacing
             st.markdown(f"""
-            <div>
-                <h3 style="margin: 0 0 10px 0; color: #333;">{title}</h3>
-                <p><strong>Author:</strong> {authors}</p>
-                <p><strong>Publisher:</strong> {publisher}</p>
-                <p><strong>Year:</strong> {year}</p>
-                <p><strong>Loan Count:</strong> {loan_count}</p>
+            <div style="margin-top: 0;">
+                <h3 style="margin: 0 0 5px 0; color: #333;">{title}</h3>
+                <p style="margin: 2px 0;"><strong>Author:</strong> {authors}</p>
+                <p style="margin: 2px 0;"><strong>Publisher:</strong> {publisher}</p>
+                <p style="margin: 2px 0;"><strong>Year:</strong> {year}</p>
+                <p style="margin: 2px 0 10px 0;"><strong>Loan Count:</strong> {loan_count}</p>
             </div>
             """, unsafe_allow_html=True)
             
-            # Action buttons
-            btn_col1, btn_col2, btn_col3, btn_col4 = st.columns([2, 2, 1, 1])
+            # Action buttons - properly aligned
+            btn_col1, btn_col2, btn_col3 = st.columns([2, 2, 1])
             
             with btn_col1:
                 if st.button("Tell me more", key=f"details_liked_{isbn13}_{index}"):
@@ -121,13 +118,11 @@ def display_liked_book_card(book, index):
                     st.rerun()
             
             with btn_col2:
-                st.write("**Status:**")
                 new_category = st.selectbox(
-                    "", 
+                    "Status:", 
                     ["To Read", "Currently Reading", "Finished"],
                     index=["To Read", "Currently Reading", "Finished"].index(current_category),
-                    key=f"category_select_{isbn13}_{index}",
-                    label_visibility="collapsed"
+                    key=f"category_select_{isbn13}_{index}"
                 )
                 
                 # Update category if changed
@@ -141,19 +136,14 @@ def display_liked_book_card(book, index):
                             st.error("Update failed")
             
             with btn_col3:
-                if st.button("💾", key=f"update_cat_{isbn13}_{index}", help="Save"):
-                    pass  # Handled by selectbox
-            
-            with btn_col4:
                 if st.button("🗑️", key=f"remove_{isbn13}_{index}", help="Remove"):
                     if hasattr(st.session_state, 'username') and st.session_state.username:
                         unlike_book_for_user(st.session_state.username, isbn13)
                         st.success("Removed from library!")
                         st.rerun()
         
-        # Close container
-        st.markdown("</div>", unsafe_allow_html=True)
-
+        # Add a subtle separator between cards
+        st.markdown("<hr style='margin: 10px 0; border: none; border-top: 1px solid #eee;'>", unsafe_allow_html=True)
 
 # Add after MongoDB client initialization
 def get_user_library_collection():

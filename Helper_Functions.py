@@ -360,7 +360,7 @@ def display_book_card(book, index):
                     st.rerun()
 
     # Add a subtle separator between cards
-    st.markdown("<hr style='margin: 10px 0; border: none; border-top: 1px solid #eee;'>", unsafe_allow_html=True)
+    st.markdown("<hr style='margin: 10px 0; border: none; border-top: 1px solid #000;'>", unsafe_allow_html=True)
 
 
 import re

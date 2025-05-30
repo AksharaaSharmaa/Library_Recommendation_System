@@ -892,6 +892,11 @@ def setup_sidebar():
         if st.button("좋아하는 책들 | MY LIBRARY"):
             st.session_state.app_stage = "show_liked_books"
             st.rerun()
+
+        with st.sidebar:
+        if st.button("Discussion Page | 토론 페이지"):
+            st.session_state.show_discussion = True
+            st.rerun()
         
         # Reset button
         if st.button("다시 시작하기 | REFRESH PAGE"):

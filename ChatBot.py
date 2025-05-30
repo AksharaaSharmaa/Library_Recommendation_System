@@ -57,8 +57,7 @@ def main():
         st.session_state.book_discussion_messages = []
     if "book_intro_shown" not in st.session_state:
         st.session_state.book_intro_shown = False
-    if "book_categories" not in st.session_state:
-        st.session_state.book_categories = {}  # book_id: {category, status}
+    # Removed book_categories from session state - now handled by MongoDB
     if "selected_category_filter" not in st.session_state:
         st.session_state.selected_category_filter = "All"
 
@@ -306,6 +305,7 @@ def main():
         st.markdown("<h3 style='text-align:center;'>❤️ My Library</h3>", unsafe_allow_html=True)
         
         if hasattr(st.session_state, 'username') and st.session_state.username:
+            # Get liked books from MongoDB
             liked_books = get_liked_books(st.session_state.username)
             
             # Category filter
@@ -330,86 +330,20 @@ def main():
             st.markdown("---")
             
             if liked_books:
-                # Filter books based on selected category
+                # Filter books based on selected category (assuming books have category field)
                 filtered_books = []
                 for book in liked_books:
-                    book_id = str(book.get('id', '')) or book.get('bookname', '') or book.get('bookName', '')
-                    book_category = st.session_state.book_categories.get(book_id, {}).get('category', 'To Read')
+                    # Get category from the book document stored in MongoDB
+                    book_category = book.get('category', 'To Read')  # Default to 'To Read' if not set
                     
                     if st.session_state.selected_category_filter == "All" or book_category == st.session_state.selected_category_filter:
                         filtered_books.append(book)
                 
                 st.markdown(f"**{st.session_state.selected_category_filter}**: {len(filtered_books)} books")
                 
+                # Use the display_liked_book_card function from your existing code
                 for i, book in enumerate(filtered_books):
-                    book_id = str(book.get('id', '')) or book.get('bookname', '') or book.get('bookName', '')
-                    book_info = st.session_state.book_categories.get(book_id, {})
-                    current_category = book_info.get('category', 'To Read')
-                    
-                    # Simple book card with category selection and unlike button
-                    with st.container():
-                        cols = st.columns([1, 3, 2, 0.5])
-                        
-                        with cols[0]:
-                            image_url = book.get("bookImageURL", "")
-                            if image_url:
-                                st.image(image_url, width=100)
-                            else:
-                                st.markdown("""
-                                <div style="width: 80px; height: 120px; background: linear-gradient(135deg, #2c3040, #363c4e); 
-                                            display: flex; align-items: center; justify-content: center; border-radius: 8px;">
-                                    <span style="color: #b3b3cc; font-size: 10px;">No Image</span>
-                                </div>
-                                """, unsafe_allow_html=True)
-                        
-                        with cols[1]:
-                            title = book.get('bookname') or book.get('bookName', 'Unknown Title')
-                            authors = book.get('authors') or book.get('author', 'Unknown Author')
-                            
-                            st.markdown(f"**{title}**")
-                            st.markdown(f"by {authors}")
-                            
-                            # Category status badge
-                            status_colors = {
-                                'To Read': '#ffa500',
-                                'Currently Reading': '#4caf50', 
-                                'Finished': '#2196f3'
-                            }
-                            st.markdown(f"""
-                            <span style='background-color: {status_colors[current_category]}; color: white; 
-                                        padding: 2px 8px; border-radius: 12px; font-size: 12px;'>
-                                {current_category}
-                            </span>
-                            """, unsafe_allow_html=True)
-                        
-                        with cols[2]:
-                            # Category selection
-                            new_category = st.selectbox(
-                                "Status:", 
-                                ["To Read", "Currently Reading", "Finished"],
-                                index=["To Read", "Currently Reading", "Finished"].index(current_category),
-                                key=f"category_{book_id}_{i}"
-                            )
-                            
-                            # Update category if changed
-                            if new_category != current_category:
-                                if book_id not in st.session_state.book_categories:
-                                    st.session_state.book_categories[book_id] = {}
-                                
-                                st.session_state.book_categories[book_id]['category'] = new_category
-                                st.rerun()
-                        
-                        with cols[3]:
-                        # Unlike button
-                            if st.button("💔", key=f"unlike_{book_id}_{i}", help="Remove from library"):
-                                if hasattr(st.session_state, 'username') and st.session_state.username:
-                                    unlike_book_for_user(st.session_state.username, book_id)
-                                    # Also remove from categories
-                                    if book_id in st.session_state.book_categories:
-                                        del st.session_state.book_categories[book_id]
-                                    st.success("Book removed from your library!")
-                                    st.rerun()
-
+                    display_liked_book_card(book, i)
                     
                     st.markdown("---")
             else:

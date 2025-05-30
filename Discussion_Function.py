@@ -81,25 +81,69 @@ def save_reply_to_post(post_id, username, reply_content):
         return False
 
 def display_discussion_post(post, index):
-    """Display a single discussion post with replies"""
+    import streamlit as st
+    from datetime import datetime
+
+    # Identify if the post is by the current user
+    is_user_post = (
+        hasattr(st.session_state, 'username') and 
+        st.session_state.username and 
+        post['username'] == st.session_state.username
+    )
+
+    # Custom styles for distinction
+    user_post_style = """
+        background-color: #e6f2ff; 
+        border-left: 5px solid #3399ff; 
+        padding: 1em; 
+        border-radius: 8px;
+        margin-bottom: 1em;
+    """
+    other_post_style = """
+        background-color: #f9f9f9; 
+        padding: 1em; 
+        border-radius: 8px;
+        margin-bottom: 1em;
+    """
+
+    # Choose style
+    post_style = user_post_style if is_user_post else other_post_style
+
+    # Main post display
     with st.container():
-        # Post header
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            st.markdown(f"**{post['username']}**")
-        with col2:
-            timestamp = datetime.fromisoformat(post['timestamp'])
-            st.markdown(f"*{timestamp.strftime('%Y-%m-%d %H:%M')}*")
+        st.markdown(
+            f'<div style="{post_style}">'
+            f'<div style="display: flex; justify-content: space-between;">'
+            f'<b>{"🟦 You" if is_user_post else post["username"]}</b>'
+            f'<span style="color: #888;">{datetime.fromisoformat(post["timestamp"]).strftime("%Y-%m-%d %H:%M")}</span>'
+            f'</div>'
+            f'<div style="margin-top: 0.5em;">{post["content"]}</div>'
+            f'</div>',
+            unsafe_allow_html=True
+        )
 
-        # Post content
-        st.markdown(f"{post['content']}")
-
-        # Reply section
+        # Replies section
         if post.get('replies'):
             st.markdown("**Replies:**")
             for reply in post['replies']:
-                reply_timestamp = datetime.fromisoformat(reply['timestamp'])
-                st.markdown(f"↳ **{reply['username']}** ({reply_timestamp.strftime('%Y-%m-%d %H:%M')}): {reply['content']}")
+                is_user_reply = (
+                    hasattr(st.session_state, 'username') and 
+                    st.session_state.username and 
+                    reply['username'] == st.session_state.username
+                )
+                reply_style = (
+                    "background-color: #fffbe6; border-left: 3px solid #ffcc00; padding: 0.5em; border-radius: 6px; margin-bottom: 0.5em;"
+                    if is_user_reply else 
+                    "background-color: #f4f4f4; padding: 0.5em; border-radius: 6px; margin-bottom: 0.5em;"
+                )
+                st.markdown(
+                    f'<div style="{reply_style}">'
+                    f'↳ <b>{"🟨 You" if is_user_reply else reply["username"]}</b> '
+                    f'({datetime.fromisoformat(reply["timestamp"]).strftime("%Y-%m-%d %H:%M")}): '
+                    f'{reply["content"]}'
+                    f'</div>',
+                    unsafe_allow_html=True
+                )
 
         # Reply input (only if user is logged in)
         if hasattr(st.session_state, 'username') and st.session_state.username:

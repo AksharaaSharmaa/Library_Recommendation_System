@@ -445,9 +445,9 @@ def main():
                     book_info = st.session_state.book_categories.get(book_id, {})
                     current_category = book_info.get('category', 'To Read')
                     
-                    # Enhanced book card with scheduling
+                    # Enhanced book card with scheduling and unlike button
                     with st.container():
-                        cols = st.columns([1, 3, 2])
+                        cols = st.columns([1, 3, 2, 0.5])
                         
                         with cols[0]:
                             image_url = book.get("bookImageURL", "")
@@ -500,56 +500,56 @@ def main():
                             if new_category != current_category:
                                 if book_id not in st.session_state.book_categories:
                                     st.session_state.book_categories[book_id] = {}
+                                
+                                # Clear old reading schedule for this book
+                                old_info = st.session_state.book_categories.get(book_id, {})
+                                if old_info.get('start_date') and old_info.get('end_date'):
+                                    # Remove this book from all dates in reading schedule
+                                    start_date = datetime.datetime.strptime(old_info['start_date'], '%Y-%m-%d').date()
+                                    end_date = datetime.datetime.strptime(old_info['end_date'], '%Y-%m-%d').date()
+                                    current_date = start_date
+                                    while current_date <= end_date:
+                                        date_str = str(current_date)
+                                        if date_str in st.session_state.reading_schedule:
+                                            st.session_state.reading_schedule[date_str] = [
+                                                entry for entry in st.session_state.reading_schedule[date_str]
+                                                if entry.get('book_id') != book_id
+                                            ]
+                                            # Remove empty date entries
+                                            if not st.session_state.reading_schedule[date_str]:
+                                                del st.session_state.reading_schedule[date_str]
+                                        current_date += datetime.timedelta(days=1)
+                                
                                 st.session_state.book_categories[book_id]['category'] = new_category
-                                
-                                # Clear scheduling info if moving away from Ongoing
-                                if new_category != 'Ongoing':
-                                    st.session_state.book_categories[book_id].pop('start_date', None)
-                                    st.session_state.book_categories[book_id].pop('end_date', None)
-                                    st.session_state.book_categories[book_id].pop('hours_per_day', None)
-                                
                                 st.rerun()
                             
-                            # Scheduling for "Ongoing" books
+                            # Reading schedule inputs for "Ongoing" books
                             if new_category == "Ongoing":
-                                st.markdown("**📅 Reading Schedule:**")
+                                st.markdown("**Reading Schedule:**")
                                 
-                                # Hours per day input
+                                start_date = st.date_input(
+                                    "Start Date:",
+                                    value=datetime.date.today(),
+                                    key=f"start_date_{book_id}_{i}"
+                                )
+                                
+                                end_date = st.date_input(
+                                    "End Date:",
+                                    value=datetime.date.today() + datetime.timedelta(days=30),
+                                    key=f"end_date_{book_id}_{i}"
+                                )
+                                
                                 hours_per_day = st.number_input(
                                     "Hours per day:",
                                     min_value=0.5,
-                                    max_value=24.0,
-                                    value=float(book_info.get('hours_per_day', 1.0)),
+                                    max_value=12.0,
+                                    value=1.0,
                                     step=0.5,
                                     key=f"hours_{book_id}_{i}"
                                 )
                                 
-                                # Start date input
-                                start_date = st.date_input(
-                                    "Start date:",
-                                    value=datetime.datetime.strptime(book_info.get('start_date', str(datetime.date.today())), '%Y-%m-%d').date() if book_info.get('start_date') else datetime.date.today(),
-                                    key=f"start_{book_id}_{i}"
-                                )
-                                
-                                # Calculate reading schedule button
-                                if st.button("Calculate Schedule", key=f"calc_{book_id}_{i}"):
-                                    # Estimate book length (pages) - using a heuristic based on typical book lengths
-                                    # For demonstration, using average of 250-300 pages, can be enhanced with actual page data
-                                    estimated_pages = 275  # Default estimate
-                                    
-                                    # Calculate reading speed (pages per hour) - average reader: 30-50 pages/hour
-                                    pages_per_hour = 40  # Conservative estimate
-                                    
-                                    # Calculate total reading time needed
-                                    total_hours_needed = estimated_pages / pages_per_hour
-                                    
-                                    # Calculate days needed based on hours per day
-                                    days_needed = int(total_hours_needed / hours_per_day) + (1 if total_hours_needed % hours_per_day > 0 else 0)
-                                    
-                                    # Calculate end date
-                                    end_date = start_date + datetime.timedelta(days=days_needed)
-                                    
-                                    # Update book info
+                                if st.button(f"Set Schedule", key=f"schedule_{book_id}_{i}"):
+                                    # Update book category info
                                     if book_id not in st.session_state.book_categories:
                                         st.session_state.book_categories[book_id] = {}
                                     
@@ -557,12 +557,10 @@ def main():
                                         'category': 'Ongoing',
                                         'start_date': str(start_date),
                                         'end_date': str(end_date),
-                                        'hours_per_day': hours_per_day,
-                                        'estimated_pages': estimated_pages,
-                                        'total_hours': total_hours_needed
+                                        'hours_per_day': hours_per_day
                                     })
                                     
-                                    # Update reading schedule
+                                    # Add to reading schedule
                                     current_date = start_date
                                     while current_date <= end_date:
                                         date_str = str(current_date)
@@ -570,164 +568,59 @@ def main():
                                             st.session_state.reading_schedule[date_str] = []
                                         
                                         # Add book to this date if not already there
-                                        book_entry = {
-                                            'book_id': book_id,
-                                            'title': title,
-                                            'hours': hours_per_day
-                                        }
+                                        book_exists = any(
+                                            entry.get('book_id') == book_id 
+                                            for entry in st.session_state.reading_schedule[date_str]
+                                        )
                                         
-                                        # Check if book is not already scheduled for this date
-                                        if not any(entry['book_id'] == book_id for entry in st.session_state.reading_schedule[date_str]):
-                                            st.session_state.reading_schedule[date_str].append(book_entry)
+                                        if not book_exists:
+                                            st.session_state.reading_schedule[date_str].append({
+                                                'book_id': book_id,
+                                                'title': title,
+                                                'hours': hours_per_day
+                                            })
                                         
                                         current_date += datetime.timedelta(days=1)
                                     
-                                    st.success(f"✅ Reading schedule calculated! You'll finish this book by {end_date.strftime('%B %d, %Y')}")
+                                    st.success("Reading schedule set!")
                                     st.rerun()
-                                
-                                # Show calculated schedule if available
-                                if book_info.get('end_date'):
-                                    end_date_obj = datetime.datetime.strptime(book_info['end_date'], '%Y-%m-%d').date()
-                                    days_remaining = (end_date_obj - datetime.date.today()).days
-                                    
-                                    if days_remaining > 0:
-                                        st.markdown(f"🎯 **Finish by:** {end_date_obj.strftime('%B %d, %Y')} ({days_remaining} days remaining)")
-                                    elif days_remaining == 0:
-                                        st.markdown(f"🎯 **Finish by:** Today!")
-                                    else:
-                                        st.markdown(f"📅 **Schedule:** Completed {abs(days_remaining)} days ago")
-                                    
-                                    if book_info.get('total_hours'):
-                                        st.markdown(f"📖 **Estimated reading time:** {book_info['total_hours']:.1f} hours total")
-                            
-                            # Progress tracking for ongoing books
-                            if current_category == "Ongoing" and book_info.get('start_date'):
-                                start_date_obj = datetime.datetime.strptime(book_info['start_date'], '%Y-%m-%d').date()
-                                days_since_start = (datetime.date.today() - start_date_obj).days
-                                
-                                if days_since_start >= 0:
-                                    if book_info.get('end_date'):
-                                        end_date_obj = datetime.datetime.strptime(book_info['end_date'], '%Y-%m-%d').date()
-                                        total_days = (end_date_obj - start_date_obj).days
-                                        progress_percentage = min(100, (days_since_start / total_days * 100)) if total_days > 0 else 0
-                                        
-                                        st.markdown(f"""
-                                        <div style='background-color: #f0f0f0; border-radius: 10px; padding: 3px;'>
-                                            <div style='background-color: #4caf50; width: {progress_percentage}%; height: 20px; 
-                                                       border-radius: 10px; text-align: center; line-height: 20px; color: white; font-size: 12px;'>
-                                                {progress_percentage:.1f}%
-                                            </div>
-                                        </div>
-                                        """, unsafe_allow_html=True)
                         
-                        st.markdown("---")
-                
-                # Reading Statistics
-                st.markdown("---")
-                st.markdown("<h4>📊 Reading Statistics</h4>", unsafe_allow_html=True)
-                
-                # Count books by category
-                to_read_count = sum(1 for book_id, info in st.session_state.book_categories.items() if info.get('category', 'To Read') == 'To Read')
-                ongoing_count = sum(1 for book_id, info in st.session_state.book_categories.items() if info.get('category') == 'Ongoing')
-                finished_count = sum(1 for book_id, info in st.session_state.book_categories.items() if info.get('category') == 'Finished')
-                
-                # Ensure we count all books (those without explicit category are "To Read")
-                total_categorized = to_read_count + ongoing_count + finished_count
-                uncategorized = len(liked_books) - total_categorized
-                to_read_count += uncategorized
-                
-                stat_col1, stat_col2, stat_col3 = st.columns(3)
-                
-                with stat_col1:
-                    st.markdown(f"""
-                    <div style='background-color: #fff3cd; padding: 15px; border-radius: 8px; text-align: center;'>
-                        <h3 style='color: #856404; margin: 0;'>{to_read_count}</h3>
-                        <p style='color: #856404; margin: 5px 0 0 0;'>To Read</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                with stat_col2:
-                    st.markdown(f"""
-                    <div style='background-color: #d4edda; padding: 15px; border-radius: 8px; text-align: center;'>
-                        <h3 style='color: #155724; margin: 0;'>{ongoing_count}</h3>
-                        <p style='color: #155724; margin: 5px 0 0 0;'>Ongoing</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                with stat_col3:
-                    st.markdown(f"""
-                    <div style='background-color: #cce7ff; padding: 15px; border-radius: 8px; text-align: center;'>
-                        <h3 style='color: #004085; margin: 0;'>{finished_count}</h3>
-                        <p style='color: #004085; margin: 5px 0 0 0;'>Finished</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                # Daily reading summary for today
-                today_str = str(datetime.date.today())
-                if today_str in st.session_state.reading_schedule:
+                        with cols[3]:
+                            # Unlike button
+                            if st.button("💔", key=f"unlike_{book_id}_{i}", help="Remove from library"):
+                                if hasattr(st.session_state, 'username') and st.session_state.username:
+                                    remove_liked_book(st.session_state.username, book_id)
+                                    # Also remove from categories and schedule
+                                    if book_id in st.session_state.book_categories:
+                                        del st.session_state.book_categories[book_id]
+                                    # Remove from reading schedule
+                                    for date_key in list(st.session_state.reading_schedule.keys()):
+                                        st.session_state.reading_schedule[date_key] = [
+                                            entry for entry in st.session_state.reading_schedule[date_key]
+                                            if entry.get('book_id') != book_id
+                                        ]
+                                        if not st.session_state.reading_schedule[date_key]:
+                                            del st.session_state.reading_schedule[date_key]
+                                    st.success("Book removed from your library!")
+                                    st.rerun()
+                    
                     st.markdown("---")
-                    st.markdown("<h4>📖 Today's Reading Schedule</h4>", unsafe_allow_html=True)
-                    
-                    total_hours_today = 0
-                    for book_entry in st.session_state.reading_schedule[today_str]:
-                        st.markdown(f"• **{book_entry['title']}** - {book_entry['hours']} hours")
-                        total_hours_today += book_entry['hours']
-                    
-                    st.markdown(f"**Total reading time today:** {total_hours_today} hours")
-                
-                # Weekly reading overview
-                st.markdown("---")
-                st.markdown("<h4>📅 This Week's Reading Plan</h4>", unsafe_allow_html=True)
-                
-                # Get start of current week (Monday)
-                today = datetime.date.today()
-                start_of_week = today - datetime.timedelta(days=today.weekday())
-                
-                weekly_schedule = {}
-                total_weekly_hours = 0
-                
-                for i in range(7):  # 7 days in a week
-                    current_day = start_of_week + datetime.timedelta(days=i)
-                    day_str = str(current_day)
-                    day_name = current_day.strftime('%A')
-                    
-                    if day_str in st.session_state.reading_schedule:
-                        daily_hours = sum(entry['hours'] for entry in st.session_state.reading_schedule[day_str])
-                        weekly_schedule[day_name] = {
-                            'hours': daily_hours,
-                            'books': len(st.session_state.reading_schedule[day_str])
-                        }
-                        total_weekly_hours += daily_hours
-                    else:
-                        weekly_schedule[day_name] = {'hours': 0, 'books': 0}
-                
-                # Display weekly overview
-                week_cols = st.columns(7)
-                for i, (day_name, day_info) in enumerate(weekly_schedule.items()):
-                    with week_cols[i]:
-                        bg_color = "#e8f5e8" if day_info['hours'] > 0 else "#f8f9fa"
-                        st.markdown(f"""
-                        <div style='background-color: {bg_color}; padding: 10px; border-radius: 5px; text-align: center; border: 1px solid #ddd;'>
-                            <strong>{day_name[:3]}</strong><br>
-                            <span style='color: #2c5aa0;'>{day_info['hours']}h</span><br>
-                            <span style='font-size: 10px; color: #666;'>{day_info['books']} books</span>
-                        </div>
-                        """, unsafe_allow_html=True)
-                
-                if total_weekly_hours > 0:
-                    st.markdown(f"**Total weekly reading time:** {total_weekly_hours} hours")
-                else:
-                    st.markdown("No reading scheduled for this week. Start planning your reading schedule!")
-            
             else:
-                st.markdown("Your library is empty. Start exploring books to add them to your collection!")
-                if st.button("Discover Books", key="discover_from_empty"):
-                    st.session_state.app_stage = "welcome"
-                    st.rerun()
+                st.info("You haven't liked any books yet. Go to recommendations and like some books to see them here!")
         else:
-            st.error("Please ensure you are logged in to view your library.")
+            st.warning("Please log in to view your library.")
         
-        # Back to main app button
-        if st.button("← Back to Book Discovery", key="back_to_main"):
-            st.session_state.app_stage = "show_recommendations" if st.session_state.books_data else "welcome"
+        # Back to recommendations button
+        if st.button("← Back to Recommendations", key="back_to_recs_from_library"):
+            st.session_state.app_stage = "show_recommendations"
             st.rerun()
+
+    # Footer
+    add_vertical_space(3)
+    st.markdown("---")
+    st.markdown(
+        "<div style='text-align: center; color: #666; font-size: 14px;'>"
+        "📚 한 권의 책은 하나의 세상이다"
+        "</div>", 
+        unsafe_allow_html=True
+    )

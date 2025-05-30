@@ -178,7 +178,6 @@ def main():
 
     elif st.session_state.app_stage == "show_recommendations":
         add_vertical_space(2)
-        st.markdown("<h3 style='text-align:center;'>📖 Recommended Books for You</h3>", unsafe_allow_html=True)
         
         # Display books
         for i, book in enumerate(st.session_state.books_data[:10]):  # Show top 10 books

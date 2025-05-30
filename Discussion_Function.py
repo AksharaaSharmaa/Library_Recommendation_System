@@ -80,6 +80,24 @@ def save_reply_to_post(post_id, username, reply_content):
         st.error(f"Error saving reply: {e}")
         return False
 
+def delete_discussion_post(post_id):
+    """Delete a discussion post from MongoDB"""
+    discussion_collection = get_discussion_collection()
+    if discussion_collection is None:
+        return False
+
+    try:
+        # Ensure post_id is an ObjectId
+        if not isinstance(post_id, ObjectId):
+            post_id = ObjectId(post_id)
+        
+        # Delete the post
+        result = discussion_collection.delete_one({"_id": post_id})
+        return result.deleted_count > 0
+    except Exception as e:
+        st.error(f"Error deleting discussion post: {e}")
+        return False
+
 def display_discussion_post(post, index):
     import streamlit as st
     from datetime import datetime
@@ -121,6 +139,35 @@ def display_discussion_post(post, index):
             f'</div>',
             unsafe_allow_html=True
         )
+
+        # Delete button (only for user's own posts)
+        if is_user_post:
+            col1, col2 = st.columns([6, 1])
+            with col2:
+                if st.button("🗑️", key=f"delete_btn_{index}", help="Delete this post"):
+                    # Confirmation dialog using session state
+                    if f"confirm_delete_{index}" not in st.session_state:
+                        st.session_state[f"confirm_delete_{index}"] = True
+                        st.warning("⚠️ Are you sure you want to delete this post? This action cannot be undone.")
+                        
+                        # Create confirmation buttons
+                        col_yes, col_no = st.columns(2)
+                        with col_yes:
+                            if st.button("Yes, Delete", key=f"confirm_yes_{index}", type="primary"):
+                                if delete_discussion_post(post['_id']):
+                                    st.success("Post deleted successfully!")
+                                    # Clean up session state
+                                    if f"confirm_delete_{index}" in st.session_state:
+                                        del st.session_state[f"confirm_delete_{index}"]
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to delete post.")
+                        with col_no:
+                            if st.button("Cancel", key=f"confirm_no_{index}"):
+                                # Clean up session state
+                                if f"confirm_delete_{index}" in st.session_state:
+                                    del st.session_state[f"confirm_delete_{index}"]
+                                st.rerun()
 
         # Replies section
         if post.get('replies'):

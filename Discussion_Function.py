@@ -84,119 +84,81 @@ def display_discussion_post(post, index):
     import streamlit as st
     from datetime import datetime
 
-    # Optional: Custom CSS for background and font
-    st.markdown("""
-        <style>
-        .community-post-container {
-            background: linear-gradient(120deg, #f8f3ed 0%, #f7eee4 100%);
-            border-radius: 12px;
-            padding: 2em 2em 1.5em 2em;
-            margin-bottom: 2em;
-            font-family: 'Georgia', serif;
-        }
-        .post-header {
-            display: flex;
-            align-items: center;
-            gap: 0.8em;
-        }
-        .post-title {
-            font-size: 2em;
-            font-weight: 500;
-            margin-bottom: 0.2em;
-        }
-        .post-username {
-            font-weight: bold;
-            font-size: 1.1em;
-        }
-        .post-timestamp {
-            margin-left: auto;
-            color: #594a3f;
-            font-style: italic;
-            font-size: 1.1em;
-        }
-        .post-content {
-            margin: 1.2em 0 0.7em 0;
-            font-size: 1.15em;
-        }
-        .replies-label {
-            font-weight: bold;
-            margin-top: 1em;
-            margin-bottom: 0.3em;
-        }
-        .reply-block {
-            margin-left: 1.5em;
-            font-size: 1.07em;
-            margin-top: 0.2em;
-        }
-        .reply-username {
-            font-weight: bold;
-        }
-        </style>
-    """, unsafe_allow_html=True)
+    # Identify if the post is by the current user
+    is_user_post = (
+        hasattr(st.session_state, 'username') and 
+        st.session_state.username and 
+        post['username'] == st.session_state.username
+    )
 
-    post_time = datetime.fromisoformat(post["timestamp"]).strftime("%Y-%m-%d %H:%M")
+    # Custom styles for distinction
+    user_post_style = """
+        background-color: #e6f2ff; 
+        border-left: 5px solid #3399ff; 
+        padding: 1em; 
+        border-radius: 8px;
+        margin-bottom: 1em;
+    """
+    other_post_style = """
+        background-color: #f9f9f9; 
+        padding: 1em; 
+        border-radius: 8px;
+        margin-bottom: 1em;
+    """
 
-    # Main container
-    st.markdown(f"""
-    <div class="community-post-container">
-        <div class="post-header">
-            <span style="font-size:1.5em; margin-right:0.4em;">📚</span>
-            <span class="post-title">Community Posts</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span class="post-username">{post['username']}</span>
-            <span class="post-timestamp">{post_time}</span>
-        </div>
-        <div class="post-content">{post['content']}</div>
-        <div class="replies-label">Replies:</div>
-    """, unsafe_allow_html=True)
+    # Choose style
+    post_style = user_post_style if is_user_post else other_post_style
 
-    # Replies
-    if post.get('replies'):
-        for reply in post['replies']:
-            reply_time = datetime.fromisoformat(reply["timestamp"]).strftime("%Y-%m-%d %H:%M")
-            st.markdown(
-                f"""
-                <div class="reply-block">
-                    ↳ <span class="reply-username">{reply['username']}</span> ({reply_time}): {reply['content']}
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-    else:
-        st.markdown('<div class="reply-block" style="color:#aaa;">No replies yet.</div>', unsafe_allow_html=True)
+    # Main post display
+    with st.container():
+        st.markdown(
+            f'<div style="{post_style}">'
+            f'<div style="display: flex; justify-content: space-between;">'
+            f'<b>{"🟦 You" if is_user_post else post["username"]}</b>'
+            f'<span style="color: #888;">{datetime.fromisoformat(post["timestamp"]).strftime("%Y-%m-%d %H:%M")}</span>'
+            f'</div>'
+            f'<div style="margin-top: 0.5em;">{post["content"]}</div>'
+            f'</div>',
+            unsafe_allow_html=True
+        )
 
-    st.markdown("</div>", unsafe_allow_html=True)
+        # Replies section
+        if post.get('replies'):
+            st.markdown("**Replies:**")
+            for reply in post['replies']:
+                is_user_reply = (
+                    hasattr(st.session_state, 'username') and 
+                    st.session_state.username and 
+                    reply['username'] == st.session_state.username
+                )
+                reply_style = (
+                    "background-color: #fffbe6; border-left: 3px solid #ffcc00; padding: 0.5em; border-radius: 6px; margin-bottom: 0.5em;"
+                    if is_user_reply else 
+                    "background-color: #f4f4f4; padding: 0.5em; border-radius: 6px; margin-bottom: 0.5em;"
+                )
+                st.markdown(
+                    f'<div style="{reply_style}">'
+                    f'↳ <b>{"🟨 You" if is_user_reply else reply["username"]}</b> '
+                    f'({datetime.fromisoformat(reply["timestamp"]).strftime("%Y-%m-%d %H:%M")}): '
+                    f'{reply["content"]}'
+                    f'</div>',
+                    unsafe_allow_html=True
+                )
 
-    # Reply input (if user is logged in)
-    if hasattr(st.session_state, 'username') and st.session_state.username:
-        with st.expander("💬 Reply to this post"):
-            # Custom input box style
-            st.markdown("""
-                <style>
-                textarea[data-testid="stTextArea"] {
-                    background-color: #f8f3ed;
-                    border-radius: 8px;
-                    border: 1.5px solid #b8a488;
-                    font-size: 16px;
-                    padding: 10px;
-                    color: #594a3f;
-                }
-                </style>
-            """, unsafe_allow_html=True)
-            reply_content = st.text_area(
-                "",
-                key=f"reply_input_{index}",
-                placeholder="Write your reply here...",
-                height=70,
-                label_visibility="collapsed"
-            )
-            if st.button("Post Reply", key=f"reply_btn_{index}"):
-                if reply_content.strip():
-                    if save_reply_to_post(post['_id'], st.session_state.username, reply_content.strip()):
-                        st.success("Reply posted successfully!")
-                        st.rerun()
+        # Reply input (only if user is logged in)
+        if hasattr(st.session_state, 'username') and st.session_state.username:
+            with st.expander("💬 Reply to this post"):
+                reply_content = st.text_area(
+                    "Your reply:",
+                    key=f"reply_input_{index}",
+                    placeholder="Write your reply here..."
+                )
+                if st.button("Post Reply", key=f"reply_btn_{index}"):
+                    if reply_content.strip():
+                        if save_reply_to_post(post['_id'], st.session_state.username, reply_content.strip()):
+                            st.success("Reply posted successfully!")
+                            st.rerun()
+                        else:
+                            st.error("Failed to post reply.")
                     else:
-                        st.error("Failed to post reply.")
-                else:
-                    st.warning("Please enter a reply.")
+                        st.warning("Please enter a reply.")

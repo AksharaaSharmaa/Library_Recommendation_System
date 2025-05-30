@@ -32,7 +32,7 @@ def load_dtl_kdc_json():
 dtl_kdc_dict = load_dtl_kdc_json()
 
 def display_liked_book_card(book, index):
-    """Display a clean liked book card with minimal styling."""
+    """Display a clean liked book card with minimal styling (no card container)."""
     info = book if isinstance(book, dict) else book.get("doc", {})
     
     # Extract book information
@@ -52,98 +52,97 @@ def display_liked_book_card(book, index):
         "Finished": "#45b7d1"      # Blue
     }
     
-    with st.container():
-        # Category badge with colored background
-        st.markdown(f"""
-        <div style="
-            text-align: right;
-            margin-bottom: 5px;
+    # Category badge with colored background
+    st.markdown(f"""
+    <div style="
+        text-align: right;
+        margin-bottom: 5px;
+    ">
+        <span style="
+            background: {category_colors.get(current_category, '#007bff')};
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.75em;
+            font-weight: 600;
         ">
-            <span style="
-                background: {category_colors.get(current_category, '#007bff')};
-                color: white;
-                padding: 4px 12px;
-                border-radius: 15px;
-                font-size: 0.75em;
-                font-weight: 600;
+            {current_category}
+        </span>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Content layout
+    cols = st.columns([1, 3])
+    
+    with cols[0]:
+        # Book image
+        if image_url:
+            st.image(image_url, width=120)
+        else:
+            st.markdown(f"""
+            <div style="
+                width: 120px;
+                height: 160px;
+                background: #f0f0f0;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #666;
+                margin: 0;
             ">
-                {current_category}
-            </span>
+                📚 No Image
+            </div>
+            """, unsafe_allow_html=True)
+    
+    with cols[1]:
+        # Book details with reduced spacing
+        st.markdown(f"""
+        <div style="margin-top: 0;">
+            <h3 style="margin: 0 0 5px 0; color: #333;">{title}</h3>
+            <p style="margin: 2px 0;"><strong>Author:</strong> {authors}</p>
+            <p style="margin: 2px 0;"><strong>Publisher:</strong> {publisher}</p>
+            <p style="margin: 2px 0;"><strong>Year:</strong> {year}</p>
+            <p style="margin: 2px 0 10px 0;"><strong>Loan Count:</strong> {loan_count}</p>
         </div>
         """, unsafe_allow_html=True)
         
-        # Content layout
-        cols = st.columns([1, 3])
+        # Action buttons - properly aligned
+        btn_col1, btn_col2, btn_col3 = st.columns([2, 2, 1])
         
-        with cols[0]:
-            # Book image
-            if image_url:
-                st.image(image_url, width=120)
-            else:
-                st.markdown(f"""
-                <div style="
-                    width: 120px;
-                    height: 160px;
-                    background: #f0f0f0;
-                    border-radius: 8px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: #666;
-                    margin: 0;
-                ">
-                    📚 No Image
-                </div>
-                """, unsafe_allow_html=True)
+        with btn_col1:
+            if st.button("Tell me more", key=f"details_liked_{isbn13}_{index}"):
+                st.session_state.selected_book = info
+                st.session_state.app_stage = "discuss_book"
+                st.rerun()
         
-        with cols[1]:
-            # Book details with reduced spacing
-            st.markdown(f"""
-            <div style="margin-top: 0;">
-                <h3 style="margin: 0 0 5px 0; color: #333;">{title}</h3>
-                <p style="margin: 2px 0;"><strong>Author:</strong> {authors}</p>
-                <p style="margin: 2px 0;"><strong>Publisher:</strong> {publisher}</p>
-                <p style="margin: 2px 0;"><strong>Year:</strong> {year}</p>
-                <p style="margin: 2px 0 10px 0;"><strong>Loan Count:</strong> {loan_count}</p>
-            </div>
-            """, unsafe_allow_html=True)
+        with btn_col2:
+            new_category = st.selectbox(
+                "જ⁀➴       Status:", 
+                ["To Read", "Currently Reading", "Finished"],
+                index=["To Read", "Currently Reading", "Finished"].index(current_category),
+                key=f"category_select_{isbn13}_{index}"
+            )
             
-            # Action buttons - properly aligned
-            btn_col1, btn_col2, btn_col3 = st.columns([2, 2, 1])
-            
-            with btn_col1:
-                if st.button("Tell me more", key=f"details_liked_{isbn13}_{index}"):
-                    st.session_state.selected_book = info
-                    st.session_state.app_stage = "discuss_book"
-                    st.rerun()
-            
-            with btn_col2:
-                new_category = st.selectbox(
-                    "જ⁀➴       Status:", 
-                    ["To Read", "Currently Reading", "Finished"],
-                    index=["To Read", "Currently Reading", "Finished"].index(current_category),
-                    key=f"category_select_{isbn13}_{index}"
-                )
-                
-                # Update category if changed
-                if new_category != current_category:
-                    if hasattr(st.session_state, 'username') and st.session_state.username:
-                        success = update_book_category(st.session_state.username, isbn13, new_category)
-                        if success:
-                            st.success("Status updated!")
-                            st.rerun()
-                        else:
-                            st.error("Update failed")
-            
-            with btn_col3:
-                if st.button("🗑️", key=f"remove_{isbn13}_{index}", help="Remove"):
-                    if hasattr(st.session_state, 'username') and st.session_state.username:
-                        unlike_book_for_user(st.session_state.username, isbn13)
-                        st.success("Removed from library!")
+            # Update category if changed
+            if new_category != current_category:
+                if hasattr(st.session_state, 'username') and st.session_state.username:
+                    success = update_book_category(st.session_state.username, isbn13, new_category)
+                    if success:
+                        st.success("Status updated!")
                         st.rerun()
+                    else:
+                        st.error("Update failed")
         
-        # Add a subtle separator between cards
-        st.markdown("<hr style='margin: 10px 0; border: none; border-top: 1px solid #eee;'>", unsafe_allow_html=True)
+        with btn_col3:
+            if st.button("🗑️", key=f"remove_{isbn13}_{index}", help="Remove"):
+                if hasattr(st.session_state, 'username') and st.session_state.username:
+                    unlike_book_for_user(st.session_state.username, isbn13)
+                    st.success("Removed from library!")
+                    st.rerun()
+    
+    # Add a subtle separator between cards
+    st.markdown("<hr style='margin: 10px 0; border: none; border-top: 1px solid #eee;'>", unsafe_allow_html=True)
         
 # Add after MongoDB client initialization
 def get_user_library_collection():
@@ -309,60 +308,56 @@ def display_book_card(book, index):
     else:
         info = book
 
-    with st.container():
-        st.markdown('<div class="book-card" style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px;">', unsafe_allow_html=True)
-        cols = st.columns([1, 3])
-        with cols[0]:
-            image_url = info.get("bookImageURL", "")
-            if image_url:
-                st.image(image_url, width=120)
-            else:
-                st.markdown("""
-                <div style="width: 100px; height: 150px; background: linear-gradient(135deg, #2c3040, #363c4e); 
-                            display: flex; align-items: center; justify-content: center; border-radius: 5px;">
-                    <span style="color: #b3b3cc;">No Image</span>
-                </div>
-                """, unsafe_allow_html=True)
-        with cols[1]:
-            title = info.get('bookname') or info.get('bookName', '제목 없음')
-            authors = info.get('authors') or info.get('author', '저자 없음')
-            publisher = info.get('publisher', '출판사 없음')
-            year = info.get('publication_year') or info.get('publicationYear', '연도 없음')
-            loan_count = info.get('loan_count') or info.get('loanCount', 0)
-            isbn13 = info.get('isbn13') or info.get('isbn', 'unknown')
-
-            st.markdown(f"""
-            <div style="padding-left: 10px;">
-                <div style="font-size: 1.2em; font-weight: bold; color: #333; margin-bottom: 8px;">{title}</div>
-                <div style="margin-bottom: 4px;"><strong>저자:</strong> {authors}</div>
-                <div style="margin-bottom: 4px;"><strong>출판사:</strong> {publisher}</div>
-                <div style="margin-bottom: 4px;"><strong>출간년도:</strong> {year}</div>
-                <div style="margin-bottom: 8px;"><strong>대출 횟수:</strong> {loan_count}</div>
+    cols = st.columns([1, 3])
+    with cols[0]:
+        image_url = info.get("bookImageURL", "")
+        if image_url:
+            st.image(image_url, width=120)
+        else:
+            st.markdown("""
+            <div style="width: 100px; height: 150px; background: linear-gradient(135deg, #2c3040, #363c4e); 
+                        display: flex; align-items: center; justify-content: center; border-radius: 5px;">
+                <span style="color: #b3b3cc;">No Image</span>
             </div>
             """, unsafe_allow_html=True)
+    with cols[1]:
+        title = info.get('bookname') or info.get('bookName', '제목 없음')
+        authors = info.get('authors') or info.get('author', '저자 없음')
+        publisher = info.get('publisher', '출판사 없음')
+        year = info.get('publication_year') or info.get('publicationYear', '연도 없음')
+        loan_count = info.get('loan_count') or info.get('loanCount', 0)
+        isbn13 = info.get('isbn13') or info.get('isbn', 'unknown')
 
-            btn_col1, btn_col2 = st.columns([2, 1])
-            with btn_col1:
-                if st.button(f"이 책에 대해 더 알아보기", key=f"details_{isbn13}_{index}"):
-                    st.session_state.selected_book = info
-                    st.session_state.app_stage = "discuss_book"
+        st.markdown(f"""
+        <div style="padding-left: 10px;">
+            <div style="font-size: 1.2em; font-weight: bold; color: #333; margin-bottom: 8px;">{title}</div>
+            <div style="margin-bottom: 4px;"><strong>저자:</strong> {authors}</div>
+            <div style="margin-bottom: 4px;"><strong>출판사:</strong> {publisher}</div>
+            <div style="margin-bottom: 4px;"><strong>출간년도:</strong> {year}</div>
+            <div style="margin-bottom: 8px;"><strong>대출 횟수:</strong> {loan_count}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        btn_col1, btn_col2 = st.columns([2, 1])
+        with btn_col1:
+            if st.button(f"이 책에 대해 더 알아보기", key=f"details_{isbn13}_{index}"):
+                st.session_state.selected_book = info
+                st.session_state.app_stage = "discuss_book"
+                st.rerun()
+        with btn_col2:
+            # Check if this book is already liked
+            liked_books = get_liked_books(st.session_state.username)
+            already_liked = any((b.get("isbn13") or b.get("isbn")) == isbn13 for b in liked_books)
+            if already_liked:
+                st.button("❤️", key=f"liked_{isbn13}_{index}", help="내 서재에 추가됨", disabled=True)
+            else:
+                if st.button("❤️", key=f"like_{isbn13}_{index}", help="내 서재에 추가"):
+                    # Store the book in MongoDB with consistent ISBN field
+                    book_data = info.copy()
+                    book_data['isbn13'] = isbn13
+                    like_book_for_user(st.session_state.username, book_data)
+                    st.success("서재에 추가되었습니다!")
                     st.rerun()
-            with btn_col2:
-                # Check if this book is already liked
-                liked_books = get_liked_books(st.session_state.username)
-                already_liked = any((b.get("isbn13") or b.get("isbn")) == isbn13 for b in liked_books)
-                if already_liked:
-                    st.button("❤️", key=f"liked_{isbn13}_{index}", help="내 서재에 추가됨", disabled=True)
-                else:
-                    if st.button("❤️", key=f"like_{isbn13}_{index}", help="내 서재에 추가"):
-                        # Store the book in MongoDB with consistent ISBN field
-                        book_data = info.copy()
-                        book_data['isbn13'] = isbn13
-                        like_book_for_user(st.session_state.username, book_data)
-                        st.success("서재에 추가되었습니다!")
-                        st.rerun()
-                        
-
 
 import re
 

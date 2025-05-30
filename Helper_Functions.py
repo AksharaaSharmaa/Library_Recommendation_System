@@ -32,11 +32,13 @@ def load_dtl_kdc_json():
 dtl_kdc_dict = load_dtl_kdc_json()
 
 def display_liked_book_card(book, index):
-    """Display a liked book card with a remove (cross) button using MongoDB."""
+    """Display a liked book card with category selection and remove button using MongoDB."""
     info = book if isinstance(book, dict) else book.get("doc", {})
+    
     with st.container():
         st.markdown('<div class="book-card" style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px;">', unsafe_allow_html=True)
         cols = st.columns([1, 3])
+        
         with cols[0]:
             image_url = info.get("bookImageURL", "")
             if image_url:
@@ -48,6 +50,7 @@ def display_liked_book_card(book, index):
                     <span style="color: #b3b3cc;">No Image</span>
                 </div>
                 """, unsafe_allow_html=True)
+        
         with cols[1]:
             title = info.get('bookname') or info.get('bookName', '제목 없음')
             authors = info.get('authors') or info.get('author', '저자 없음')
@@ -55,6 +58,8 @@ def display_liked_book_card(book, index):
             year = info.get('publication_year') or info.get('publicationYear', '연도 없음')
             loan_count = info.get('loan_count') or info.get('loanCount', 0)
             isbn13 = info.get('isbn13') or info.get('isbn', 'unknown')
+            current_category = info.get('category', 'To Read')
+            
             st.markdown(f"""
             <div style="padding-left: 10px;">
                 <div style="font-size: 1.2em; font-weight: bold; color: #333; margin-bottom: 8px;">{title}</div>
@@ -64,18 +69,49 @@ def display_liked_book_card(book, index):
                 <div style="margin-bottom: 8px;"><strong>Loan Count:</strong> {loan_count}</div>
             </div>
             """, unsafe_allow_html=True)
-            btn_col1, btn_col2 = st.columns([3, 1])
+            
+            # Category selection and buttons
+            btn_col1, btn_col2, btn_col3, btn_col4 = st.columns([2, 2, 1, 1])
+            
             with btn_col1:
-                if st.button(f"Tell me more about this book", key=f"details_liked_{isbn13}_{index}"):
+                if st.button(f"Tell me more", key=f"details_liked_{isbn13}_{index}"):
                     st.session_state.selected_book = info
                     st.session_state.app_stage = "discuss_book"
                     st.rerun()
+            
             with btn_col2:
+                # Category selection dropdown
+                new_category = st.selectbox(
+                    "Status:", 
+                    ["To Read", "Currently Reading", "Finished"],
+                    index=["To Read", "Currently Reading", "Finished"].index(current_category),
+                    key=f"category_select_{isbn13}_{index}"
+                )
+                
+                # Update category if changed
+                if new_category != current_category:
+                    if hasattr(st.session_state, 'username') and st.session_state.username:
+                        success = update_book_category(st.session_state.username, isbn13, new_category)
+                        if success:
+                            st.success(f"Updated to {new_category}!")
+                            st.rerun()
+                        else:
+                            st.error("Failed to update category")
+            
+            with btn_col3:
+                # Update category button (if needed)
+                if st.button("💾", key=f"update_cat_{isbn13}_{index}", help="Save category change"):
+                    # This is handled automatically by the selectbox change above
+                    pass
+            
+            with btn_col4:
                 # Remove (cross) button
                 if st.button("❌", key=f"remove_{isbn13}_{index}", help="Remove from My Library"):
-                    unlike_book_for_user(st.session_state.username, isbn13)
-                    st.success("Removed from your library!")
-                    st.rerun()
+                    if hasattr(st.session_state, 'username') and st.session_state.username:
+                        unlike_book_for_user(st.session_state.username, isbn13)
+                        st.success("Removed from your library!")
+                        st.rerun()
+        
         st.markdown('</div>', unsafe_allow_html=True)
 
 
@@ -85,21 +121,28 @@ def get_user_library_collection():
     db = client["Login_Credentials"]
     return db["user_libraries"]
 
-def like_book_for_user(username, book_info):
+def like_book_for_user(username, book_info, category="To Read"):
     user_library = get_user_library_collection()
-    isbn = book_info.get("isbn13")
+    isbn = book_info.get("isbn13") or book_info.get("isbn")
     if not isbn:
         return False
+    
+    # Add category to book_info before saving
+    book_with_category = book_info.copy()
+    book_with_category["category"] = category
+    book_with_category["date_added"] = datetime.now().isoformat()  # Track when book was added
+    
     # First, try to add to existing document
     result = user_library.update_one(
         {"username": username},
-        {"$addToSet": {"liked_books": book_info}}
+        {"$addToSet": {"liked_books": book_with_category}}
     )
+    
     # If no document was modified, create one with an empty array and add the book
     if result.matched_count == 0:
         user_library.update_one(
             {"username": username},
-            {"$set": {"liked_books": [book_info], "username": username}},
+            {"$set": {"liked_books": [book_with_category], "username": username}},
             upsert=True
         )
     return True
@@ -111,10 +154,44 @@ def get_liked_books(username):
 
 def unlike_book_for_user(username, isbn):
     user_library = get_user_library_collection()
+    # Remove book with matching isbn13 or isbn
     user_library.update_one(
         {"username": username},
-        {"$pull": {"liked_books": {"isbn13": isbn}}}
+        {"$pull": {"liked_books": {"$or": [{"isbn13": isbn}, {"isbn": isbn}]}}}
     )
+
+def update_book_category(username, isbn, new_category):
+    user_library = get_user_library_collection()
+    
+    # Update the category of the book with matching ISBN
+    result = user_library.update_one(
+        {
+            "username": username,
+            "liked_books": {"$elemMatch": {"$or": [{"isbn13": isbn}, {"isbn": isbn}]}}
+        },
+        {
+            "$set": {
+                "liked_books.$.category": new_category,
+                "liked_books.$.last_updated": datetime.now().isoformat()
+            }
+        }
+    )
+    
+    return result.modified_count > 0
+
+def get_books_by_category(username, category):
+    user_library = get_user_library_collection()
+    
+    # Use aggregation to filter books by category
+    pipeline = [
+        {"$match": {"username": username}},
+        {"$unwind": "$liked_books"},
+        {"$match": {"liked_books.category": category}},
+        {"$replaceRoot": {"newRoot": "$liked_books"}}
+    ]
+    
+    books = list(user_library.aggregate(pipeline))
+    return books
 
 def display_message(message):
     if message["role"] != "system":

@@ -57,7 +57,6 @@ def main():
         st.session_state.book_discussion_messages = []
     if "book_intro_shown" not in st.session_state:
         st.session_state.book_intro_shown = False
-    # Removed book_categories from session state - now handled by MongoDB
     if "selected_category_filter" not in st.session_state:
         st.session_state.selected_category_filter = "All"
 
@@ -330,21 +329,19 @@ def main():
             st.markdown("---")
             
             if liked_books:
-                # Filter books based on selected category (assuming books have category field)
+                # Filter books based on selected category
                 filtered_books = []
                 for book in liked_books:
-                    # Get category from the book document stored in MongoDB
-                    book_category = book.get('category', 'To Read')  # Default to 'To Read' if not set
+                    book_category = book.get('category', 'To Read')
                     
                     if st.session_state.selected_category_filter == "All" or book_category == st.session_state.selected_category_filter:
                         filtered_books.append(book)
                 
                 st.markdown(f"**{st.session_state.selected_category_filter}**: {len(filtered_books)} books")
                 
-                # Use the display_liked_book_card function from your existing code
+                # Display filtered books using the MongoDB-compatible display function
                 for i, book in enumerate(filtered_books):
                     display_liked_book_card(book, i)
-                    
                     st.markdown("---")
             else:
                 st.info("You haven't liked any books yet. Go to recommendations and like some books to see them here!")

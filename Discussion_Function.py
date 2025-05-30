@@ -1,4 +1,6 @@
 from datetime import datetime
+import streamlit as st
+from pymongo import MongoClient
 
 def get_discussion_collection():
     """Get the MongoDB collection for discussions"""

@@ -310,19 +310,19 @@ def main():
             # Category filter
             col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
             with col1:
-                if st.button("All | 모든 책", key="filter_all"):
+                if st.button("모든 책", key="filter_all"):
                     st.session_state.selected_category_filter = "All"
                     st.rerun()
             with col2:
-                if st.button("To Read | 읽기", key="filter_to_read"):
+                if st.button("읽기", key="filter_to_read"):
                     st.session_state.selected_category_filter = "To Read"
                     st.rerun()
             with col3:
-                if st.button("Currently Reading | 현재 읽고 있는 중", key="filter_ongoing"):
+                if st.button("현재읽고있는중", key="filter_ongoing"):
                     st.session_state.selected_category_filter = "Currently Reading"
                     st.rerun()
             with col4:
-                if st.button("Finished | 완성된", key="filter_finished"):
+                if st.button("완성된", key="filter_finished"):
                     st.session_state.selected_category_filter = "Finished"
                     st.rerun()
             

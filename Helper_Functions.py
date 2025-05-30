@@ -118,6 +118,14 @@ def display_liked_book_card(book, index):
                     st.rerun()
             
             with btn_col2:
+                st.markdown("""
+                <style>
+                div[data-testid="stSelectbox"] > div > div > div {
+                    text-align: center;
+                }
+                </style>
+                """, unsafe_allow_html=True)
+                
                 new_category = st.selectbox(
                     "Status:", 
                     ["To Read", "Currently Reading", "Finished"],

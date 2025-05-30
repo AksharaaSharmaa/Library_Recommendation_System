@@ -193,11 +193,21 @@ def main():
                 if user_followup:
                     st.session_state.messages.append({"role": "user", "content": user_followup})
                     
-                    # Check if user wants new recommendations
-                    if any(keyword in user_followup.lower() for keyword in ['different', 'other', 'new', 'more', '다른', '새로운', '더']):
+                    # First, try to detect if this is a new genre/author request
+                    dtl_code, dtl_label = get_dtl_kdc_code(user_followup, HYPERCLOVA_API_KEY)
+                    
+                    # Check if user wants new recommendations with specific genre/author
+                    if dtl_code and LIBRARY_API_KEY:
+                        # This is a new genre/author request - trigger library API search
                         st.session_state.app_stage = "process_user_input"
+                    elif any(keyword in user_followup.lower() for keyword in ['different', 'other', 'new', 'more', '다른', '새로운', '더', 'genre', 'author', 'category', '장르', '작가', '카테고리']):
+                        # User wants different recommendations but didn't specify genre/author clearly
+                        # Ask them to be more specific to trigger library API
+                        response = "I'd be happy to find different books for you! Please specify the genre, author, or type of books you'd like me to search for. For example, you could say 'mystery novels', 'romance books', 'books by Stephen King', or 'Korean literature'.\n\n한국어 답변: 다른 책들을 찾아드리겠습니다! 찾고 싶은 장르, 작가 또는 책의 종류를 구체적으로 말씀해 주세요. 예를 들어 '추리소설', '로맨스 소설', '스티븐 킹의 책들', '한국문학' 등으로 말씀해 주시면 됩니다."
+                        st.session_state.messages.append({"role": "assistant", "content": response})
+                        st.session_state.app_stage = "awaiting_user_input"
                     else:
-                        # Process as follow-up question using HyperCLOVA
+                        # Process as follow-up question using HyperCLOVA (for general questions about current books)
                         response = process_followup_with_hyperclova(user_followup, HYPERCLOVA_API_KEY)
                         if response:
                             st.session_state.messages.append({"role": "assistant", "content": response})

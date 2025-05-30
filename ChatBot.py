@@ -401,14 +401,14 @@ def main():
                         
                         with cols[3]:
                         # Unlike button
-                        if st.button("💔", key=f"unlike_{book_id}_{i}", help="Remove from library"):
-                            if hasattr(st.session_state, 'username') and st.session_state.username:
-                                unlike_book_for_user(st.session_state.username, book_id)
-                                # Also remove from categories
-                                if book_id in st.session_state.book_categories:
-                                    del st.session_state.book_categories[book_id]
-                                st.success("Book removed from your library!")
-                                st.rerun()
+                            if st.button("💔", key=f"unlike_{book_id}_{i}", help="Remove from library"):
+                                if hasattr(st.session_state, 'username') and st.session_state.username:
+                                    unlike_book_for_user(st.session_state.username, book_id)
+                                    # Also remove from categories
+                                    if book_id in st.session_state.book_categories:
+                                        del st.session_state.book_categories[book_id]
+                                    st.success("Book removed from your library!")
+                                    st.rerun()
 
                     
                     st.markdown("---")

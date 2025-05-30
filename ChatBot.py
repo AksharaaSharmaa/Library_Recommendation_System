@@ -177,6 +177,8 @@ def main():
         st.rerun()
 
     elif st.session_state.app_stage == "show_recommendations":
+        add_vertical_space(2)
+        st.markdown("<h3 style='text-align:center;'>📖 Recommended Books for You</h3>", unsafe_allow_html=True)
         
         # Display books
         for i, book in enumerate(st.session_state.books_data[:10]):  # Show top 10 books
@@ -185,7 +187,7 @@ def main():
         # Chat input for follow-up questions
         col1, col2 = st.columns([4, 1])
         with col1:
-            user_followup = st.text_input("", key="followup_input")
+            user_followup = st.text_input("Ask me anything about these books or request different recommendations:", key="followup_input")
         with col2:
             st.markdown("<br>", unsafe_allow_html=True)
             if st.button("보내다 ᯓ➤", key="send_followup"):
@@ -354,12 +356,15 @@ def main():
                     st.markdown("---")
             else:
                 st.info("You haven't liked any books yet. Go to recommendations and like some books to see them here!")
+                if st.button("Discover Books"):
+                    st.session_state.app_stage = "welcome"
+                    st.rerun()
         else:
             st.warning("Please log in to view your library.")
         
         # Back to recommendations button
         if st.button("← Back to Recommendations", key="back_to_recs_from_library"):
-            st.session_state.app_stage = "show_recommendations"
+            st.session_state.app_stage = "show_recommendations" if st.session_state.books_data else "welcome"
             st.rerun()
 
     # Footer

@@ -305,22 +305,33 @@ def main():
             # Get liked books from MongoDB
             liked_books = get_liked_books(st.session_state.username)
             
-            # Category filter
+            # Category filter with equal-sized buttons using CSS
+            st.markdown("""
+            <style>
+            div[data-testid="column"] button {
+                width: 100% !important;
+                min-height: 40px !important;
+                white-space: nowrap !important;
+                font-size: 14px !important;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+            
             col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
             with col1:
-                if st.button("모든 책", key="filter_all"):
+                if st.button("모든 책", key="filter_all", use_container_width=True):
                     st.session_state.selected_category_filter = "All"
                     st.rerun()
             with col2:
-                if st.button("읽기", key="filter_to_read"):
+                if st.button("읽기", key="filter_to_read", use_container_width=True):
                     st.session_state.selected_category_filter = "To Read"
                     st.rerun()
             with col3:
-                if st.button("현재읽고있는중", key="filter_ongoing"):
+                if st.button("현재읽고있는중", key="filter_ongoing", use_container_width=True):
                     st.session_state.selected_category_filter = "Currently Reading"
                     st.rerun()
             with col4:
-                if st.button("완성된", key="filter_finished"):
+                if st.button("완성된", key="filter_finished", use_container_width=True):
                     st.session_state.selected_category_filter = "Finished"
                     st.rerun()
             

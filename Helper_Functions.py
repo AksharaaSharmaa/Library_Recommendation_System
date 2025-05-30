@@ -118,14 +118,6 @@ def display_liked_book_card(book, index):
                     st.rerun()
             
             with btn_col2:
-                st.markdown("""
-                <style>
-                div[data-testid="stSelectbox"] > div > div > div {
-                    text-align: center;
-                }
-                </style>
-                """, unsafe_allow_html=True)
-                
                 new_category = st.selectbox(
                     "Status:", 
                     ["To Read", "Currently Reading", "Finished"],
@@ -152,7 +144,7 @@ def display_liked_book_card(book, index):
         
         # Add a subtle separator between cards
         st.markdown("<hr style='margin: 10px 0; border: none; border-top: 1px solid #eee;'>", unsafe_allow_html=True)
-
+        
 # Add after MongoDB client initialization
 def get_user_library_collection():
     client = st.session_state.db_client  # Already set in login.py

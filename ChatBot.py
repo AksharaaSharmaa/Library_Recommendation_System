@@ -18,6 +18,7 @@ import hashlib
 import random
 from Helper_Functions import *
 import calendar
+from Discussion_Function import *
 
 # --- EMBEDDED API KEYS ---
 HYPERCLOVA_API_KEY = "nv-270db94eb8bf42108110b22f551e655axCwf"
@@ -59,6 +60,8 @@ def main():
         st.session_state.book_intro_shown = False
     if "selected_category_filter" not in st.session_state:
         st.session_state.selected_category_filter = "All"
+    if "show_discussion" not in st.session_state:
+        st.session_state.show_discussion = False
 
     setup_sidebar()
 
@@ -370,6 +373,77 @@ def main():
                     st.rerun()
         else:
             st.warning("Please log in to view your library.")
+
+    elif st.session_state.app_stage == "discussion_page":
+        add_vertical_space(2)
+        st.markdown("<h1 style='text-align:center;'>💬 Community Discussion</h1>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:center;'>Share your thoughts about books with fellow readers</div>", unsafe_allow_html=True)
+        st.markdown("---")
+        
+        # Check if user is logged in
+        if hasattr(st.session_state, 'username') and st.session_state.username:
+            # New post section
+            st.markdown("### 📝 Share Your Thoughts")
+            with st.form("new_discussion_post"):
+                post_content = st.text_area(
+                    "What's on your mind about books?",
+                    placeholder="Share your book thoughts, recommendations, or start a discussion...",
+                    height=100
+                )
+                submitted = st.form_submit_button("Post Discussion")
+                
+                if submitted and post_content.strip():
+                    if save_discussion_post(st.session_state.username, post_content.strip()):
+                        st.success("Your post has been shared!")
+                        st.rerun()
+                    else:
+                        st.error("Failed to post discussion.")
+                elif submitted:
+                    st.warning("Please enter some content before posting.")
+            
+            st.markdown("---")
+            
+            # Display all discussion posts
+            st.markdown("### 📚 Community Posts")
+            posts = get_all_discussion_posts()
+            
+            if posts:
+                for i, post in enumerate(posts):
+                    display_discussion_post(post, i)
+                    st.markdown("---")
+            else:
+                st.info("No discussions yet. Be the first to start a conversation!")
+        
+        else:
+            st.warning("Please log in to participate in discussions.")
+            st.info("You can view discussions, but you need to log in to post or reply.")
+            
+            # Show discussions in read-only mode
+            st.markdown("### 📚 Community Posts")
+            posts = get_all_discussion_posts()
+            
+            if posts:
+                for i, post in enumerate(posts):
+                    # Display post without reply functionality
+                    with st.container():
+                        col1, col2 = st.columns([3, 1])
+                        with col1:
+                            st.markdown(f"**{post['username']}**")
+                        with col2:
+                            timestamp = datetime.fromisoformat(post['timestamp'])
+                            st.markdown(f"*{timestamp.strftime('%Y-%m-%d %H:%M')}*")
+                        
+                        st.markdown(f"{post['content']}")
+                        
+                        if post.get('replies'):
+                            st.markdown("**Replies:**")
+                            for reply in post['replies']:
+                                reply_timestamp = datetime.fromisoformat(reply['timestamp'])
+                                st.markdown(f"↳ **{reply['username']}** ({reply_timestamp.strftime('%Y-%m-%d %H:%M')}): {reply['content']}")
+                        
+                        st.markdown("---")
+            else:
+                st.info("No discussions yet.")
         
         # Back to recommendations button
         if st.button("← Back to Recommendations", key="back_to_recs_from_library"):

@@ -117,7 +117,7 @@ def display_liked_book_card(book, index):
                     st.session_state.app_stage = "discuss_book"
                     st.rerun()
             
-            with btn_col 2:
+            with btn_col2:
                 new_category = st.selectbox(
                     "Status:", 
                     ["To Read", "Currently Reading", "Finished"],

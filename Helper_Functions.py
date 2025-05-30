@@ -119,7 +119,7 @@ def display_liked_book_card(book, index):
             
             with btn_col 2:
                 new_category = st.selectbox(
-                    "જ⁀➴ Status:", 
+                    "Status:", 
                     ["To Read", "Currently Reading", "Finished"],
                     index=["To Read", "Currently Reading", "Finished"].index(current_category),
                     key=f"category_select_{isbn13}_{index}"

@@ -329,7 +329,7 @@ def display_book_card(book, index):
         isbn13 = info.get('isbn13') or info.get('isbn', 'unknown')
 
         st.markdown(f"""
-        <div style="padding-left: 10px;">
+        <div style="padding-left: 10px; margin-top: 0;">
             <div style="font-size: 1.2em; font-weight: bold; color: #333; margin-bottom: 8px;">{title}</div>
             <div style="margin-bottom: 4px;"><strong>저자:</strong> {authors}</div>
             <div style="margin-bottom: 4px;"><strong>출판사:</strong> {publisher}</div>
@@ -358,6 +358,10 @@ def display_book_card(book, index):
                     like_book_for_user(st.session_state.username, book_data)
                     st.success("서재에 추가되었습니다!")
                     st.rerun()
+
+    # Add a subtle separator between cards
+    st.markdown("<hr style='margin: 10px 0; border: none; border-top: 1px solid #eee;'>", unsafe_allow_html=True)
+
 
 import re
 

@@ -377,7 +377,7 @@ def main():
     elif st.session_state.app_stage == "discussion_page":
         add_vertical_space(2)
         st.markdown("<h1 style='text-align:center;'>💬 Community Discussion</h1>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:center;'>Share your thoughts about books with fellow readers</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:center;'>책에 대한 생각을 동료 독자들과 공유하세요</div>", unsafe_allow_html=True)
         st.markdown("---")
         
         # Check if user is logged in
@@ -386,7 +386,7 @@ def main():
             st.markdown("### 📝 Share Your Thoughts")
             with st.form("new_discussion_post"):
                 post_content = st.text_area(
-                    "What's on your mind about books?",
+                    "What's on your mind about books? (책에 대해 무슨 생각을 하고 있나요?)",
                     placeholder="Share your book thoughts, recommendations, or start a discussion...",
                     height=100
                 )

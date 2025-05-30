@@ -140,34 +140,20 @@ def display_discussion_post(post, index):
             unsafe_allow_html=True
         )
 
-        # Delete button (only for user's own posts)
+        # Delete button (only for user's own posts) - Single click deletion
         if is_user_post:
             col1, col2 = st.columns([6, 1])
             with col2:
                 if st.button("🗑️", key=f"delete_btn_{index}", help="Delete this post"):
-                    # Confirmation dialog using session state
-                    if f"confirm_delete_{index}" not in st.session_state:
-                        st.session_state[f"confirm_delete_{index}"] = True
-                        st.warning("⚠️ Are you sure you want to delete this post? This action cannot be undone.")
-                        
-                        # Create confirmation buttons
-                        col_yes, col_no = st.columns(2)
-                        with col_yes:
-                            if st.button("Yes, Delete", key=f"confirm_yes_{index}", type="primary"):
-                                if delete_discussion_post(post['_id']):
-                                    st.success("Post deleted successfully!")
-                                    # Clean up session state
-                                    if f"confirm_delete_{index}" in st.session_state:
-                                        del st.session_state[f"confirm_delete_{index}"]
-                                    st.rerun()
-                                else:
-                                    st.error("Failed to delete post.")
-                        with col_no:
-                            if st.button("Cancel", key=f"confirm_no_{index}"):
-                                # Clean up session state
-                                if f"confirm_delete_{index}" in st.session_state:
-                                    del st.session_state[f"confirm_delete_{index}"]
-                                st.rerun()
+                    try:
+                        if delete_discussion_post(post['_id']):
+                            st.success("Post deleted successfully!")
+                            # Force immediate refresh
+                            st.rerun()
+                        else:
+                            st.error("Failed to delete post. Please try again.")
+                    except Exception as e:
+                        st.error(f"Error deleting post: {e}")
 
         # Replies section
         if post.get('replies'):

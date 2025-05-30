@@ -84,7 +84,7 @@ def display_discussion_post(post, index):
     import streamlit as st
     from datetime import datetime
 
-    # Custom CSS for background and font
+    # Optional: Custom CSS for background and font
     st.markdown("""
         <style>
         .community-post-container {
@@ -106,8 +106,7 @@ def display_discussion_post(post, index):
         }
         .post-username {
             font-weight: bold;
-            font-size: 1.15em;
-            margin-bottom: 0.5em;
+            font-size: 1.1em;
         }
         .post-timestamp {
             margin-left: auto;
@@ -117,7 +116,7 @@ def display_discussion_post(post, index):
         }
         .post-content {
             margin: 1.2em 0 0.7em 0;
-            font-size: 1.1em;
+            font-size: 1.15em;
         }
         .replies-label {
             font-weight: bold;

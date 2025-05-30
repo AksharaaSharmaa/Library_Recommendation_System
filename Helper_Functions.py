@@ -32,7 +32,7 @@ def load_dtl_kdc_json():
 dtl_kdc_dict = load_dtl_kdc_json()
 
 def display_liked_book_card(book, index):
-    """Display a beautifully designed liked book card with aesthetic styling and colored categories."""
+    """Display a clean liked book card with minimal styling."""
     info = book if isinstance(book, dict) else book.get("doc", {})
     
     # Extract book information
@@ -45,248 +45,83 @@ def display_liked_book_card(book, index):
     current_category = info.get('category', 'To Read')
     image_url = info.get("bookImageURL", "")
     
-    # Category color mapping
-    category_colors = {
-        "To Read": {"bg": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", "text": "#ffffff", "badge": "#764ba2"},
-        "Currently Reading": {"bg": "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)", "text": "#ffffff", "badge": "#f5576c"},
-        "Finished": {"bg": "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)", "text": "#ffffff", "badge": "#00f2fe"}
-    }
-    
-    current_color = category_colors.get(current_category, category_colors["To Read"])
-    
     with st.container():
-        # Main card with organic curved design
+        # Simple card container
+        st.markdown("""
+        <div style="
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        ">
+        """, unsafe_allow_html=True)
+        
+        # Category badge
         st.markdown(f"""
         <div style="
-            background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
-            border-radius: 25px;
-            padding: 0;
-            margin: 20px 0;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1), 0 10px 20px rgba(0,0,0,0.08);
-            position: relative;
-            overflow: hidden;
-            transform: translateY(0px);
-            transition: all 0.3s ease;
+            text-align: right;
+            margin-bottom: 15px;
         ">
-            <!-- Decorative background elements -->
-            <div style="
-                position: absolute;
-                top: -50px;
-                right: -50px;
-                width: 150px;
-                height: 150px;
-                background: {current_color['bg']};
-                border-radius: 50%;
-                opacity: 0.1;
-            "></div>
-            <div style="
-                position: absolute;
-                bottom: -30px;
-                left: -30px;
-                width: 100px;
-                height: 100px;
-                background: linear-gradient(45deg, #ff9a9e 0%, #fecfef 100%);
-                border-radius: 30px;
-                opacity: 0.08;
-                transform: rotate(45deg);
-            "></div>
-            
-            <!-- Category badge -->
-            <div style="
-                position: absolute;
-                top: 20px;
-                right: 20px;
-                background: {current_color['bg']};
-                color: {current_color['text']};
-                padding: 8px 16px;
-                border-radius: 20px;
-                font-size: 0.85em;
+            <span style="
+                background: #007bff;
+                color: white;
+                padding: 5px 10px;
+                border-radius: 15px;
+                font-size: 0.8em;
                 font-weight: 600;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-                z-index: 10;
             ">
-                ✨ {current_category}
-            </div>
-            
-            <div style="padding: 30px; padding-top: 60px;">
+                {current_category}
+            </span>
+        </div>
         """, unsafe_allow_html=True)
         
         # Content layout
-        cols = st.columns([1.2, 3])
+        cols = st.columns([1, 3])
         
         with cols[0]:
-            # Book image with elegant styling
+            # Book image
             if image_url:
-                st.markdown(f"""
-                <div style="
-                    display: flex;
-                    justify-content: center;
-                    margin-bottom: 20px;
-                ">
-                    <div style="
-                        border-radius: 15px;
-                        overflow: hidden;
-                        box-shadow: 0 15px 35px rgba(0,0,0,0.15);
-                        transform: rotate(-2deg);
-                        transition: transform 0.3s ease;
-                    ">
-                        <img src="{image_url}" style="
-                            width: 140px;
-                            height: auto;
-                            display: block;
-                        "/>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+                st.image(image_url, width=120)
             else:
                 st.markdown(f"""
                 <div style="
+                    width: 120px;
+                    height: 160px;
+                    background: #f0f0f0;
+                    border-radius: 8px;
                     display: flex;
+                    align-items: center;
                     justify-content: center;
-                    margin-bottom: 20px;
+                    color: #666;
                 ">
-                    <div style="
-                        width: 140px;
-                        height: 200px;
-                        background: {current_color['bg']};
-                        border-radius: 15px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        transform: rotate(-2deg);
-                        box-shadow: 0 15px 35px rgba(0,0,0,0.15);
-                    ">
-                        <div style="
-                            color: {current_color['text']};
-                            font-size: 0.9em;
-                            font-weight: 500;
-                            text-align: center;
-                            opacity: 0.9;
-                        ">
-                            📚<br>No Image
-                        </div>
-                    </div>
+                    📚 No Image
                 </div>
                 """, unsafe_allow_html=True)
         
         with cols[1]:
-            # Book details with modern typography
+            # Book details
             st.markdown(f"""
-            <div style="padding-left: 20px;">
-                <!-- Title -->
-                <h2 style="
-                    font-size: 1.4em;
-                    font-weight: 700;
-                    color: #2c3e50;
-                    margin: 0 0 15px 0;
-                    line-height: 1.3;
-                    background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
-                    -webkit-background-clip: text;
-                    -webkit-text-fill-color: transparent;
-                    background-clip: text;
-                ">{title}</h2>
-                
-                <!-- Book details with icons -->
-                <div style="margin-bottom: 25px;">
-                    <div style="
-                        display: flex;
-                        align-items: center;
-                        margin-bottom: 8px;
-                        color: #34495e;
-                    ">
-                        <span style="margin-right: 10px; font-size: 1.1em;">👤</span>
-                        <span style="font-weight: 500;">{authors}</span>
-                    </div>
-                    <div style="
-                        display: flex;
-                        align-items: center;
-                        margin-bottom: 8px;
-                        color: #34495e;
-                    ">
-                        <span style="margin-right: 10px; font-size: 1.1em;">🏢</span>
-                        <span>{publisher}</span>
-                    </div>
-                    <div style="
-                        display: flex;
-                        align-items: center;
-                        margin-bottom: 8px;
-                        color: #34495e;
-                    ">
-                        <span style="margin-right: 10px; font-size: 1.1em;">📅</span>
-                        <span>{year}</span>
-                    </div>
-                    <div style="
-                        display: flex;
-                        align-items: center;
-                        color: #34495e;
-                    ">
-                        <span style="margin-right: 10px; font-size: 1.1em;">📊</span>
-                        <span style="
-                            background: linear-gradient(135deg, #ff6b6b, #feca57);
-                            color: white;
-                            padding: 3px 8px;
-                            border-radius: 12px;
-                            font-size: 0.85em;
-                            font-weight: 600;
-                        ">{loan_count} loans</span>
-                    </div>
-                </div>
+            <div>
+                <h3 style="margin: 0 0 10px 0; color: #333;">{title}</h3>
+                <p><strong>Author:</strong> {authors}</p>
+                <p><strong>Publisher:</strong> {publisher}</p>
+                <p><strong>Year:</strong> {year}</p>
+                <p><strong>Loan Count:</strong> {loan_count}</p>
             </div>
             """, unsafe_allow_html=True)
             
-            # Action buttons with modern styling
-            btn_col1, btn_col2, btn_col3, btn_col4 = st.columns([2.5, 2.5, 1, 1])
+            # Action buttons
+            btn_col1, btn_col2, btn_col3, btn_col4 = st.columns([2, 2, 1, 1])
             
             with btn_col1:
-                # Custom styled button using HTML/CSS for "Tell me more"
-                button_html = f"""
-                <div style="margin-bottom: 10px;">
-                    <style>
-                        .tell-more-btn-{index} {{
-                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                            color: white;
-                            border: none;
-                            padding: 12px 20px;
-                            border-radius: 25px;
-                            font-weight: 600;
-                            font-size: 0.9em;
-                            cursor: pointer;
-                            transition: all 0.3s ease;
-                            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-                            width: 100%;
-                            text-align: center;
-                            display: inline-block;
-                            text-decoration: none;
-                        }}
-                        .tell-more-btn-{index}:hover {{
-                            transform: translateY(-2px);
-                            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
-                        }}
-                    </style>
-                </div>
-                """
-                st.markdown(button_html, unsafe_allow_html=True)
-                
-                if st.button("✨ Tell me more", key=f"details_liked_{isbn13}_{index}", 
-                           help="Discover more about this book"):
+                if st.button("Tell me more", key=f"details_liked_{isbn13}_{index}"):
                     st.session_state.selected_book = info
                     st.session_state.app_stage = "discuss_book"
                     st.rerun()
             
             with btn_col2:
-                # Styled category dropdown
-                st.markdown("""
-                <div style="margin-bottom: 10px;">
-                    <label style="
-                        font-size: 0.85em;
-                        font-weight: 600;
-                        color: #34495e;
-                        margin-bottom: 5px;
-                        display: block;
-                    ">📋 Status</label>
-                </div>
-                """, unsafe_allow_html=True)
-                
+                st.write("**Status:**")
                 new_category = st.selectbox(
                     "", 
                     ["To Read", "Currently Reading", "Finished"],
@@ -300,76 +135,24 @@ def display_liked_book_card(book, index):
                     if hasattr(st.session_state, 'username') and st.session_state.username:
                         success = update_book_category(st.session_state.username, isbn13, new_category)
                         if success:
-                            st.success("✅ Status updated!")
+                            st.success("Status updated!")
                             st.rerun()
                         else:
-                            st.error("❌ Update failed")
+                            st.error("Update failed")
             
             with btn_col3:
-                # Elegant save button
-                st.markdown("<div style='margin-top: 25px;'></div>", unsafe_allow_html=True)
-                if st.button("💾", key=f"update_cat_{isbn13}_{index}", 
-                           help="Save category change",
-                           use_container_width=True):
-                    pass  # Handled automatically by selectbox
+                if st.button("💾", key=f"update_cat_{isbn13}_{index}", help="Save"):
+                    pass  # Handled by selectbox
             
             with btn_col4:
-                # Elegant remove button
-                st.markdown("<div style='margin-top: 25px;'></div>", unsafe_allow_html=True)
-                if st.button("🗑️", key=f"remove_{isbn13}_{index}", 
-                           help="Remove from library",
-                           use_container_width=True):
+                if st.button("🗑️", key=f"remove_{isbn13}_{index}", help="Remove"):
                     if hasattr(st.session_state, 'username') and st.session_state.username:
                         unlike_book_for_user(st.session_state.username, isbn13)
-                        st.success("✅ Removed from library!")
+                        st.success("Removed from library!")
                         st.rerun()
         
-        # Close the main card
-        st.markdown("""
-            </div>
-        </div>
-        <style>
-            /* Hover effects for the entire card */
-            div[data-testid="column"]:hover .book-card {
-                transform: translateY(-5px);
-                box-shadow: 0 25px 50px rgba(0,0,0,0.15);
-            }
-            
-            /* Style Streamlit buttons */
-            .stButton > button {
-                border-radius: 20px;
-                border: none;
-                font-weight: 600;
-                transition: all 0.3s ease;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            }
-            
-            .stButton > button:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-            }
-            
-            /* Style selectbox */
-            .stSelectbox > div > div {
-                border-radius: 15px;
-                border: 2px solid #e0e6ff;
-                background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
-            }
-            
-            /* Custom scrollbar if needed */
-            ::-webkit-scrollbar {
-                width: 8px;
-            }
-            ::-webkit-scrollbar-track {
-                background: #f1f1f1;
-                border-radius: 10px;
-            }
-            ::-webkit-scrollbar-thumb {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                border-radius: 10px;
-            }
-        </style>
-        """, unsafe_allow_html=True)
+        # Close container
+        st.markdown("</div>", unsafe_allow_html=True)
 
 
 # Add after MongoDB client initialization

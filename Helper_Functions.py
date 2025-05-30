@@ -364,9 +364,10 @@ def display_book_card(book, index):
                         
 
 
-# --- Enhanced HyperCLOVA API Integration ---
+import re
+
 def extract_keywords_with_hyperclova(user_input, api_key):
-    """Extract and detect if the user is asking for books by a specific author or a genre"""
+    """Extract and detect if the user is asking for books by a specific author or a genre (robust natural language support)"""
     if not api_key:
         return detect_author_or_genre_fallback(user_input)
     
@@ -375,7 +376,7 @@ def extract_keywords_with_hyperclova(user_input, api_key):
         "Content-Type": "application/json"
     }
     
-    # Enhanced multi-language author detection prompt
+    # Enhanced multi-language author detection prompt with more natural language examples
     author_detection_prompt = f"""
 사용자 입력 분석: "{user_input}"
 
@@ -384,7 +385,7 @@ def extract_keywords_with_hyperclova(user_input, api_key):
 **작가 검색 패턴:**
 - 한국 작가: "박경리", "김영하", "무라카미 하루키", "황석영 작품", "이문열 소설"
 - 외국 작가: "Stephen King", "J.K. Rowling", "Agatha Christie", "셰익스피어", "헤밍웨이"
-- 작가 관련 표현: "~의 작품", "~가 쓴", "~저자", "~작가의 책", "books by ~"
+- 작가 관련 표현: "~의 작품", "~가 쓴", "~저자", "~작가의 책", "books by ~", "recommend me books by ~", "show me books by ~", "books written by ~", "author ~", "작가 ~", "저자 ~", "책 by ~"
 
 **장르/주제 검색 패턴:**
 - 문학 장르: "로맨스", "추리소설", "판타지", "SF", "호러", "스릴러"
@@ -406,13 +407,17 @@ def extract_keywords_with_hyperclova(user_input, api_key):
 "스티븐 킹" → AUTHOR:스티븐 킹
 "철학 관련 서적" → GENRE
 "해리포터 작가 책" → AUTHOR:J.K. Rowling
+"recommend me books by Stephen King" → AUTHOR:Stephen King
+"show me books by Agatha Christie" → AUTHOR:Agatha Christie
+"books written by 헤밍웨이" → AUTHOR:헤밍웨이
+"author 무라카미 하루키" → AUTHOR:무라카미 하루키
 """
     
     data_detection = {
         "messages": [
             {
                 "role": "system",
-                "content": "당신은 도서 검색 요청을 정확히 분석하는 전문가입니다. 사용자가 특정 작가의 책을 찾는지, 아니면 특정 장르나 주제의 책을 찾는지 명확하게 구분해야 합니다. 작가 이름이 포함되면 작가 검색, 장르나 주제만 언급되면 장르 검색으로 판단합니다."
+                "content": "당신은 도서 검색 요청을 정확히 분석하는 전문가입니다. 사용자가 특정 작가의 책을 찾는지, 아니면 특정 장르나 주제의 책을 찾는지 명확하게 구분해야 합니다. 작가 이름이 포함되면 작가 검색, 장르나 주제만 언급되면 장르 검색으로 판단합니다. 반드시 아래 응답 형식만 사용하세요."
             },
             {
                 "role": "user", 
@@ -426,6 +431,7 @@ def extract_keywords_with_hyperclova(user_input, api_key):
     
     try:
         # API call for request type detection
+        import requests
         response = requests.post(
             "https://clovastudio.stream.ntruss.com/testapp/v1/chat-completions/HCX-003",
             headers=headers,
@@ -440,7 +446,6 @@ def extract_keywords_with_hyperclova(user_input, api_key):
             # Parse the response more robustly
             if "AUTHOR:" in detection_result:
                 author_name = detection_result.split("AUTHOR:")[-1].strip()
-                # Clean up the author name
                 author_name = author_name.replace('"', '').replace("'", '').strip()
                 if author_name:
                     return ("AUTHOR", author_name)
@@ -448,83 +453,84 @@ def extract_keywords_with_hyperclova(user_input, api_key):
                 return ("GENRE", user_input)
             
             # If response format is unexpected, try fallback
-            return detect_author_or_genre_fallback(user_input)
+            return enhanced_fallback_extraction(user_input)
         else:
-            st.warning(f"HyperCLOVA API error: {response.status_code}")
-            return detect_author_or_genre_fallback(user_input)
+            # Optionally: log or print error
+            return enhanced_fallback_extraction(user_input)
             
     except Exception as e:
-        st.warning(f"Request type detection failed: {e}")
-        return detect_author_or_genre_fallback(user_input)
+        # Optionally: log or print error
+        return enhanced_fallback_extraction(user_input)
 
-def detect_author_or_genre_fallback(user_input):
-    """Enhanced fallback method to detect if input is author name or genre without API"""
-    import re
-    
-    # Normalize input for better matching
+def enhanced_fallback_extraction(user_input):
+    """Improved fallback method to detect if input is author name or genre without API"""
     normalized_input = user_input.lower().strip()
     
-    # Common author-related keywords in multiple languages
+    # Author-related regex patterns (English & Korean)
+    author_patterns = [
+        r'books by ([\w\s\.\-가-힣]+)',         # books by Stephen King
+        r'by author ([\w\s\.\-가-힣]+)',        # by author J.K. Rowling
+        r'author ([\w\s\.\-가-힣]+)',           # author 무라카미 하루키
+        r'작가[ ]*([\w\s\.\-가-힣]+)',           # 작가 무라카미 하루키
+        r'저자[ ]*([\w\s\.\-가-힣]+)',           # 저자 김영하
+        r'([\w\s\.\-가-힣]+)의 작품',            # 김영하의 작품
+        r'([\w\s\.\-가-힣]+)가 쓴',              # 김영하가 쓴
+        r'([\w\s\.\-가-힣]+) 작가의 책',          # 김영하 작가의 책
+        r'books written by ([\w\s\.\-가-힣]+)', # books written by Hemingway
+    ]
+    for pattern in author_patterns:
+        match = re.search(pattern, user_input, re.IGNORECASE)
+        if match:
+            author_name = match.group(1).strip()
+            # Remove trailing words like '책', '소설', etc.
+            author_name = re.sub(r'(책|소설|작품|author|저자|작가)$', '', author_name, flags=re.IGNORECASE).strip()
+            if author_name:
+                return ("AUTHOR", author_name)
+    
+    # Fallback to your original logic if no pattern matched
+    return detect_author_or_genre_fallback(user_input)
+
+def detect_author_or_genre_fallback(user_input):
+    """Original fallback method with minor improvements"""
+    normalized_input = user_input.lower().strip()
     author_keywords = [
         '작가', '저자', '작품', '소설가', '시인', '문학가',
         'author', 'writer', 'books by', 'novels by', 'works by',
         '가 쓴', '의 작품', '의 책', '의 소설'
     ]
-    
-    # Common genre keywords
     genre_keywords = [
         '소설', '로맨스', '추리', '미스터리', '판타지', 'sf', '공상과학',
         '역사', '철학', '경제', '과학', '자기계발', '에세이', '시집',
         'romance', 'mystery', 'fantasy', 'thriller', 'horror', 
         'philosophy', 'history', 'economics', 'science'
     ]
-    
-    # Check for explicit author indicators
     for keyword in author_keywords:
         if keyword in normalized_input:
-            # Extract potential author name by removing keywords
             clean_name = user_input
             for remove_word in ['작가', '저자', '작품', '소설', '책', 'author', 'writer', 'books by']:
                 clean_name = re.sub(rf'\b{re.escape(remove_word)}\b', '', clean_name, flags=re.IGNORECASE)
             clean_name = clean_name.strip()
             if clean_name:
                 return ("AUTHOR", clean_name)
-    
-    # Enhanced Korean name detection
     korean_surnames = ['김', '박', '이', '최', '정', '강', '조', '윤', '장', '임', '한', '오', '서', '신', '권', '황', '안', '송', '류', '전']
     has_korean_surname = any(surname in user_input for surname in korean_surnames)
-    
-    # Check for Western name patterns (Title case words)
     words = user_input.split()
     has_western_name_pattern = len(words) >= 2 and any(word[0].isupper() and len(word) > 1 for word in words)
-    
-    # Famous author name patterns (partial matching)
     famous_authors = [
         '하루키', '헤밍웨이', '톨스토이', '도스토옙스키', '카프카', '조이스',
         'king', 'rowling', 'christie', 'shakespeare', 'hemingway'
     ]
     has_famous_author = any(author.lower() in normalized_input for author in famous_authors)
-    
-    # If it looks like a person's name
     if has_korean_surname or has_western_name_pattern or has_famous_author:
-        # But check if it's clearly a genre request
         genre_indicators = ['추천', '소개', '목록', '리스트', '종류', '분야', '관련']
         is_genre_request = any(indicator in normalized_input for indicator in genre_indicators) and \
                           any(genre in normalized_input for genre in genre_keywords)
-        
         if not is_genre_request:
             return ("AUTHOR", user_input.strip())
-    
-    # Check for clear genre indicators
     if any(genre in normalized_input for genre in genre_keywords):
         return ("GENRE", user_input)
-    
-    # Default fallback logic
-    # If input is very short and looks like a name, assume author
     if len(words) <= 3 and (has_korean_surname or has_western_name_pattern):
         return ("AUTHOR", user_input.strip())
-    
-    # Otherwise, assume genre request
     return ("GENRE", user_input)
 
 def extract_genre_keywords(user_input, api_key, dtl_kdc_dict, headers):

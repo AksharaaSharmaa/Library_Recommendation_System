@@ -1,6 +1,6 @@
-# 📚 Book Wanderer / 책방랑자
-
 <div align="center">
+
+# 📚 Book Wanderer / 책방랑자
 
 ![Book Wanderer Banner](https://via.placeholder.com/800x200/2c3040/ffffff?text=📚+Book+Wanderer+%2F+책방랑자)
 
@@ -11,7 +11,7 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Korean Support](https://img.shields.io/badge/Language-English%20%2B%20Korean-purple.svg)]()
 
-[🚀 Live Demo](#) • [📖 Documentation](#features) • [🛠️ Installation](#installation) • [🤝 Contributing](#contributing)
+🚀 **[Experience Book Wanderer Live](https://your-live-app-url.streamlit.app)**
 
 </div>
 
@@ -21,33 +21,50 @@
 
 **Book Wanderer** is an intelligent, bilingual book recommendation system that bridges the gap between Korean and English literature. Powered by AI and integrated with comprehensive library databases, it offers personalized book discoveries, community discussions, and reading management tools.
 
+<div align="center">
+
 ### ✨ What Makes Book Wanderer Special?
 
-- 🤖 **AI-Powered Recommendations** - Smart suggestions using HyperCLOVA API
-- 🌐 **Bilingual Support** - Seamless English/Korean experience
-- 📚 **Library Integration** - Real-time book data from Korean Library API
-- 👥 **Community Features** - Share thoughts and discover together
-- 📱 **Personal Library** - Track your reading journey
-- 🎨 **Beautiful UI** - Intuitive and engaging interface
+🤖 **AI-Powered Recommendations** • 🌐 **Bilingual Support** • 📚 **Library Integration**
+
+👥 **Community Features** • 📱 **Personal Library** • 🎨 **Beautiful UI**
+
+</div>
 
 ---
 
 ## 🎯 Features
 
+<div align="center">
+
 ### 🔍 **Smart Book Discovery**
+
+</div>
+
 ```
 🎭 Genre-Based Search        📝 Author-Specific Search
 🏷️ Category Filtering        ⭐ Popularity Rankings
 🔄 Dynamic Recommendations   🎯 Personalized Suggestions
 ```
 
+<div align="center">
+
 ### 🤖 **AI Assistant Integration**
-- **HyperCLOVA API** - Advanced Korean language processing
-- **Bilingual Responses** - Every interaction in both languages
-- **Context-Aware Chat** - Understands your reading preferences
-- **Book Analysis** - Deep insights into themes, plots, and recommendations
+
+![Library GIF](https://media.giphy.com/media/l2Je66zG6mAAZxgqI/giphy.gif)
+
+</div>
+
+Experience the power of **HyperCLOVA API** with advanced Korean language processing, bilingual responses that adapt to your preferences, context-aware conversations that understand your reading journey, and deep book analysis with insights into themes, plots, and personalized recommendations.
+
+<div align="center">
 
 ### 📚 **Personal Library Management**
+
+![Reading GIF](https://media.giphy.com/media/WoWm8YzFQJg5i/giphy.gif)
+
+</div>
+
 | Feature | Description |
 |---------|-------------|
 | 📖 **Reading Status** | Track books as "To Read", "Currently Reading", "Finished" |
@@ -55,13 +72,22 @@
 | 📊 **Reading Stats** | Visualize your reading journey |
 | 🏷️ **Smart Categories** | Auto-organize by genre and preferences |
 
+<div align="center">
+
 ### 💬 **Community Hub**
-- **Discussion Forums** - Share thoughts and reviews
-- **Book Clubs** - Connect with fellow readers
-- **Multilingual Posts** - Communicate in your preferred language
-- **Real-time Updates** - Stay connected with the community
+
+![Community GIF](https://media.giphy.com/media/3oKIPnAiaMCws8nOsE/giphy.gif)
+
+</div>
+
+Connect with fellow book lovers through discussion forums where you can share thoughts and reviews, join book clubs to connect with like-minded readers, communicate in your preferred language with multilingual post support, and stay connected with real-time community updates.
+
+<div align="center">
 
 ### 🎨 **User Experience**
+
+</div>
+
 ```css
 ✨ Modern Design          🌙 Dark/Light Modes
 📱 Responsive Layout      🚀 Fast Performance
@@ -72,14 +98,24 @@
 
 ## 🛠️ Installation
 
+<div align="center">
+
 ### Prerequisites
+
+</div>
+
 ```bash
 Python 3.8+
 pip package manager
 MongoDB (for user data)
 ```
 
+<div align="center">
+
 ### Quick Start
+
+</div>
+
 ```bash
 # Clone the repository
 git clone https://github.com/yourusername/book-wanderer.git
@@ -100,7 +136,12 @@ cp .env.example .env
 streamlit run main.py
 ```
 
+<div align="center">
+
 ### 🔑 API Configuration
+
+</div>
+
 ```env
 # Required API Keys
 HYPERCLOVA_API_KEY=your_hyperclova_key
@@ -112,7 +153,14 @@ MONGODB_URI=your_mongodb_connection_string
 
 ## 🎮 Usage
 
-### 1. **Getting Started**
+<div align="center">
+
+### Getting Started
+
+![Books GIF](https://media.giphy.com/media/l0HlBO7eyXzSZkJri/giphy.gif)
+
+</div>
+
 ```python
 # Launch the app
 streamlit run main.py
@@ -121,7 +169,12 @@ streamlit run main.py
 # Start exploring books in your preferred language!
 ```
 
-### 2. **Book Discovery Flow**
+<div align="center">
+
+### Book Discovery Flow
+
+</div>
+
 ```mermaid
 graph LR
     A[Welcome] --> B[Describe Preferences]
@@ -132,7 +185,12 @@ graph LR
     F --> G[Join Discussion]
 ```
 
-### 3. **Key Interactions**
+<div align="center">
+
+### Key Interactions
+
+</div>
+
 | Action | English | Korean |
 |--------|---------|--------|
 | Search | "Find mystery novels" | "추리소설 찾아줘" |
@@ -158,9 +216,16 @@ book-wanderer/
     └── 🎨 styles/
 ```
 
+<div align="center">
+
 ## 🔧 Technical Architecture
 
 ### **Core Components**
+
+![Tech Stack](https://media.giphy.com/media/qgQUggAC3Pfv687qPC/giphy.gif)
+
+</div>
+
 ```python
 # AI Integration
 HyperCLOVA API → Natural Language Processing
@@ -173,7 +238,12 @@ CSS/HTML → Custom Styling
 JavaScript → Interactive Elements
 ```
 
+<div align="center">
+
 ### **Data Flow**
+
+</div>
+
 ```
 User Input → AI Processing → API Calls → Data Processing → UI Rendering
      ↓
@@ -184,46 +254,42 @@ Community Features ← MongoDB ← User Management
 
 ## 🌐 API Integrations
 
+<div align="center">
+
 ### **Korean Library API**
-- **Purpose**: Access to extensive Korean book database
-- **Features**: Search by genre, author, title, ISBN
-- **Data**: Book metadata, cover images, popularity metrics
 
-### **HyperCLOVA API**
-- **Purpose**: Advanced Korean language AI processing
-- **Features**: Natural language understanding, bilingual responses
-- **Capabilities**: Book analysis, recommendation generation
+</div>
 
-### **MongoDB Integration**
-- **User Management**: Authentication and profiles
-- **Library Storage**: Personal book collections
-- **Community Data**: Discussion posts and interactions
-
----
-
-## 🎨 Screenshots
+Access to extensive Korean book database with search capabilities by genre, author, title, and ISBN. Get comprehensive book metadata, cover images, and popularity metrics to enhance your reading experience.
 
 <div align="center">
 
-### 🏠 Welcome Interface
-![Welcome Screen](https://via.placeholder.com/600x400/f8f9fa/333333?text=Welcome+Screen)
-
-### 📚 Book Recommendations
-![Book Recommendations](https://via.placeholder.com/600x400/e3f2fd/1976d2?text=Book+Recommendations)
-
-### 💬 Community Discussion
-![Community Features](https://via.placeholder.com/600x400/f3e5f5/7b1fa2?text=Community+Discussion)
-
-### 📖 Personal Library
-![Personal Library](https://via.placeholder.com/600x400/e8f5e8/388e3c?text=Personal+Library)
+### **HyperCLOVA API**
 
 </div>
+
+Advanced Korean language AI processing with natural language understanding and bilingual responses. Enjoy sophisticated book analysis and intelligent recommendation generation tailored to your preferences.
+
+<div align="center">
+
+### **MongoDB Integration**
+
+</div>
+
+Secure user management with authentication and profiles, personal library storage for your book collections, and community data management for discussion posts and interactions.
 
 ---
 
 ## 🚀 Advanced Features
 
+<div align="center">
+
 ### **Multi-Language AI Processing**
+
+![AI Processing](https://media.giphy.com/media/LaVp0AyqR5bGsC5Cbm/giphy.gif)
+
+</div>
+
 ```python
 # Automatic language detection and response
 def process_bilingual_query(user_input):
@@ -232,7 +298,12 @@ def process_bilingual_query(user_input):
     # Maintain context across languages
 ```
 
+<div align="center">
+
 ### **Smart Book Matching**
+
+</div>
+
 ```python
 # Advanced recommendation algorithm
 def generate_recommendations(user_preferences):
@@ -242,7 +313,14 @@ def generate_recommendations(user_preferences):
     # Return personalized suggestions
 ```
 
+<div align="center">
+
 ### **Real-time Community**
+
+![Community](https://media.giphy.com/media/3oKIPEqDGUULpEU0aQ/giphy.gif)
+
+</div>
+
 ```python
 # Live discussion features
 def community_integration():
@@ -256,16 +334,24 @@ def community_integration():
 
 ## 🤝 Contributing
 
+<div align="center">
+
 We welcome contributions from the community! Here's how you can help:
 
 ### **Ways to Contribute**
-- 🐛 **Bug Reports** - Found an issue? Let us know!
-- 💡 **Feature Requests** - Have ideas? We'd love to hear them!
-- 🔧 **Code Contributions** - Submit pull requests
-- 📖 **Documentation** - Help improve our docs
-- 🌐 **Translation** - Support more languages
+
+🐛 **Bug Reports** • 💡 **Feature Requests** • 🔧 **Code Contributions**
+
+📖 **Documentation** • 🌐 **Translation** • ❤️ **Community Support**
+
+</div>
+
+<div align="center">
 
 ### **Development Setup**
+
+</div>
+
 ```bash
 # Fork the repository
 git fork https://github.com/yourusername/book-wanderer
@@ -282,69 +368,23 @@ git push origin feature/amazing-feature
 
 ---
 
-## 📊 Roadmap
-
-### **Version 2.0** 🎯
-- [ ] Machine Learning recommendation engine
-- [ ] Mobile app version
-- [ ] Advanced analytics dashboard
-- [ ] Book club scheduling system
-
-### **Version 2.5** 🚀
-- [ ] Voice search capabilities
-- [ ] AR book previews
-- [ ] Social reading challenges
-- [ ] Publisher integrations
-
-### **Version 3.0** 🌟
-- [ ] Multi-language expansion
-- [ ] AI book writing assistant
-- [ ] Virtual book events
-- [ ] Global community features
-
----
-
-## 📈 Statistics
+## 📜 License
 
 <div align="center">
 
-![GitHub Stats](https://via.placeholder.com/400x200/2c3040/ffffff?text=GitHub+Statistics)
-
-**Project Metrics**
-- 📚 **Books Indexed**: 50,000+
-- 👥 **Active Users**: Growing daily
-- 🌐 **Languages**: English & Korean
-- ⭐ **User Rating**: 4.8/5
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 </div>
-
----
-
-## 📜 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
 ## 🙏 Acknowledgments
 
-- **HyperCLOVA** - AI language processing
-- **Korean National Library** - Book database access
-- **Streamlit Community** - Amazing framework
-- **Contributors** - All the amazing people who help improve this project
-
----
-
-## 📞 Support & Contact
-
 <div align="center">
 
-[![Email](https://img.shields.io/badge/Email-Contact-blue?style=for-the-badge)](mailto:support@bookwanderer.com)
-[![Documentation](https://img.shields.io/badge/Docs-Read-green?style=for-the-badge)](https://docs.bookwanderer.com)
-[![Discord](https://img.shields.io/badge/Discord-Chat-purple?style=for-the-badge)](https://discord.gg/bookwanderer)
+**Special Thanks To:**
 
-**"한 권의 책은 하나의 세상이다"**
-*"Every book is a world of its own"*
+**HyperCLOVA** • **Korean National Library** • **Streamlit Community** • **Our Amazing Contributors**
 
 </div>
 
@@ -352,8 +392,18 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <div align="center">
 
+## 📞 Support & Contact
+
+![Support](https://media.giphy.com/media/3oKIPsx2VAYAgEHC12/giphy.gif)
+
+**"한 권의 책은 하나의 세상이다"**
+
+*"Every book is a world of its own"*
+
+---
+
 **Made with ❤️ for book lovers worldwide**
 
-[⬆ Back to Top](#-book-wanderer--책방랑자)
+*Connecting readers across languages and cultures*
 
 </div>

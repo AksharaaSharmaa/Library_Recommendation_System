@@ -2,7 +2,6 @@
 
 # 📚 Book Wanderer / 책방랑자
 
-![Book Wanderer Banner](https://via.placeholder.com/800x200/2c3040/ffffff?text=📚+Book+Wanderer+%2F+책방랑자)
 
 *Discover your next favorite read with AI assistance in English and Korean*
 
@@ -11,7 +10,7 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Korean Support](https://img.shields.io/badge/Language-English%20%2B%20Korean-purple.svg)]()
 
-🚀 **[Experience Book Wanderer Live](https://your-live-app-url.streamlit.app)**
+🚀 **[Experience Book Wanderer Live](https://genta-library-recommendation.streamlit.app/)**
 
 </div>
 
@@ -377,33 +376,3 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 </div>
 
 ---
-
-## 🙏 Acknowledgments
-
-<div align="center">
-
-**Special Thanks To:**
-
-**HyperCLOVA** • **Korean National Library** • **Streamlit Community** • **Our Amazing Contributors**
-
-</div>
-
----
-
-<div align="center">
-
-## 📞 Support & Contact
-
-![Support](https://media.giphy.com/media/3oKIPsx2VAYAgEHC12/giphy.gif)
-
-**"한 권의 책은 하나의 세상이다"**
-
-*"Every book is a world of its own"*
-
----
-
-**Made with ❤️ for book lovers worldwide**
-
-*Connecting readers across languages and cultures*
-
-</div>

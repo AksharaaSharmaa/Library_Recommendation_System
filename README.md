@@ -156,8 +156,6 @@ MONGODB_URI=your_mongodb_connection_string
 
 ### Getting Started
 
-![Books GIF](https://media.giphy.com/media/l0HlBO7eyXzSZkJri/giphy.gif)
-
 </div>
 
 ```python
@@ -221,8 +219,6 @@ book-wanderer/
 
 ### **Core Components**
 
-![Tech Stack](https://media.giphy.com/media/qgQUggAC3Pfv687qPC/giphy.gif)
-
 </div>
 
 ```python
@@ -278,72 +274,6 @@ Advanced Korean language AI processing with natural language understanding and b
 Secure user management with authentication and profiles, personal library storage for your book collections, and community data management for discussion posts and interactions.
 
 ---
-
-## 🚀 Advanced Features
-
-<div align="center">
-
-### **Multi-Language AI Processing**
-
-![AI Processing](https://media.giphy.com/media/LaVp0AyqR5bGsC5Cbm/giphy.gif)
-
-</div>
-
-```python
-# Automatic language detection and response
-def process_bilingual_query(user_input):
-    # Detect language preference
-    # Generate response in both languages
-    # Maintain context across languages
-```
-
-<div align="center">
-
-### **Smart Book Matching**
-
-</div>
-
-```python
-# Advanced recommendation algorithm
-def generate_recommendations(user_preferences):
-    # Analyze reading history
-    # Match with similar users
-    # Consider genre preferences
-    # Return personalized suggestions
-```
-
-<div align="center">
-
-### **Real-time Community**
-
-![Community](https://media.giphy.com/media/3oKIPEqDGUULpEU0aQ/giphy.gif)
-
-</div>
-
-```python
-# Live discussion features
-def community_integration():
-    # Real-time post updates
-    # User interaction tracking
-    # Content moderation
-    # Engagement analytics
-```
-
----
-
-## 🤝 Contributing
-
-<div align="center">
-
-We welcome contributions from the community! Here's how you can help:
-
-### **Ways to Contribute**
-
-🐛 **Bug Reports** • 💡 **Feature Requests** • 🔧 **Code Contributions**
-
-📖 **Documentation** • 🌐 **Translation** • ❤️ **Community Support**
-
-</div>
 
 <div align="center">
 

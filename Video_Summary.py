@@ -1,7 +1,7 @@
 import tempfile
 import moviepy as mp
-from moviepy import TextClip, ImageClip, CompositeVideoClip, concatenate_videoclips
-from PIL import Image, ImageDraw, ImageFilter, ImageEnhance, ImageFont
+from moviepy import TextClip, ImageClip, CompositeVideoClip, concatenate_videoclips, vfx
+from PIL import Image, ImageDraw, ImageFont
 import traceback
 import base64
 import requests
@@ -14,7 +14,6 @@ import streamlit as st
 def generate_book_summary_video(book_data, api_key):
     try:
         temp_dir = tempfile.mkdtemp()
-
         title = book_data.get('bookname') or book_data.get('bookName', 'Unknown Title')
         author = book_data.get('authors') or book_data.get('author', 'Unknown Author')
         publisher = book_data.get('publisher', 'Unknown Publisher')
@@ -26,40 +25,46 @@ def generate_book_summary_video(book_data, api_key):
 
         summary_points = generate_book_summary_points(title, author, api_key)
 
+        # Create intro image with book title
         intro_text = f"Book Summary\n{title}"
         intro_image_path = create_text_image(intro_text, (1080, 1080), 60, temp_dir, "intro.png")
-        intro_clip = ImageClip(intro_image_path).set_duration(3)
+        intro_clip = ImageClip(intro_image_path).with_duration(3)
 
+        # Create author image
         author_text = f"By {author}"
         author_image_path = create_text_image(author_text, (1080, 1080), 50, temp_dir, "author.png")
-        author_clip = ImageClip(author_image_path).set_duration(2)
+        author_clip = ImageClip(author_image_path).with_duration(2)
 
-        cover_clip = ImageClip(cover_image_path).set_duration(4)
-        cover_clip = cover_clip.resize(height=1080)
+        # Create the main book cover clip and resize
+        cover_clip = ImageClip(cover_image_path).with_duration(4)
+        cover_clip = cover_clip.fx(vfx.resize, height=1080)
         if cover_clip.w > 1080:
-            cover_clip = cover_clip.resize(width=1080)
-        cover_clip = cover_clip.set_position('center')
+            cover_clip = cover_clip.fx(vfx.resize, width=1080)
+        cover_clip = cover_clip.with_position('center')
 
+        # Create clips for each summary point
         point_clips = []
         for i, point in enumerate(summary_points):
             point_image_path = add_text_to_book_cover(
                 cover_image_path, point, temp_dir, f"point_{i}.png"
             )
-            point_clip = ImageClip(point_image_path).set_duration(6)
+            point_clip = ImageClip(point_image_path).with_duration(6)
             point_clips.append(point_clip)
 
+        # Create outro image
         outro_text = f"Happy Reading!\n📚 Book Wanderer"
         outro_image_path = create_text_image(outro_text, (1080, 1080), 60, temp_dir, "outro.png")
-        outro_clip = ImageClip(outro_image_path).set_duration(3)
+        outro_clip = ImageClip(outro_image_path).with_duration(3)
 
+        # Combine all clips
         all_clips = [intro_clip, author_clip, cover_clip] + point_clips + [outro_clip]
         final_clip = concatenate_videoclips(all_clips, method="compose")
         final_clip = final_clip.without_audio()
 
         output_path = os.path.join(temp_dir, "book_summary.mp4")
         final_clip.write_videofile(
-            output_path, 
-            fps=24, 
+            output_path,
+            fps=24,
             codec='libx264',
             preset='medium',
             verbose=False,
@@ -99,7 +104,7 @@ def create_placeholder_cover(title, author, temp_dir):
     draw = ImageDraw.Draw(image)
     try:
         font_paths = [
-            "Arial.ttf", 
+            "Arial.ttf",
             "/System/Library/Fonts/Arial.ttf",
             "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
             "C:/Windows/Fonts/arial.ttf"
@@ -147,17 +152,17 @@ def create_placeholder_cover(title, author, temp_dir):
 def generate_book_summary_points(title, author, api_key):
     try:
         prompt = f"""
-        Create 5 engaging summary points about the book "{title}" by {author}. 
+        Create 5 engaging summary points about the book "{title}" by {author}.
         Each point should be 1-2 sentences long and highlight key aspects like:
         - Main themes or plot elements
         - Character insights
         - Writing style or unique features
         - Why readers might enjoy it
         - Historical or cultural significance
-        
+
         Format as a JSON array of strings:
         ["Point 1", "Point 2", "Point 3", "Point 4", "Point 5"]
-        
+
         Make the points informative but accessible to general readers.
         """
         messages = [
@@ -206,7 +211,7 @@ def create_text_image(text, size, font_size, temp_dir, filename):
     draw = ImageDraw.Draw(image)
     try:
         font_paths = [
-            "Arial.ttf", 
+            "Arial.ttf",
             "/System/Library/Fonts/Arial.ttf",
             "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
             "C:/Windows/Fonts/arial.ttf"
@@ -253,7 +258,7 @@ def add_text_to_book_cover(cover_path, text, temp_dir, filename):
     draw = ImageDraw.Draw(overlay)
     try:
         font_paths = [
-            "Arial.ttf", 
+            "Arial.ttf",
             "/System/Library/Fonts/Arial.ttf",
             "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
             "C:/Windows/Fonts/arial.ttf"
@@ -286,9 +291,9 @@ def add_text_to_book_cover(cover_path, text, temp_dir, filename):
     text_x = (1080 - text_width) // 2
     text_y = rect_y + margin
     draw.multiline_text(
-        (text_x, text_y), 
-        wrapped_text, 
-        font=font, 
+        (text_x, text_y),
+        wrapped_text,
+        font=font,
         fill=(255, 255, 255, 255),
         align="center"
     )
@@ -337,34 +342,6 @@ def wrap_text_for_cover(text, font, max_width):
             current_line = [word]
     if current_line:
         lines.append(' '.join(current_line))
-    return '\n'.join(lines)
-
-def wrap_text_for_cover(text, font, max_width):
-    words = text.split()
-    if len(words) <= 3:
-        return text
-    
-    # For longer titles, try to split intelligently
-    lines = []
-    current_line = []
-    
-    for word in words:
-        current_line.append(word)
-        line_text = ' '.join(current_line)
-        
-        temp_img = Image.new('RGB', (1, 1))
-        temp_draw = ImageDraw.Draw(temp_img)
-        bbox = temp_draw.textbbox((0, 0), line_text, font=font)
-        line_width = bbox[2] - bbox[0]
-        
-        if line_width > max_width and len(current_line) > 1:
-            current_line.pop()
-            lines.append(' '.join(current_line))
-            current_line = [word]
-    
-    if current_line:
-        lines.append(' '.join(current_line))
-    
     return '\n'.join(lines)
 
 # Integration function to add video generation to your main app

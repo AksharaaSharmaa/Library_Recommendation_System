@@ -19,6 +19,7 @@ import random
 from Helper_Functions import *
 import calendar
 from Discussion_Function import *
+from Video_Summary import *
 
 # --- EMBEDDED API KEYS ---
 HYPERCLOVA_API_KEY = "nv-270db94eb8bf42108110b22f551e655axCwf"
@@ -186,40 +187,117 @@ def main():
         for i, book in enumerate(st.session_state.books_data[:10]):  # Show top 10 books
             display_book_card(book, i)
         
-        # Chat input for follow-up questions
-        col1, col2 = st.columns([4, 1])
-        with col1:
-            user_followup = st.text_input("Ask me anything about these books or request different recommendations:", key="followup_input")
-        with col2:
-            st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("보내다 ᯓ➤", key="send_followup"):
-                if user_followup:
-                    st.session_state.messages.append({"role": "user", "content": user_followup})
-                    
-                    # First, try to detect if this is a new genre/author request
-                    dtl_code, dtl_label = get_dtl_kdc_code(user_followup, HYPERCLOVA_API_KEY)
-                    
-                    # Check if user wants new recommendations with specific genre/author
-                    if dtl_code and LIBRARY_API_KEY:
-                        # This is a new genre/author request - trigger library API search
-                        st.session_state.app_stage = "process_user_input"
-                    elif any(keyword in user_followup.lower() for keyword in ['different', 'other', 'new', 'more', '다른', '새로운', '더', 'genre', 'author', 'category', '장르', '작가', '카테고리']):
-                        # User wants different recommendations but didn't specify genre/author clearly
-                        # Ask them to be more specific to trigger library API
-                        response = "I'd be happy to find different books for you! Please specify the genre, author, or type of books you'd like me to search for. For example, you could say 'mystery novels', 'romance books', 'books by Stephen King', or 'Korean literature'.\n\n한국어 답변: 다른 책들을 찾아드리겠습니다! 찾고 싶은 장르, 작가 또는 책의 종류를 구체적으로 말씀해 주세요. 예를 들어 '추리소설', '로맨스 소설', '스티븐 킹의 책들', '한국문학' 등으로 말씀해 주시면 됩니다."
-                        st.session_state.messages.append({"role": "assistant", "content": response})
-                        st.session_state.app_stage = "awaiting_user_input"
+        # ADD THIS: Book Video Generation Section
+        st.markdown("---")
+        st.header("🎬 Book Summary Videos")
+        
+        with st.expander("Generate Book Summary Videos", expanded=False):
+            st.markdown("### Create engaging video summaries for your recommended books")
+            st.markdown("""
+            Our AI will create video presentations that:
+            - Showcase the book cover prominently
+            - Highlight key themes and plot elements
+            - Provide engaging summaries for each book
+            - Create shareable content for book lovers
+            """)
+            
+            # Let user select which book to create video for
+            book_options = []
+            for i, book in enumerate(st.session_state.books_data[:5]):  # Limit to first 5 books
+                title = book.get('bookname') or book.get('bookName', 'Unknown Title')
+                author = book.get('authors') or book.get('author', 'Unknown Author')
+                book_options.append(f"{title} by {author}")
+            
+            if book_options:
+                selected_book_index = st.selectbox(
+                    "Select a book to create a summary video:",
+                    range(len(book_options)),
+                    format_func=lambda x: book_options[x],
+                    key="book_video_selector"
+                )
+                
+                col1, col2 = st.columns([3, 1])
+                
+                with col1:
+                    if st.button("Generate Book Summary Video", key="generate_book_video"):
+                        selected_book = st.session_state.books_data[selected_book_index]
+                        
+                        with st.spinner("Creating your book summary video... This may take a few minutes."):
+                            try:
+                                # Generate the video using HyperCLOVA API key
+                                video_path = generate_book_summary_video(
+                                    selected_book,
+                                    HYPERCLOVA_API_KEY
+                                )
+                                
+                                if video_path and not video_path.startswith("Error"):
+                                    # Save the path to session state
+                                    st.session_state.book_video_path = video_path
+                                    st.session_state.book_video_generated = True
+                                    st.session_state.selected_book_for_video = selected_book
+                                    
+                                    st.success("Book summary video generated successfully!")
+                                    st.rerun()
+                                else:
+                                    st.error(f"Error generating video: {video_path}")
+                            
+                            except Exception as e:
+                                st.error(f"Error generating video: {str(e)}")
+                
+                with col2:
+                    # Show book cover preview
+                    selected_book = st.session_state.books_data[selected_book_index]
+                    cover_url = selected_book.get('bookImageURL', '')
+                    if cover_url:
+                        try:
+                            st.image(cover_url, caption="Book Cover", use_container_width=True)
+                        except:
+                            st.markdown("""
+                            <div style="width: 100%; height: 200px; background: linear-gradient(135deg, #2c3040, #363c4e); 
+                                        display: flex; align-items: center; justify-content: center; border-radius: 8px;">
+                                <span style="color: #b3b3cc;">No Cover Available</span>
+                            </div>
+                            """, unsafe_allow_html=True)
                     else:
-                        # Process as follow-up question using HyperCLOVA (for general questions about current books)
-                        response = process_followup_with_hyperclova(user_followup, HYPERCLOVA_API_KEY)
-                        if response:
-                            st.session_state.messages.append({"role": "assistant", "content": response})
-                        else:
-                            st.session_state.messages.append({
-                                "role": "assistant",
-                                "content": "I'd be happy to help you with more information about these books or other recommendations. What specific aspect would you like to know more about?\n\n한국어 답변: 이 책들에 대한 더 많은 정보나 다른 추천에 대해 기꺼이 도와드리겠습니다. 어떤 구체적인 측면에 대해 더 알고 싶으신가요?"
-                            })
-                    st.rerun()
+                        st.markdown("""
+                        <div style="width: 100%; height: 200px; background: linear-gradient(135deg, #2c3040, #363c4e); 
+                                    display: flex; align-items: center; justify-content: center; border-radius: 8px;">
+                            <span style="color: #b3b3cc;">No Cover Available</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+            
+            # Display the video if it exists
+            if hasattr(st.session_state, 'book_video_generated') and st.session_state.book_video_generated:
+                st.markdown("### 📺 Your Book Summary Video")
+                
+                # Show which book the video is for
+                if hasattr(st.session_state, 'selected_book_for_video'):
+                    book = st.session_state.selected_book_for_video
+                    title = book.get('bookname') or book.get('bookName', 'Unknown Title')
+                    author = book.get('authors') or book.get('author', 'Unknown Author')
+                    st.markdown(f"**Video for:** {title} by {author}")
+                
+                # Display the video
+                try:
+                    st.video(st.session_state.book_video_path)
+                    
+                    # Provide download button
+                    with open(st.session_state.book_video_path, "rb") as file:
+                        st.download_button(
+                            label="📥 Download Video",
+                            data=file,
+                            file_name=f"book_summary_{title.replace(' ', '_')}.mp4",
+                            mime="video/mp4",
+                            key="download_book_video"
+                        )
+                except Exception as e:
+                    st.error(f"Error displaying video: {str(e)}")
+                    
+                    # Clear the video state if there's an error
+                    if 'book_video_generated' in st.session_state:
+                        del st.session_state.book_video_generated
+                    if 'book_video_path' in st.session_state:
+                        del st.session_state.book_video_path
 
     elif st.session_state.app_stage == "discuss_book":
         if st.session_state.selected_book:

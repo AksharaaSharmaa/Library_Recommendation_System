@@ -67,8 +67,7 @@ def generate_book_summary_video(book_data, api_key):
             fps=24,
             codec='libx264',
             preset='medium',
-            verbose=False,
-            logger=None
+            logger=None  # <--- Only use logger, do NOT use 'verbose'
         )
         final_clip.close()
         return output_path

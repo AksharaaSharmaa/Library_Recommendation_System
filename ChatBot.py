@@ -188,7 +188,6 @@ def main():
             display_book_card(book, i)
         
         # ADD THIS: Book Video Generation Section
-        st.markdown("---")
         st.header("🎬 Book Summary Videos")
         
         with st.expander("Generate Book Summary Videos", expanded=False):

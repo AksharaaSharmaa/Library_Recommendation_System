@@ -74,7 +74,7 @@ def generate_book_summary_video(book_data, api_key):
         publisher = book_data.get('publisher', 'Unknown Publisher')
         cover_url = book_data.get('bookImageURL', '')
 
-        # Ensure English for title and author
+        # You can still use title/author for the summary generation, but NOT for video slides
         title = ensure_english(raw_title)
         author = ensure_english(raw_author)
 
@@ -85,15 +85,7 @@ def generate_book_summary_video(book_data, api_key):
         sentences = re.split(r'(?<=[.!?]) +', summary_text)
         chunks = [' '.join(sentences[i:i+2]) for i in range(0, len(sentences), 2)]
 
-        # Create intro image with book title (in English)
-        intro_text = f"Book Summary\n{title}"
-        intro_image_path = create_text_image(intro_text, (1080, 1080), 60, temp_dir, "intro.png")
-        intro_clip = ImageClip(intro_image_path).with_duration(3)
-
-        # Create author image (in English)
-        author_text = f"By {author}"
-        author_image_path = create_text_image(author_text, (1080, 1080), 50, temp_dir, "author.png")
-        author_clip = ImageClip(author_image_path).with_duration(2)
+        # --- REMOVED: Intro and Author slides ---
 
         # Create the main book cover clip and resize
         cover_image_path = download_book_cover(cover_url, temp_dir)
@@ -115,12 +107,12 @@ def generate_book_summary_video(book_data, api_key):
             point_clips.append(point_clip)
 
         # Create outro image
-        outro_text = f"Happy Reading!\n📚 Book Wanderer"
+        outro_text = f"Happy Reading!\n~ Book Wanderer"
         outro_image_path = create_text_image(outro_text, (1080, 1080), 60, temp_dir, "outro.png")
         outro_clip = ImageClip(outro_image_path).with_duration(3)
 
-        # Combine all clips
-        all_clips = [intro_clip, author_clip, cover_clip] + point_clips + [outro_clip]
+        # Only include cover, summary slides, and outro
+        all_clips = [cover_clip] + point_clips + [outro_clip]
         final_clip = concatenate_videoclips(all_clips, method="compose")
         final_clip = final_clip.without_audio()
 

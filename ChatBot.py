@@ -203,7 +203,7 @@ def main():
             
             # Let user select which book to create video for
             book_options = []
-            for i, book in enumerate(st.session_state.books_data[:5]):  # Limit to first 5 books
+            for i, book in enumerate(st.session_state.books_data[:10]):  # Limit to first 5 books
                 title = book.get('bookname') or book.get('bookName', 'Unknown Title')
                 author = book.get('authors') or book.get('author', 'Unknown Author')
                 book_options.append(f"{title} by {author}")

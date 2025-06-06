@@ -6,3 +6,4 @@ pymongo
 plotly
 Pillow
 pandas
+moviepy

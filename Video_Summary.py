@@ -10,6 +10,7 @@ import os
 import json
 import re
 import streamlit as st
+from translate import Translator  # <-- NEW
 
 def call_hyperclova_api(messages, api_key):
     """Helper function to call HyperCLOVA API with correct headers"""
@@ -36,6 +37,16 @@ def call_hyperclova_api(messages, api_key):
         st.error(f"Error connecting to HyperCLOVA API: {e}")
         return None
 
+def ensure_english(text):
+    """Translate text to English if it's not already in English."""
+    try:
+        translator = Translator(to_lang="en")
+        translated = translator.translate(text)
+        return translated
+    except Exception as e:
+        print(f"Translation error: {e}")
+        return text
+
 def generate_book_summary_text(title, author, api_key):
     try:
         prompt = (
@@ -58,14 +69,14 @@ def generate_book_summary_text(title, author, api_key):
 def generate_book_summary_video(book_data, api_key):
     try:
         temp_dir = tempfile.mkdtemp()
-        title = book_data.get('bookname') or book_data.get('bookName', 'Unknown Title')
-        author = book_data.get('authors') or book_data.get('author', 'Unknown Author')
+        raw_title = book_data.get('bookname') or book_data.get('bookName', 'Unknown Title')
+        raw_author = book_data.get('authors') or book_data.get('author', 'Unknown Author')
         publisher = book_data.get('publisher', 'Unknown Publisher')
         cover_url = book_data.get('bookImageURL', '')
 
-        cover_image_path = download_book_cover(cover_url, temp_dir)
-        if not cover_image_path:
-            cover_image_path = create_placeholder_cover(title, author, temp_dir)
+        # Ensure English for title and author
+        title = ensure_english(raw_title)
+        author = ensure_english(raw_author)
 
         # Generate a detailed summary using HyperCLOVA
         summary_text = generate_book_summary_text(title, author, api_key)
@@ -74,17 +85,20 @@ def generate_book_summary_video(book_data, api_key):
         sentences = re.split(r'(?<=[.!?]) +', summary_text)
         chunks = [' '.join(sentences[i:i+2]) for i in range(0, len(sentences), 2)]
 
-        # Create intro image with book title
+        # Create intro image with book title (in English)
         intro_text = f"Book Summary\n{title}"
         intro_image_path = create_text_image(intro_text, (1080, 1080), 60, temp_dir, "intro.png")
         intro_clip = ImageClip(intro_image_path).with_duration(3)
 
-        # Create author image
+        # Create author image (in English)
         author_text = f"By {author}"
         author_image_path = create_text_image(author_text, (1080, 1080), 50, temp_dir, "author.png")
         author_clip = ImageClip(author_image_path).with_duration(2)
 
         # Create the main book cover clip and resize
+        cover_image_path = download_book_cover(cover_url, temp_dir)
+        if not cover_image_path:
+            cover_image_path = create_placeholder_cover(title, author, temp_dir)
         cover_clip = ImageClip(cover_image_path).with_duration(4)
         cover_clip = cover_clip.resized(height=1080)
         if cover_clip.w > 1080:

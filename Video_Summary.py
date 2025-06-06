@@ -1,9 +1,9 @@
 import tempfile
 import moviepy as mp
 from moviepy.editor import TextClip, ImageClip, CompositeVideoClip, concatenate_videoclips
+from moviepy.video.fx import resize
 from PIL import Image, ImageDraw, ImageFilter, ImageEnhance, ImageFont
 import traceback
-from moviepy.video.fx import *
 import base64
 import requests
 import io
@@ -45,10 +45,10 @@ def generate_book_summary_video(book_data, api_key):
         # Create the main book cover clip
         cover_clip = ImageClip(cover_image_path, duration=4)
         
-        # Resize and center the cover image using MoviePy's resized() method
-        cover_clip = cover_clip.resized(height=1080)
+        # Resize and center the cover image using MoviePy v2 syntax
+        cover_clip = cover_clip.fx(resize, height=1080)
         if cover_clip.w > 1080:
-            cover_clip = cover_clip.resized(width=1080)
+            cover_clip = cover_clip.fx(resize, width=1080)
         cover_clip = cover_clip.set_position('center')
         
         # Create clips for each summary point

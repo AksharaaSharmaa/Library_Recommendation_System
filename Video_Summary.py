@@ -373,14 +373,14 @@ def integrate_book_video_generation():
             
             # Let user select which book to create video for
             book_options = []
-            for i, book in enumerate(st.session_state.books_data[:5]):  # Limit to first 5 books
+            for i, book in enumerate(st.session_state.books_data[:10]):  # Limit to first 5 books
                 title = book.get('bookname') or book.get('bookName', 'Unknown Title')
                 author = book.get('authors') or book.get('author', 'Unknown Author')
                 book_options.append(f"{title} by {author}")
             
             if book_options:
                 selected_book_index = st.selectbox(
-                    "Select a book to create a summary video:",
+                    "જ⁀➴ Select a book to create a summary video:",
                     range(len(book_options)),
                     format_func=lambda x: book_options[x]
                 )

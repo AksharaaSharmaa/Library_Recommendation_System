@@ -1,7 +1,6 @@
 import tempfile
 import moviepy as mp
 from moviepy import TextClip, ImageClip, CompositeVideoClip, concatenate_videoclips
-from moviepy.video.fx import resize
 from PIL import Image, ImageDraw, ImageFilter, ImageEnhance, ImageFont
 import traceback
 import base64
@@ -14,67 +13,49 @@ import streamlit as st
 
 def generate_book_summary_video(book_data, api_key):
     try:
-        # Create a temporary directory to store our assets
         temp_dir = tempfile.mkdtemp()
-        
-        # Extract book information
+
         title = book_data.get('bookname') or book_data.get('bookName', 'Unknown Title')
         author = book_data.get('authors') or book_data.get('author', 'Unknown Author')
         publisher = book_data.get('publisher', 'Unknown Publisher')
         cover_url = book_data.get('bookImageURL', '')
-        
-        # Download and process the book cover
+
         cover_image_path = download_book_cover(cover_url, temp_dir)
         if not cover_image_path:
-            # Create a placeholder cover if download fails
             cover_image_path = create_placeholder_cover(title, author, temp_dir)
-        
-        # Generate book summary points using AI
+
         summary_points = generate_book_summary_points(title, author, api_key)
-        
-        # Create intro image with book title
+
         intro_text = f"Book Summary\n{title}"
         intro_image_path = create_text_image(intro_text, (1080, 1080), 60, temp_dir, "intro.png")
-        intro_clip = ImageClip(intro_image_path, duration=3)
-        
-        # Create author image
+        intro_clip = ImageClip(intro_image_path).set_duration(3)
+
         author_text = f"By {author}"
         author_image_path = create_text_image(author_text, (1080, 1080), 50, temp_dir, "author.png")
-        author_clip = ImageClip(author_image_path, duration=2)
-        
-        # Create the main book cover clip
-        cover_clip = ImageClip(cover_image_path, duration=4)
-        
-        # Resize and center the cover image using MoviePy v2 syntax
-        cover_clip = cover_clip.fx(resize, height=1080)
+        author_clip = ImageClip(author_image_path).set_duration(2)
+
+        cover_clip = ImageClip(cover_image_path).set_duration(4)
+        cover_clip = cover_clip.resize(height=1080)
         if cover_clip.w > 1080:
-            cover_clip = cover_clip.fx(resize, width=1080)
+            cover_clip = cover_clip.resize(width=1080)
         cover_clip = cover_clip.set_position('center')
-        
-        # Create clips for each summary point
+
         point_clips = []
         for i, point in enumerate(summary_points):
-            # Create image with cover and text overlay
             point_image_path = add_text_to_book_cover(
                 cover_image_path, point, temp_dir, f"point_{i}.png"
             )
-            
-            point_clip = ImageClip(point_image_path, duration=6)
+            point_clip = ImageClip(point_image_path).set_duration(6)
             point_clips.append(point_clip)
-        
-        # Create outro image
+
         outro_text = f"Happy Reading!\n📚 Book Wanderer"
         outro_image_path = create_text_image(outro_text, (1080, 1080), 60, temp_dir, "outro.png")
-        outro_clip = ImageClip(outro_image_path, duration=3)
-        
-        # Combine all clips
+        outro_clip = ImageClip(outro_image_path).set_duration(3)
+
         all_clips = [intro_clip, author_clip, cover_clip] + point_clips + [outro_clip]
         final_clip = concatenate_videoclips(all_clips, method="compose")
-        
-        # Remove audio (silent video)
         final_clip = final_clip.without_audio()
-        
-        # Write the video file
+
         output_path = os.path.join(temp_dir, "book_summary.mp4")
         final_clip.write_videofile(
             output_path, 
@@ -84,12 +65,9 @@ def generate_book_summary_video(book_data, api_key):
             verbose=False,
             logger=None
         )
-        
-        # Close the clip to free memory
         final_clip.close()
-        
         return output_path
-    
+
     except Exception as e:
         error_traceback = traceback.format_exc()
         print(f"Full error traceback:\n{error_traceback}")
@@ -98,53 +76,36 @@ def generate_book_summary_video(book_data, api_key):
 def download_book_cover(cover_url, temp_dir):
     if not cover_url:
         return None
-    
     try:
         response = requests.get(cover_url, timeout=10)
         response.raise_for_status()
-        
-        # Open and process the image
         img = Image.open(io.BytesIO(response.content))
         img = img.convert('RGB')
-        
-        # Resize to ensure proper dimensions
         img = resize_image_to_fit(img, 1080, 1080)
-        
-        # Save the image
         cover_path = os.path.join(temp_dir, "book_cover.jpg")
         img.save(cover_path, "JPEG", quality=95)
-        
         return cover_path
-    
     except Exception as e:
         print(f"Error downloading book cover: {e}")
         return None
 
 def create_placeholder_cover(title, author, temp_dir):
-    # Create a gradient background
     width, height = 800, 1200
     image = Image.new('RGB', (width, height), (60, 80, 120))
-    
-    # Create gradient effect
     for y in range(height):
         gradient_color = int(60 + (y / height) * 40)
         for x in range(width):
             image.putpixel((x, y), (gradient_color, gradient_color + 20, gradient_color + 60))
-    
     draw = ImageDraw.Draw(image)
-    
-    # Try to load fonts
     try:
-        # Try different font paths for cross-platform compatibility
         font_paths = [
             "Arial.ttf", 
-            "/System/Library/Fonts/Arial.ttf",  # macOS
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",  # Linux
-            "C:/Windows/Fonts/arial.ttf"  # Windows
+            "/System/Library/Fonts/Arial.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "C:/Windows/Fonts/arial.ttf"
         ]
         title_font = None
         author_font = None
-        
         for font_path in font_paths:
             try:
                 title_font = ImageFont.truetype(font_path, 60)
@@ -152,20 +113,15 @@ def create_placeholder_cover(title, author, temp_dir):
                 break
             except (IOError, OSError):
                 continue
-        
         if title_font is None:
             title_font = ImageFont.load_default()
             author_font = ImageFont.load_default()
-            
     except Exception:
         title_font = ImageFont.load_default()
         author_font = ImageFont.load_default()
-    
-    # Wrap and draw title
     wrapped_title = wrap_text_for_cover(title, title_font, width - 100)
     title_bbox = draw.multiline_textbbox((0, 0), wrapped_title, font=title_font)
     title_height = title_bbox[3] - title_bbox[1]
-    
     title_y = height // 3 - title_height // 2
     draw.multiline_text(
         ((width - (title_bbox[2] - title_bbox[0])) // 2, title_y),
@@ -174,8 +130,6 @@ def create_placeholder_cover(title, author, temp_dir):
         fill="white",
         align="center"
     )
-    
-    # Draw author
     author_bbox = draw.textbbox((0, 0), author, font=author_font)
     author_y = height - 200
     draw.text(
@@ -185,19 +139,13 @@ def create_placeholder_cover(title, author, temp_dir):
         fill="lightgray",
         align="center"
     )
-    
-    # Add decorative elements
     draw.rectangle([50, 50, width-50, height-50], outline="white", width=3)
-    
-    # Save the placeholder cover
     cover_path = os.path.join(temp_dir, "placeholder_cover.jpg")
     image.save(cover_path, "JPEG", quality=95)
-    
     return cover_path
 
 def generate_book_summary_points(title, author, api_key):
     try:
-        # Use the same HyperCLOVA API as in your main code
         prompt = f"""
         Create 5 engaging summary points about the book "{title}" by {author}. 
         Each point should be 1-2 sentences long and highlight key aspects like:
@@ -212,22 +160,16 @@ def generate_book_summary_points(title, author, api_key):
         
         Make the points informative but accessible to general readers.
         """
-        
         messages = [
             {"role": "system", "content": "You are a knowledgeable book reviewer and literary analyst."},
             {"role": "user", "content": prompt}
         ]
-        
         response = call_hyperclova_api(messages, api_key)
-        
         if response:
-            # Extract JSON array from response
             json_match = re.search(r"\[.*\]", response, re.DOTALL)
             if json_match:
                 summary_points = json.loads(json_match.group(0))
-                return summary_points[:5]  # Ensure we have exactly 5 points
-        
-        # Fallback points if AI fails
+                return summary_points[:5]
         return [
             f"'{title}' showcases {author}'s distinctive literary voice and storytelling mastery.",
             "The narrative explores profound themes that resonate with contemporary readers.",
@@ -235,10 +177,8 @@ def generate_book_summary_points(title, author, api_key):
             "This work offers unique insights into human nature and social dynamics.",
             "A compelling read that has earned recognition among literary critics and readers alike."
         ]
-    
     except Exception as e:
         print(f"Error generating summary points: {e}")
-        # Return generic fallback points
         return [
             f"Discover the compelling world created by {author} in this remarkable work.",
             f"'{title}' presents a captivating narrative that engages readers from start to finish.",
@@ -249,149 +189,102 @@ def generate_book_summary_points(title, author, api_key):
 
 def resize_image_to_fit(image, max_width, max_height):
     width, height = image.size
-    
-    # Calculate scaling factor
     width_ratio = max_width / width
     height_ratio = max_height / height
     scale_factor = min(width_ratio, height_ratio)
-    
-    # Calculate new dimensions
     new_width = int(width * scale_factor)
     new_height = int(height * scale_factor)
-    
     return image.resize((new_width, new_height), Image.LANCZOS)
 
 def create_text_image(text, size, font_size, temp_dir, filename):
     width, height = size
-    
-    # Create gradient background
     image = Image.new('RGB', (width, height))
     for y in range(height):
         gradient = int(30 + (y / height) * 50)
         for x in range(width):
             image.putpixel((x, y), (gradient, gradient + 10, gradient + 30))
-    
     draw = ImageDraw.Draw(image)
-    
-    # Try to load font with cross-platform compatibility
     try:
         font_paths = [
             "Arial.ttf", 
-            "/System/Library/Fonts/Arial.ttf",  # macOS
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",  # Linux
-            "C:/Windows/Fonts/arial.ttf"  # Windows
+            "/System/Library/Fonts/Arial.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "C:/Windows/Fonts/arial.ttf"
         ]
         font = None
-        
         for font_path in font_paths:
             try:
                 font = ImageFont.truetype(font_path, font_size)
                 break
             except (IOError, OSError):
                 continue
-        
         if font is None:
             font = ImageFont.load_default()
-            
     except Exception:
         font = ImageFont.load_default()
-    
-    # Calculate text position
     lines = text.split('\n')
     total_height = 0
     line_heights = []
-    
     for line in lines:
         bbox = draw.textbbox((0, 0), line, font=font)
         line_height = bbox[3] - bbox[1]
         total_height += line_height
         line_heights.append(line_height)
-    
     y = (height - total_height) // 2
-    
-    # Draw each line centered
     for i, line in enumerate(lines):
         bbox = draw.textbbox((0, 0), line, font=font)
         line_width = bbox[2] - bbox[0]
         x = (width - line_width) // 2
         draw.text((x, y), line, font=font, fill="white")
-        y += line_heights[i] + 10  # Add some spacing between lines
-    
-    # Save the image
+        y += line_heights[i] + 10
     output_path = os.path.join(temp_dir, filename)
     image.save(output_path)
-    
     return output_path
 
 def add_text_to_book_cover(cover_path, text, temp_dir, filename):
-    # Load the cover image
     img = Image.open(cover_path)
     img = img.convert('RGB')
-    
-    # Ensure the image fits within 1080x1080
     img = resize_image_to_fit(img, 1080, 1080)
-    
-    # Create a canvas and center the image
     canvas = Image.new('RGB', (1080, 1080), (20, 20, 30))
-    
-    # Center the image on the canvas
     x_offset = (1080 - img.width) // 2
     y_offset = (1080 - img.height) // 2
     canvas.paste(img, (x_offset, y_offset))
-    
-    # Create overlay for text
     overlay = Image.new('RGBA', canvas.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
-    
-    # Font setup with cross-platform compatibility
     try:
         font_paths = [
             "Arial.ttf", 
-            "/System/Library/Fonts/Arial.ttf",  # macOS
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",  # Linux
-            "C:/Windows/Fonts/arial.ttf"  # Windows
+            "/System/Library/Fonts/Arial.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "C:/Windows/Fonts/arial.ttf"
         ]
         font = None
-        
         for font_path in font_paths:
             try:
                 font = ImageFont.truetype(font_path, 36)
                 break
             except (IOError, OSError):
                 continue
-        
         if font is None:
             font = ImageFont.load_default()
-            
     except Exception:
         font = ImageFont.load_default()
-    
-    # Wrap text
     max_width = 900
     wrapped_text = wrap_text_simple(text, font, max_width)
-    
-    # Calculate text dimensions
     bbox = draw.multiline_textbbox((0, 0), wrapped_text, font=font)
     text_width = bbox[2] - bbox[0]
     text_height = bbox[3] - bbox[1]
-    
-    # Create background rectangle at the bottom
     margin = 25
     rect_height = text_height + (margin * 2)
     rect_width = min(text_width + (margin * 2), 1080 - 40)
     rect_x = (1080 - rect_width) // 2
     rect_y = 1080 - rect_height - 40
-    
-    # Draw semi-transparent background
     draw.rectangle(
         [rect_x, rect_y, rect_x + rect_width, rect_y + rect_height],
-        fill=(0, 0, 0, 200)  # Black with transparency
+        fill=(0, 0, 0, 200)
     )
-    
-    # Position and draw text
     text_x = (1080 - text_width) // 2
     text_y = rect_y + margin
-    
     draw.multiline_text(
         (text_x, text_y), 
         wrapped_text, 
@@ -399,41 +292,51 @@ def add_text_to_book_cover(cover_path, text, temp_dir, filename):
         fill=(255, 255, 255, 255),
         align="center"
     )
-    
-    # Composite the overlay
     canvas = canvas.convert('RGBA')
     result = Image.alpha_composite(canvas, overlay)
     result = result.convert('RGB')
-    
-    # Save the image
     output_path = os.path.join(temp_dir, filename)
     result.save(output_path)
-    
     return output_path
 
 def wrap_text_simple(text, font, max_width):
     words = text.split()
     lines = []
     current_line = []
-    
     for word in words:
         current_line.append(word)
         line_text = ' '.join(current_line)
-        
-        # Create a temporary draw object to measure text
         temp_img = Image.new('RGB', (1, 1))
         temp_draw = ImageDraw.Draw(temp_img)
         bbox = temp_draw.textbbox((0, 0), line_text, font=font)
         line_width = bbox[2] - bbox[0]
-        
         if line_width > max_width and len(current_line) > 1:
             current_line.pop()
             lines.append(' '.join(current_line))
             current_line = [word]
-    
     if current_line:
         lines.append(' '.join(current_line))
-    
+    return '\n'.join(lines)
+
+def wrap_text_for_cover(text, font, max_width):
+    words = text.split()
+    if len(words) <= 3:
+        return text
+    lines = []
+    current_line = []
+    for word in words:
+        current_line.append(word)
+        line_text = ' '.join(current_line)
+        temp_img = Image.new('RGB', (1, 1))
+        temp_draw = ImageDraw.Draw(temp_img)
+        bbox = temp_draw.textbbox((0, 0), line_text, font=font)
+        line_width = bbox[2] - bbox[0]
+        if line_width > max_width and len(current_line) > 1:
+            current_line.pop()
+            lines.append(' '.join(current_line))
+            current_line = [word]
+    if current_line:
+        lines.append(' '.join(current_line))
     return '\n'.join(lines)
 
 def wrap_text_for_cover(text, font, max_width):

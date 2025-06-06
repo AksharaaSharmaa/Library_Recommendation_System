@@ -1,6 +1,6 @@
 import tempfile
 import moviepy as mp
-from moviepy import TextClip, ImageClip, CompositeVideoClip, concatenate_videoclips
+from moviepy.editor import TextClip, ImageClip, CompositeVideoClip, concatenate_videoclips
 from PIL import Image, ImageDraw, ImageFilter, ImageEnhance, ImageFont
 import traceback
 from moviepy.video.fx import *
@@ -45,10 +45,10 @@ def generate_book_summary_video(book_data, api_key):
         # Create the main book cover clip
         cover_clip = ImageClip(cover_image_path, duration=4)
         
-        # Resize and center the cover image
-        cover_clip = cover_clip.resize(height=1080)
+        # Resize and center the cover image using MoviePy's resized() method
+        cover_clip = cover_clip.resized(height=1080)
         if cover_clip.w > 1080:
-            cover_clip = cover_clip.resize(width=1080)
+            cover_clip = cover_clip.resized(width=1080)
         cover_clip = cover_clip.set_position('center')
         
         # Create clips for each summary point
@@ -84,6 +84,9 @@ def generate_book_summary_video(book_data, api_key):
             verbose=False,
             logger=None
         )
+        
+        # Close the clip to free memory
+        final_clip.close()
         
         return output_path
     
@@ -132,9 +135,29 @@ def create_placeholder_cover(title, author, temp_dir):
     
     # Try to load fonts
     try:
-        title_font = ImageFont.truetype("Arial.ttf", 60)
-        author_font = ImageFont.truetype("Arial.ttf", 40)
-    except IOError:
+        # Try different font paths for cross-platform compatibility
+        font_paths = [
+            "Arial.ttf", 
+            "/System/Library/Fonts/Arial.ttf",  # macOS
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",  # Linux
+            "C:/Windows/Fonts/arial.ttf"  # Windows
+        ]
+        title_font = None
+        author_font = None
+        
+        for font_path in font_paths:
+            try:
+                title_font = ImageFont.truetype(font_path, 60)
+                author_font = ImageFont.truetype(font_path, 40)
+                break
+            except (IOError, OSError):
+                continue
+        
+        if title_font is None:
+            title_font = ImageFont.load_default()
+            author_font = ImageFont.load_default()
+            
+    except Exception:
         title_font = ImageFont.load_default()
         author_font = ImageFont.load_default()
     
@@ -250,10 +273,27 @@ def create_text_image(text, size, font_size, temp_dir, filename):
     
     draw = ImageDraw.Draw(image)
     
-    # Try to load font
+    # Try to load font with cross-platform compatibility
     try:
-        font = ImageFont.truetype("Arial.ttf", font_size)
-    except IOError:
+        font_paths = [
+            "Arial.ttf", 
+            "/System/Library/Fonts/Arial.ttf",  # macOS
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",  # Linux
+            "C:/Windows/Fonts/arial.ttf"  # Windows
+        ]
+        font = None
+        
+        for font_path in font_paths:
+            try:
+                font = ImageFont.truetype(font_path, font_size)
+                break
+            except (IOError, OSError):
+                continue
+        
+        if font is None:
+            font = ImageFont.load_default()
+            
+    except Exception:
         font = ImageFont.load_default()
     
     # Calculate text position
@@ -303,10 +343,27 @@ def add_text_to_book_cover(cover_path, text, temp_dir, filename):
     overlay = Image.new('RGBA', canvas.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
     
-    # Font setup
+    # Font setup with cross-platform compatibility
     try:
-        font = ImageFont.truetype("Arial.ttf", 36)
-    except IOError:
+        font_paths = [
+            "Arial.ttf", 
+            "/System/Library/Fonts/Arial.ttf",  # macOS
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",  # Linux
+            "C:/Windows/Fonts/arial.ttf"  # Windows
+        ]
+        font = None
+        
+        for font_path in font_paths:
+            try:
+                font = ImageFont.truetype(font_path, 36)
+                break
+            except (IOError, OSError):
+                continue
+        
+        if font is None:
+            font = ImageFont.load_default()
+            
+    except Exception:
         font = ImageFont.load_default()
     
     # Wrap text

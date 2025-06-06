@@ -1,6 +1,6 @@
 import tempfile
 import moviepy as mp
-from moviepy.editor import TextClip, ImageClip, CompositeVideoClip, concatenate_videoclips
+from moviepy import TextClip, ImageClip, CompositeVideoClip, concatenate_videoclips
 from moviepy.video.fx import resize
 from PIL import Image, ImageDraw, ImageFilter, ImageEnhance, ImageFont
 import traceback

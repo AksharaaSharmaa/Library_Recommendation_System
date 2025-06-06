@@ -11,6 +11,50 @@ import json
 import re
 import streamlit as st
 
+def call_hyperclova_api(messages, api_key):
+    """Helper function to call HyperCLOVA API with correct headers"""
+    try:
+        endpoint = "https://clovastudio.stream.ntruss.com/testapp/v1/chat-completions/HCX-003"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "messages": messages,
+            "maxTokens": 1024,
+            "temperature": 0.7,
+            "topP": 0.8,
+        }
+        response = requests.post(endpoint, headers=headers, json=payload)
+        if response.status_code == 200:
+            result = response.json()
+            return result['result']['message']['content']
+        else:
+            st.error(f"Error connecting to HyperCLOVA API: {response.status_code}")
+            return None
+    except Exception as e:
+        st.error(f"Error connecting to HyperCLOVA API: {e}")
+        return None
+
+def generate_book_summary_text(title, author, api_key):
+    try:
+        prompt = (
+            f"Summarize the book '{title}' by {author} in English. "
+            "Provide a detailed yet concise summary that covers the main plot, key characters, major themes, and the book's overall impact. "
+            "Write in clear, engaging English for a general audience."
+        )
+        messages = [
+            {"role": "system", "content": "You are an expert book reviewer."},
+            {"role": "user", "content": prompt}
+        ]
+        response = call_hyperclova_api(messages, api_key)
+        if response:
+            return response.strip()
+        return f"No summary available for '{title}' by {author}."
+    except Exception as e:
+        print(f"Error generating summary: {e}")
+        return f"Error generating summary for '{title}' by {author}."
+
 def generate_book_summary_video(book_data, api_key):
     try:
         temp_dir = tempfile.mkdtemp()
@@ -23,7 +67,12 @@ def generate_book_summary_video(book_data, api_key):
         if not cover_image_path:
             cover_image_path = create_placeholder_cover(title, author, temp_dir)
 
-        summary_points = generate_book_summary_points(title, author, api_key)
+        # Generate a detailed summary using HyperCLOVA
+        summary_text = generate_book_summary_text(title, author, api_key)
+
+        # Split summary into manageable chunks for slides (every 2 sentences)
+        sentences = re.split(r'(?<=[.!?]) +', summary_text)
+        chunks = [' '.join(sentences[i:i+2]) for i in range(0, len(sentences), 2)]
 
         # Create intro image with book title
         intro_text = f"Book Summary\n{title}"
@@ -42,11 +91,11 @@ def generate_book_summary_video(book_data, api_key):
             cover_clip = cover_clip.resized(width=1080)
         cover_clip = cover_clip.with_position('center')
 
-        # Create clips for each summary point
+        # Create a slide for each summary chunk
         point_clips = []
-        for i, point in enumerate(summary_points):
+        for i, chunk in enumerate(chunks):
             point_image_path = add_text_to_book_cover(
-                cover_image_path, point, temp_dir, f"point_{i}.png"
+                cover_image_path, chunk, temp_dir, f"summary_{i}.png"
             )
             point_clip = ImageClip(point_image_path).with_duration(6)
             point_clips.append(point_clip)
@@ -67,7 +116,7 @@ def generate_book_summary_video(book_data, api_key):
             fps=24,
             codec='libx264',
             preset='medium',
-            logger=None  # <--- Only use logger, do NOT use 'verbose'
+            logger=None
         )
         final_clip.close()
         return output_path
@@ -147,49 +196,6 @@ def create_placeholder_cover(title, author, temp_dir):
     cover_path = os.path.join(temp_dir, "placeholder_cover.jpg")
     image.save(cover_path, "JPEG", quality=95)
     return cover_path
-
-def generate_book_summary_points(title, author, api_key):
-    try:
-        prompt = f"""
-        Create 5 engaging summary points about the book "{title}" by {author}.
-        Each point should be 1-2 sentences long and highlight key aspects like:
-        - Main themes or plot elements
-        - Character insights
-        - Writing style or unique features
-        - Why readers might enjoy it
-        - Historical or cultural significance
-
-        Format as a JSON array of strings:
-        ["Point 1", "Point 2", "Point 3", "Point 4", "Point 5"]
-
-        Make the points informative but accessible to general readers.
-        """
-        messages = [
-            {"role": "system", "content": "You are a knowledgeable book reviewer and literary analyst."},
-            {"role": "user", "content": prompt}
-        ]
-        response = call_hyperclova_api(messages, api_key)
-        if response:
-            json_match = re.search(r"\[.*\]", response, re.DOTALL)
-            if json_match:
-                summary_points = json.loads(json_match.group(0))
-                return summary_points[:5]
-        return [
-            f"'{title}' showcases {author}'s distinctive literary voice and storytelling mastery.",
-            "The narrative explores profound themes that resonate with contemporary readers.",
-            "Character development and plot structure demonstrate exceptional craftsmanship.",
-            "This work offers unique insights into human nature and social dynamics.",
-            "A compelling read that has earned recognition among literary critics and readers alike."
-        ]
-    except Exception as e:
-        print(f"Error generating summary points: {e}")
-        return [
-            f"Discover the compelling world created by {author} in this remarkable work.",
-            f"'{title}' presents a captivating narrative that engages readers from start to finish.",
-            "The author's skillful prose and character development create an immersive reading experience.",
-            "This book explores themes that are both timeless and relevant to modern readers.",
-            "A thought-provoking work that deserves a place on every book lover's reading list."
-        ]
 
 def resize_image_to_fit(image, max_width, max_height):
     width, height = image.size

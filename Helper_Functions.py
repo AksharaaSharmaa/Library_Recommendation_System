@@ -893,7 +893,7 @@ def setup_sidebar():
             st.session_state.app_stage = "show_liked_books"
             st.rerun()
 
-        if st.button("Discussion Page | 토론 페이지", key="open_discussion"):
+        if st.button("토론 페이지 | DISCUSSION PAGE", key="open_discussion"):
             st.session_state.show_discussion = True
             st.session_state.app_stage = "discussion_page"
             st.rerun()

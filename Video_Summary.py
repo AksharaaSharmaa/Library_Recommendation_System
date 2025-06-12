@@ -1,6 +1,6 @@
 import tempfile
 import moviepy as mp
-from moviepy import TextClip, ImageClip, CompositeVideoClip, concatenate_videoclips
+from moviepy import TextClip, ImageClip, CompositeVideoClip, concatenate_videoclips, AudioFileClip
 from PIL import Image, ImageDraw, ImageFont
 import traceback
 import base64
@@ -11,6 +11,9 @@ import json
 import re
 import streamlit as st
 from translate import Translator  # <-- NEW
+import pyttsx3
+import threading
+import time
 
 def call_hyperclova_api(messages, api_key):
     """Helper function to call HyperCLOVA API with correct headers"""
@@ -46,6 +49,95 @@ def ensure_english(text):
     except Exception as e:
         print(f"Translation error: {e}")
         return text
+
+def generate_speech_audio(text, output_path, voice_rate=150, voice_volume=0.9):
+    """Generate speech audio from text using pyttsx3"""
+    try:
+        # Clean text for speech
+        clean_text = re.sub(r'[^\w\s.,!?-]', '', text)
+        clean_text = re.sub(r'\s+', ' ', clean_text).strip()
+        
+        if not clean_text:
+            return None
+            
+        # Initialize TTS engine
+        engine = pyttsx3.init()
+        
+        # Configure voice settings
+        engine.setProperty('rate', voice_rate)
+        engine.setProperty('volume', voice_volume)
+        
+        # Try to set a better voice if available
+        voices = engine.getProperty('voices')
+        if voices:
+            # Prefer female voice or first available voice
+            for voice in voices:
+                if 'female' in voice.name.lower() or 'zira' in voice.name.lower():
+                    engine.setProperty('voice', voice.id)
+                    break
+            else:
+                engine.setProperty('voice', voices[0].id)
+        
+        # Save speech to file
+        engine.save_to_file(clean_text, output_path)
+        engine.runAndWait()
+        engine.stop()
+        
+        # Verify file was created and has content
+        if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
+            return output_path
+        else:
+            return None
+            
+    except Exception as e:
+        print(f"Error generating speech: {e}")
+        return None
+
+def create_audio_for_text_chunks(text_chunks, temp_dir):
+    """Create individual audio files for each text chunk"""
+    audio_files = []
+    
+    for i, chunk in enumerate(text_chunks):
+        if not chunk.strip():
+            audio_files.append(None)
+            continue
+            
+        audio_filename = f"audio_chunk_{i}.wav"
+        audio_path = os.path.join(temp_dir, audio_filename)
+        
+        # Generate speech for this chunk
+        result = generate_speech_audio(chunk, audio_path)
+        audio_files.append(result)
+        
+        # Small delay to prevent TTS engine issues
+        time.sleep(0.1)
+    
+    return audio_files
+
+def get_audio_duration(audio_path):
+    """Get duration of audio file"""
+    try:
+        if audio_path and os.path.exists(audio_path):
+            audio_clip = AudioFileClip(audio_path)
+            duration = audio_clip.duration
+            audio_clip.close()
+            return duration
+        return 0
+    except Exception as e:
+        print(f"Error getting audio duration: {e}")
+        return 0
+
+def create_title_announcement_audio(title, author, temp_dir):
+    """Create audio announcement for the book title and author"""
+    announcement_text = f"Welcome to the summary of {title} by {author}."
+    audio_path = os.path.join(temp_dir, "title_announcement.wav")
+    return generate_speech_audio(announcement_text, audio_path)
+
+def create_outro_audio(temp_dir):
+    """Create audio for outro"""
+    outro_text = "Happy Reading! This summary was brought to you by Book Wanderer."
+    audio_path = os.path.join(temp_dir, "outro_audio.wav")
+    return generate_speech_audio(outro_text, audio_path)
 
 def generate_book_summary_text(title, author, api_key):
     try:
@@ -85,46 +177,103 @@ def generate_book_summary_video(book_data, api_key):
         sentences = re.split(r'(?<=[.!?]) +', summary_text)
         chunks = [' '.join(sentences[i:i+2]) for i in range(0, len(sentences), 2)]
 
+        # Create audio for all text chunks
+        print("Generating audio for text chunks...")
+        chunk_audio_files = create_audio_for_text_chunks(chunks, temp_dir)
+
+        # Create title announcement audio
+        title_audio = create_title_announcement_audio(title, author, temp_dir)
+        
+        # Create outro audio
+        outro_audio = create_outro_audio(temp_dir)
+
         # --- REMOVED: Intro and Author slides ---
 
         # Create the main book cover clip and resize
         cover_image_path = download_book_cover(cover_url, temp_dir)
         if not cover_image_path:
             cover_image_path = create_placeholder_cover(title, author, temp_dir)
-        cover_clip = ImageClip(cover_image_path).with_duration(4)
+        
+        # Determine cover clip duration based on title audio
+        cover_duration = max(4, get_audio_duration(title_audio) if title_audio else 4)
+        cover_clip = ImageClip(cover_image_path).with_duration(cover_duration)
         cover_clip = cover_clip.resized(height=1080)
         if cover_clip.w > 1080:
             cover_clip = cover_clip.resized(width=1080)
         cover_clip = cover_clip.with_position('center')
+        
+        # Add title audio to cover clip
+        if title_audio:
+            title_audio_clip = AudioFileClip(title_audio)
+            cover_clip = cover_clip.with_audio(title_audio_clip)
 
-        # Create a slide for each summary chunk
+        # Create a slide for each summary chunk with corresponding audio
         point_clips = []
         for i, chunk in enumerate(chunks):
             point_image_path = add_text_to_book_cover(
                 cover_image_path, chunk, temp_dir, f"summary_{i}.png"
             )
-            point_clip = ImageClip(point_image_path).with_duration(6)
+            
+            # Determine clip duration based on audio or default
+            audio_duration = get_audio_duration(chunk_audio_files[i]) if chunk_audio_files[i] else 0
+            clip_duration = max(6, audio_duration + 1)  # Add 1 second buffer
+            
+            point_clip = ImageClip(point_image_path).with_duration(clip_duration)
+            
+            # Add audio if available
+            if chunk_audio_files[i]:
+                try:
+                    audio_clip = AudioFileClip(chunk_audio_files[i])
+                    point_clip = point_clip.with_audio(audio_clip)
+                except Exception as e:
+                    print(f"Error adding audio to clip {i}: {e}")
+            
             point_clips.append(point_clip)
 
-        # Create outro image
+        # Create outro image with audio
         outro_text = f"Happy Reading!\n~ Book Wanderer"
         outro_image_path = create_text_image(outro_text, (1080, 1080), 60, temp_dir, "outro.png")
-        outro_clip = ImageClip(outro_image_path).with_duration(3)
+        outro_duration = max(3, get_audio_duration(outro_audio) if outro_audio else 3)
+        outro_clip = ImageClip(outro_image_path).with_duration(outro_duration)
+        
+        # Add outro audio
+        if outro_audio:
+            try:
+                outro_audio_clip = AudioFileClip(outro_audio)
+                outro_clip = outro_clip.with_audio(outro_audio_clip)
+            except Exception as e:
+                print(f"Error adding outro audio: {e}")
 
         # Only include cover, summary slides, and outro
         all_clips = [cover_clip] + point_clips + [outro_clip]
+        
+        print("Concatenating video clips...")
         final_clip = concatenate_videoclips(all_clips, method="compose")
-        final_clip = final_clip.without_audio()
 
         output_path = os.path.join(temp_dir, "book_summary.mp4")
+        print("Writing final video file...")
         final_clip.write_videofile(
             output_path,
             fps=24,
             codec='libx264',
             preset='medium',
-            logger=None
+            logger=None,
+            audio_codec='aac'
         )
         final_clip.close()
+        
+        # Clean up audio files
+        try:
+            for audio_file in chunk_audio_files:
+                if audio_file and os.path.exists(audio_file):
+                    os.remove(audio_file)
+            if title_audio and os.path.exists(title_audio):
+                os.remove(title_audio)
+            if outro_audio and os.path.exists(outro_audio):
+                os.remove(outro_audio)
+        except Exception as e:
+            print(f"Error cleaning up audio files: {e}")
+        
         return output_path
 
     except Exception as e:

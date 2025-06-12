@@ -889,17 +889,16 @@ def get_books_by_dtl_kdc(dtl_kdc_code, auth_key, page_no=1, page_size=10):
 # --- Sidebar (as provided) ---
 def setup_sidebar():
     with st.sidebar:
-        if st.button("좋아하는 책들 /n MY LIBRARY"):
+        if st.button("좋아하는 책들\nMY LIBRARY"):
             st.session_state.app_stage = "show_liked_books"
             st.rerun()
-
-        if st.button("토론 페이지 | DISCUSSION PAGE", key="open_discussion"):
+        if st.button("토론 페이지\nDISCUSSION PAGE", key="open_discussion"):
             st.session_state.show_discussion = True
             st.session_state.app_stage = "discussion_page"
             st.rerun()
         
         # Reset button
-        if st.button("다시 시작하기 | REFRESH PAGE"):
+        if st.button("다시 시작하기\nREFRESH PAGE"):
             st.session_state.messages = [
                 {"role": "system", "content": "You are a helpful AI assistant specializing in book recommendations. For EVERY response, you must answer in BOTH English and Korean. First provide the complete answer in English, then provide '한국어 답변:' followed by the complete Korean translation of your answer."}
             ]

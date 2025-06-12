@@ -95,7 +95,7 @@ def get_audio_duration(audio_path):
         print(f"Error getting audio duration for {audio_path}: {e}")
         return 3  # Default duration
 
-def create_audio_for_text_chunks(text_chunks, temp_dir, lang='en')
+def create_audio_for_text_chunks(text_chunks, temp_dir, lang='en'):
     """Create individual audio files for each text chunk with better debugging"""
     audio_files = []
     

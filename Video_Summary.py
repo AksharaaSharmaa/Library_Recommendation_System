@@ -140,7 +140,7 @@ def create_outro_audio(temp_dir, lang='en'):
     outro_text = "Happy Reading! This summary was brought to you by Book Wanderer."
     audio_path = os.path.join(temp_dir, "outro_audio.wav")
     print(f"Creating outro audio: {outro_text}")
-    eturn generate_speech_audio(outro_text, audio_path, lang=lang)
+    return generate_speech_audio(outro_text, audio_path, lang=lang)
 
 def generate_book_summary_video(book_data, api_key):
     try:

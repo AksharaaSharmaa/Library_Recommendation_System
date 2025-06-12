@@ -8,4 +8,4 @@ Pillow
 pandas
 moviepy
 translate
-pyttsx3
+gtts

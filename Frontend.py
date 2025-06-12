@@ -1,5 +1,41 @@
 def add_custom_css():
     import streamlit as st
+
+    CHAT_HISTORY_CSS = """
+    <style>
+    .chat-history-card {
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        padding: 15px;
+        margin: 10px 0;
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .chat-history-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    .chat-session-info {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    
+    .chat-preview {
+        background: #e9ecef;
+        border-left: 4px solid #007bff;
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 0 5px 5px 0;
+        font-style: italic;
+    }
+    </style>
+    """
+    
     st.markdown("""
     <style>
         /* Main app background */

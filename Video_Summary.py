@@ -11,12 +11,12 @@ import json
 import re
 import streamlit as st
 from translate import Translator
-import pyttsx3
+from gtts import gTTS
 import threading
 import time
 
-def generate_speech_audio(text, output_path, voice_rate=150, voice_volume=0.9):
-    """Generate speech audio from text using pyttsx3 with better error handling"""
+def generate_speech_audio(text, output_path, lang='en', slow=False):
+    """Generate speech audio from text using gTTS"""
     try:
         # Clean text for speech
         clean_text = re.sub(r'[^\w\s.,!?-]', '', text)
@@ -28,50 +28,29 @@ def generate_speech_audio(text, output_path, voice_rate=150, voice_volume=0.9):
             
         print(f"Generating speech for: {clean_text[:50]}...")
         
-        # Initialize TTS engine with error handling
-        try:
-            engine = pyttsx3.init()
-        except Exception as e:
-            print(f"Error initializing TTS engine: {e}")
-            return None
+        # Create gTTS object
+        tts = gTTS(text=clean_text, lang=lang, slow=slow)
         
-        # Configure voice settings
-        try:
-            engine.setProperty('rate', voice_rate)
-            engine.setProperty('volume', voice_volume)
-            
-            # Try to set a better voice if available
-            voices = engine.getProperty('voices')
-            if voices and len(voices) > 0:
-                # Prefer female voice or first available voice
-                for voice in voices:
-                    if voice and hasattr(voice, 'name') and voice.name:
-                        if 'female' in voice.name.lower() or 'zira' in voice.name.lower():
-                            engine.setProperty('voice', voice.id)
-                            break
-                else:
-                    engine.setProperty('voice', voices[0].id)
-                    
-        except Exception as e:
-            print(f"Error setting voice properties: {e}")
-            # Continue with default settings
+        # Save to temporary wav file
+        temp_mp3 = output_path.replace('.wav', '.mp3')
+        tts.save(temp_mp3)
         
-        # Save speech to file with error handling
+        # Convert MP3 to WAV using moviepy for better compatibility
         try:
-            engine.save_to_file(clean_text, output_path)
-            engine.runAndWait()
+            audio_clip = AudioFileClip(temp_mp3)
+            audio_clip.write_audiofile(output_path, logger=None)
+            audio_clip.close()
             
-            # Give the engine time to complete
-            time.sleep(0.5)
-            
+            # Remove temporary MP3 file
+            if os.path.exists(temp_mp3):
+                os.remove(temp_mp3)
+                
         except Exception as e:
-            print(f"Error during TTS generation: {e}")
-            return None
-        finally:
-            try:
-                engine.stop()
-            except:
-                pass
+            print(f"Error converting MP3 to WAV: {e}")
+            # If conversion fails, use MP3 directly
+            if os.path.exists(temp_mp3):
+                os.rename(temp_mp3, output_path.replace('.wav', '.mp3'))
+                output_path = output_path.replace('.wav', '.mp3')
         
         # Verify file was created and has content
         if os.path.exists(output_path):
@@ -87,10 +66,10 @@ def generate_speech_audio(text, output_path, voice_rate=150, voice_volume=0.9):
             return None
             
     except Exception as e:
-        print(f"Error generating speech: {e}")
+        print(f"Error generating speech with gTTS: {e}")
         traceback.print_exc()
         return None
-
+        
 def get_audio_duration(audio_path):
     """Get duration of audio file with better error handling"""
     try:
@@ -116,7 +95,7 @@ def get_audio_duration(audio_path):
         print(f"Error getting audio duration for {audio_path}: {e}")
         return 3  # Default duration
 
-def create_audio_for_text_chunks(text_chunks, temp_dir):
+def create_audio_for_text_chunks(text_chunks, temp_dir, lang='en')
     """Create individual audio files for each text chunk with better debugging"""
     audio_files = []
     
@@ -134,7 +113,7 @@ def create_audio_for_text_chunks(text_chunks, temp_dir):
         audio_path = os.path.join(temp_dir, audio_filename)
         
         # Generate speech for this chunk
-        result = generate_speech_audio(chunk, audio_path)
+        result = generate_speech_audio(chunk, audio_path, lang=lang)
         
         if result and os.path.exists(result):
             print(f"Successfully created audio for chunk {i}")
@@ -149,19 +128,19 @@ def create_audio_for_text_chunks(text_chunks, temp_dir):
     print(f"Created {sum(1 for f in audio_files if f is not None)} audio files out of {len(text_chunks)} chunks")
     return audio_files
 
-def create_title_announcement_audio(title, author, temp_dir):
+def create_title_announcement_audio(title, author, temp_dir, lang='en'):
     """Create audio announcement for the book title and author"""
     announcement_text = f"Welcome to the summary of {title} by {author}."
     audio_path = os.path.join(temp_dir, "title_announcement.wav")
     print(f"Creating title announcement: {announcement_text}")
-    return generate_speech_audio(announcement_text, audio_path)
+    return generate_speech_audio(announcement_text, audio_path, lang=lang)
 
-def create_outro_audio(temp_dir):
+def create_outro_audio(temp_dir, lang='en'):
     """Create audio for outro"""
     outro_text = "Happy Reading! This summary was brought to you by Book Wanderer."
     audio_path = os.path.join(temp_dir, "outro_audio.wav")
     print(f"Creating outro audio: {outro_text}")
-    return generate_speech_audio(outro_text, audio_path)
+    eturn generate_speech_audio(outro_text, audio_path, lang=lang)
 
 def generate_book_summary_video(book_data, api_key):
     try:
@@ -324,14 +303,14 @@ def test_tts(temp_dir):
     test_text = "This is a test of the text to speech system."
     test_path = os.path.join(temp_dir, "test_audio.wav")
     
-    print("Testing TTS system...")
+    print("Testing gTTS system...")
     result = generate_speech_audio(test_text, test_path)
     
     if result:
-        print(f"TTS test successful: {result}")
+        print(f"gTTS test successful: {result}")
         duration = get_audio_duration(result)
         print(f"Test audio duration: {duration} seconds")
         return True
     else:
-        print("TTS test failed")
+        print("gTTS test failed")
         return False

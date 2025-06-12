@@ -125,6 +125,7 @@ def main():
                         
                         if ai_response:
                             st.session_state.messages.append({"role": "assistant", "content": ai_response})
+                            periodic_auto_save()
                         else:
                             st.session_state.messages.append({
                                 "role": "assistant", 
@@ -154,6 +155,7 @@ def main():
                         
                         if ai_response:
                             st.session_state.messages.append({"role": "assistant", "content": ai_response})
+                            periodic_auto_save()
                         else:
                             st.session_state.messages.append({
                                 "role": "assistant", 

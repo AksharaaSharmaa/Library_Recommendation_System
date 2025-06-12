@@ -908,6 +908,13 @@ def setup_sidebar():
             st.session_state.show_discussion = True
             st.session_state.app_stage = "discussion_page"
             st.rerun()
+            # Add this to your main code for testing
+        if st.button("Test TTS System"):
+            temp_dir = tempfile.mkdtemp()
+            if test_tts(temp_dir):
+                st.success("TTS system is working!")
+            else:
+                st.error("TTS system is not working properly")
         
         # Reset button
         if st.button("다시 시작하기\nREFRESH PAGE", use_container_width=True):

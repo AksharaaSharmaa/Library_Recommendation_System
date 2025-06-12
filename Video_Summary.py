@@ -15,6 +15,16 @@ from gtts import gTTS
 import threading
 import time
 
+def ensure_english(text):
+    """Translate text to English if it's not already in English."""
+    try:
+        translator = Translator(to_lang="en")
+        translated = translator.translate(text)
+        return translated
+    except Exception as e:
+        print(f"Translation error: {e}")
+        return text
+
 def generate_speech_audio(text, output_path, lang='en', slow=False):
     """Generate speech audio from text using gTTS"""
     try:
@@ -141,6 +151,25 @@ def create_outro_audio(temp_dir, lang='en'):
     audio_path = os.path.join(temp_dir, "outro_audio.wav")
     print(f"Creating outro audio: {outro_text}")
     return generate_speech_audio(outro_text, audio_path, lang=lang)
+
+def generate_book_summary_text(title, author, api_key):
+    try:
+        prompt = (
+            f"Summarize the book '{title}' by {author} in English. "
+            "Provide a detailed yet concise summary that covers the main plot, key characters, major themes, and the book's overall impact. "
+            "Write in clear, engaging English for a general audience."
+        )
+        messages = [
+            {"role": "system", "content": "You are an expert book reviewer."},
+            {"role": "user", "content": prompt}
+        ]
+        response = call_hyperclova_api(messages, api_key)
+        if response:
+            return response.strip()
+        return f"No summary available for '{title}' by {author}."
+    except Exception as e:
+        print(f"Error generating summary: {e}")
+        return f"Error generating summary for '{title}' by {author}."
 
 def generate_book_summary_video(book_data, api_key):
     try:

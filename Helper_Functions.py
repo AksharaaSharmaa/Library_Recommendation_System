@@ -889,7 +889,19 @@ def get_books_by_dtl_kdc(dtl_kdc_code, auth_key, page_no=1, page_size=10):
 # --- Sidebar (as provided) ---
 def setup_sidebar():
     with st.sidebar:
-        if st.button("좋아하는 책들을\n    MY LIBRARY", use_container_width=True):
+        # Custom CSS for button styling
+        st.markdown("""
+        <style>
+        .stButton > button {
+            white-space: pre-line !important;
+            line-height: 1.2 !important;
+            padding: 10px !important;
+            text-align: center !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        if st.button("좋아하는 책들을\nMY LIBRARY", use_container_width=True):
             st.session_state.app_stage = "show_liked_books"
             st.rerun()
         if st.button("토론 페이지\nDISCUSSION PAGE", key="open_discussion", use_container_width=True):

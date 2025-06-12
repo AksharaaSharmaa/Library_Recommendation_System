@@ -20,6 +20,7 @@ from Helper_Functions import *
 import calendar
 from Discussion_Function import *
 from Video_Summary import *
+from MongoDB_Chats_Function import *
 
 # --- EMBEDDED API KEYS ---
 HYPERCLOVA_API_KEY = "nv-270db94eb8bf42108110b22f551e655axCwf"
@@ -63,6 +64,10 @@ def main():
         st.session_state.selected_category_filter = "All"
     if "show_discussion" not in st.session_state:
         st.session_state.show_discussion = False
+    if "current_session_id" not in st.session_state:
+        st.session_state.current_session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    if "last_save_count" not in st.session_state:
+        st.session_state.last_save_count = 0
 
     setup_sidebar()
 

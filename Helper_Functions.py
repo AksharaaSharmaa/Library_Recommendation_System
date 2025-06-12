@@ -889,7 +889,7 @@ def get_books_by_dtl_kdc(dtl_kdc_code, auth_key, page_no=1, page_size=10):
 # --- Sidebar (as provided) ---
 def setup_sidebar():
     with st.sidebar:
-        if st.button("좋아하는 책들\nMY LIBRARY"):
+        if st.button("좋아하는 책들을\nMY LIBRARY"):
             st.session_state.app_stage = "show_liked_books"
             st.rerun()
         if st.button("토론 페이지\nDISCUSSION PAGE", key="open_discussion"):
@@ -916,7 +916,7 @@ def setup_sidebar():
             </p>
         </div>
         """, unsafe_allow_html=True)
-
+        
 # --- Process follow-up questions with HyperCLOVA ---
 def process_followup_with_hyperclova(user_input, api_key):
     """Process follow-up questions using HyperCLOVA API"""

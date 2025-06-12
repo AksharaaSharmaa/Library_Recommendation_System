@@ -15,6 +15,22 @@ from gtts import gTTS
 import threading
 import time
 
+def download_book_cover(cover_url, temp_dir):
+    if not cover_url:
+        return None
+    try:
+        response = requests.get(cover_url, timeout=10)
+        response.raise_for_status()
+        img = Image.open(io.BytesIO(response.content))
+        img = img.convert('RGB')
+        img = resize_image_to_fit(img, 1080, 1080)
+        cover_path = os.path.join(temp_dir, "book_cover.jpg")
+        img.save(cover_path, "JPEG", quality=95)
+        return cover_path
+    except Exception as e:
+        print(f"Error downloading book cover: {e}")
+        return None
+
 def ensure_english(text):
     """Translate text to English if it's not already in English."""
     try:
@@ -170,6 +186,61 @@ def generate_book_summary_text(title, author, api_key):
     except Exception as e:
         print(f"Error generating summary: {e}")
         return f"Error generating summary for '{title}' by {author}."
+
+def create_placeholder_cover(title, author, temp_dir):
+    width, height = 800, 1200
+    image = Image.new('RGB', (width, height), (60, 80, 120))
+    for y in range(height):
+        gradient_color = int(60 + (y / height) * 40)
+        for x in range(width):
+            image.putpixel((x, y), (gradient_color, gradient_color + 20, gradient_color + 60))
+    draw = ImageDraw.Draw(image)
+    try:
+        font_paths = [
+            "Arial.ttf",
+            "/System/Library/Fonts/Arial.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "C:/Windows/Fonts/arial.ttf"
+        ]
+        title_font = None
+        author_font = None
+        for font_path in font_paths:
+            try:
+                title_font = ImageFont.truetype(font_path, 60)
+                author_font = ImageFont.truetype(font_path, 40)
+                break
+            except (IOError, OSError):
+                continue
+        if title_font is None:
+            title_font = ImageFont.load_default()
+            author_font = ImageFont.load_default()
+    except Exception:
+        title_font = ImageFont.load_default()
+        author_font = ImageFont.load_default()
+    wrapped_title = wrap_text_for_cover(title, title_font, width - 100)
+    title_bbox = draw.multiline_textbbox((0, 0), wrapped_title, font=title_font)
+    title_height = title_bbox[3] - title_bbox[1]
+    title_y = height // 3 - title_height // 2
+    draw.multiline_text(
+        ((width - (title_bbox[2] - title_bbox[0])) // 2, title_y),
+        wrapped_title,
+        font=title_font,
+        fill="white",
+        align="center"
+    )
+    author_bbox = draw.textbbox((0, 0), author, font=author_font)
+    author_y = height - 200
+    draw.text(
+        ((width - (author_bbox[2] - author_bbox[0])) // 2, author_y),
+        author,
+        font=author_font,
+        fill="lightgray",
+        align="center"
+    )
+    draw.rectangle([50, 50, width-50, height-50], outline="white", width=3)
+    cover_path = os.path.join(temp_dir, "placeholder_cover.jpg")
+    image.save(cover_path, "JPEG", quality=95)
+    return cover_path
 
 def generate_book_summary_video(book_data, api_key):
     try:
@@ -343,3 +414,180 @@ def test_tts(temp_dir):
     else:
         print("gTTS test failed")
         return False
+
+def call_hyperclova_api(messages, api_key):
+    """Helper function to call HyperCLOVA API with correct headers"""
+    try:
+        endpoint = "https://clovastudio.stream.ntruss.com/testapp/v1/chat-completions/HCX-003"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "messages": messages,
+            "maxTokens": 1024,
+            "temperature": 0.7,
+            "topP": 0.8,
+        }
+        response = requests.post(endpoint, headers=headers, json=payload)
+        if response.status_code == 200:
+            result = response.json()
+            return result['result']['message']['content']
+        else:
+            st.error(f"Error connecting to HyperCLOVA API: {response.status_code}")
+            return None
+    except Exception as e:
+        st.error(f"Error connecting to HyperCLOVA API: {e}")
+        return None
+
+def resize_image_to_fit(image, max_width, max_height):
+    width, height = image.size
+    width_ratio = max_width / width
+    height_ratio = max_height / height
+    scale_factor = min(width_ratio, height_ratio)
+    new_width = int(width * scale_factor)
+    new_height = int(height * scale_factor)
+    return image.resize((new_width, new_height), Image.LANCZOS)
+
+def create_text_image(text, size, font_size, temp_dir, filename):
+    width, height = size
+    image = Image.new('RGB', (width, height))
+    for y in range(height):
+        gradient = int(30 + (y / height) * 50)
+        for x in range(width):
+            image.putpixel((x, y), (gradient, gradient + 10, gradient + 30))
+    draw = ImageDraw.Draw(image)
+    try:
+        font_paths = [
+            "Arial.ttf",
+            "/System/Library/Fonts/Arial.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "C:/Windows/Fonts/arial.ttf"
+        ]
+        font = None
+        for font_path in font_paths:
+            try:
+                font = ImageFont.truetype(font_path, font_size)
+                break
+            except (IOError, OSError):
+                continue
+        if font is None:
+            font = ImageFont.load_default()
+    except Exception:
+        font = ImageFont.load_default()
+    lines = text.split('\n')
+    total_height = 0
+    line_heights = []
+    for line in lines:
+        bbox = draw.textbbox((0, 0), line, font=font)
+        line_height = bbox[3] - bbox[1]
+        total_height += line_height
+        line_heights.append(line_height)
+    y = (height - total_height) // 2
+    for i, line in enumerate(lines):
+        bbox = draw.textbbox((0, 0), line, font=font)
+        line_width = bbox[2] - bbox[0]
+        x = (width - line_width) // 2
+        draw.text((x, y), line, font=font, fill="white")
+        y += line_heights[i] + 10
+    output_path = os.path.join(temp_dir, filename)
+    image.save(output_path)
+    return output_path
+
+def add_text_to_book_cover(cover_path, text, temp_dir, filename):
+    img = Image.open(cover_path)
+    img = img.convert('RGB')
+    img = resize_image_to_fit(img, 1080, 1080)
+    canvas = Image.new('RGB', (1080, 1080), (20, 20, 30))
+    x_offset = (1080 - img.width) // 2
+    y_offset = (1080 - img.height) // 2
+    canvas.paste(img, (x_offset, y_offset))
+    overlay = Image.new('RGBA', canvas.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    try:
+        font_paths = [
+            "Arial.ttf",
+            "/System/Library/Fonts/Arial.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "C:/Windows/Fonts/arial.ttf"
+        ]
+        font = None
+        for font_path in font_paths:
+            try:
+                font = ImageFont.truetype(font_path, 36)
+                break
+            except (IOError, OSError):
+                continue
+        if font is None:
+            font = ImageFont.load_default()
+    except Exception:
+        font = ImageFont.load_default()
+    max_width = 900
+    wrapped_text = wrap_text_simple(text, font, max_width)
+    bbox = draw.multiline_textbbox((0, 0), wrapped_text, font=font)
+    text_width = bbox[2] - bbox[0]
+    text_height = bbox[3] - bbox[1]
+    margin = 25
+    rect_height = text_height + (margin * 2)
+    rect_width = min(text_width + (margin * 2), 1080 - 40)
+    rect_x = (1080 - rect_width) // 2
+    rect_y = 1080 - rect_height - 40
+    draw.rectangle(
+        [rect_x, rect_y, rect_x + rect_width, rect_y + rect_height],
+        fill=(0, 0, 0, 200)
+    )
+    text_x = (1080 - text_width) // 2
+    text_y = rect_y + margin
+    draw.multiline_text(
+        (text_x, text_y),
+        wrapped_text,
+        font=font,
+        fill=(255, 255, 255, 255),
+        align="center"
+    )
+    canvas = canvas.convert('RGBA')
+    result = Image.alpha_composite(canvas, overlay)
+    result = result.convert('RGB')
+    output_path = os.path.join(temp_dir, filename)
+    result.save(output_path)
+    return output_path
+
+def wrap_text_simple(text, font, max_width):
+    words = text.split()
+    lines = []
+    current_line = []
+    for word in words:
+        current_line.append(word)
+        line_text = ' '.join(current_line)
+        temp_img = Image.new('RGB', (1, 1))
+        temp_draw = ImageDraw.Draw(temp_img)
+        bbox = temp_draw.textbbox((0, 0), line_text, font=font)
+        line_width = bbox[2] - bbox[0]
+        if line_width > max_width and len(current_line) > 1:
+            current_line.pop()
+            lines.append(' '.join(current_line))
+            current_line = [word]
+    if current_line:
+        lines.append(' '.join(current_line))
+    return '\n'.join(lines)
+
+def wrap_text_for_cover(text, font, max_width):
+    words = text.split()
+    if len(words) <= 3:
+        return text
+    lines = []
+    current_line = []
+    for word in words:
+        current_line.append(word)
+        line_text = ' '.join(current_line)
+        temp_img = Image.new('RGB', (1, 1))
+        temp_draw = ImageDraw.Draw(temp_img)
+        bbox = temp_draw.textbbox((0, 0), line_text, font=font)
+        line_width = bbox[2] - bbox[0]
+        if line_width > max_width and len(current_line) > 1:
+            current_line.pop()
+            lines.append(' '.join(current_line))
+            current_line = [word]
+    if current_line:
+        lines.append(' '.join(current_line))
+    return '\n'.join(lines)

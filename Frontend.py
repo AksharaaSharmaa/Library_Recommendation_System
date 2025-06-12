@@ -1,5 +1,7 @@
+import streamlit as st
+
 def add_custom_css():
-    import streamlit as st
+    
 
     CHAT_HISTORY_CSS = """
     <style>

@@ -910,8 +910,12 @@ def setup_sidebar():
             st.session_state.show_discussion = True
             st.session_state.app_stage = "discussion_page"
             st.rerun()
-            # Add this to your main code for testing
         
+        # NEW: Chat History Button
+        if st.button("채팅 기록\nCHAT HISTORY", key="chat_history", use_container_width=True):
+            st.session_state.app_stage = "chat_history"
+            st.rerun()
+            
         # Reset button
         if st.button("다시 시작하기\nREFRESH PAGE", use_container_width=True):
             st.session_state.messages = [

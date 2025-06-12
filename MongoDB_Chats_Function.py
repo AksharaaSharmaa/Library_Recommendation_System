@@ -155,3 +155,17 @@ def auto_save_current_session():
             st.session_state.current_session_id = session_id
             
         save_chat_session(username, st.session_state.messages, session_id)
+
+def periodic_auto_save():
+    """Periodically save chat sessions"""
+    current_message_count = len(st.session_state.messages)
+    
+    # Auto-save every 5 messages
+    if (current_message_count > st.session_state.last_save_count and 
+        current_message_count % 5 == 0 and 
+        current_message_count > 1):  # Don't save if only system message
+        
+        username = getattr(st.session_state, 'username', 'anonymous')
+        if save_chat_session(username, st.session_state.messages, st.session_state.current_session_id):
+            st.session_state.last_save_count = current_message_count
+

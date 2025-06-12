@@ -889,7 +889,7 @@ def get_books_by_dtl_kdc(dtl_kdc_code, auth_key, page_no=1, page_size=10):
 # --- Sidebar (as provided) ---
 def setup_sidebar():
     with st.sidebar:
-        if st.button("좋아하는 책들 | MY LIBRARY"):
+        if st.button("좋아하는 책들 /n MY LIBRARY"):
             st.session_state.app_stage = "show_liked_books"
             st.rerun()
 

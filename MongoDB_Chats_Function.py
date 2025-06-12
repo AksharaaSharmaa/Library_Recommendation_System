@@ -1,6 +1,7 @@
 import pymongo
 from datetime import datetime
 import json
+import streamlit as st
 
 def get_mongodb_connection():
     """Get MongoDB connection using your existing connection function"""

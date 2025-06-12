@@ -1,0 +1,157 @@
+import pymongo
+from datetime import datetime
+import json
+
+def get_mongodb_connection():
+    """Get MongoDB connection using your existing connection function"""
+    try:
+        # Use your existing connection logic
+        if 'db_client' not in st.session_state:
+            client = init_connection()
+            if client is None:
+                return None
+        else:
+            client = st.session_state.db_client
+        
+        # Use your existing database
+        db = client["Login_Credentials"]
+        return db
+    except Exception as e:
+        st.error(f"Failed to connect to MongoDB: {str(e)}")
+        return None
+
+def save_chat_session(username, messages, session_id=None):
+    """Save current chat session to MongoDB"""
+    try:
+        db = get_mongodb_connection()
+        if not db:
+            return False
+            
+        chat_collection = db["chat_history"]
+        
+        # Filter out system messages and prepare messages for storage
+        user_messages = [msg for msg in messages if msg.get("role") != "system"]
+        
+        chat_session = {
+            "username": username or "anonymous",
+            "session_id": session_id or f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+            "messages": user_messages,
+            "timestamp": datetime.now().isoformat(),
+            "message_count": len(user_messages)
+        }
+        
+        # Update if session exists, otherwise insert new
+        result = chat_collection.update_one(
+            {"session_id": chat_session["session_id"]},
+            {"$set": chat_session},
+            upsert=True
+        )
+        
+        return True
+    except Exception as e:
+        st.error(f"Failed to save chat session: {str(e)}")
+        return False
+
+def get_user_chat_history(username):
+    """Get all chat sessions for a user"""
+    try:
+        db = get_mongodb_connection()
+        if not db:
+            return []
+            
+        chat_collection = db["chat_history"]
+        
+        # Get all sessions for the user, sorted by timestamp (newest first)
+        sessions = list(chat_collection.find(
+            {"username": username or "anonymous"}
+        ).sort("timestamp", -1))
+        
+        return sessions
+    except Exception as e:
+        st.error(f"Failed to retrieve chat history: {str(e)}")
+        return []
+
+def delete_chat_session(session_id):
+    """Delete a specific chat session"""
+    try:
+        db = get_mongodb_connection()
+        if not db:
+            return False
+            
+        chat_collection = db["chat_history"]
+        result = chat_collection.delete_one({"session_id": session_id})
+        
+        return result.deleted_count > 0
+    except Exception as e:
+        st.error(f"Failed to delete chat session: {str(e)}")
+        return False
+
+def load_chat_session(session_id):
+    """Load a specific chat session"""
+    try:
+        db = get_mongodb_connection()
+        if not db:
+            return None
+            
+        chat_collection = db["chat_history"]
+        session = chat_collection.find_one({"session_id": session_id})
+        
+        return session
+    except Exception as e:
+        st.error(f"Failed to load chat session: {str(e)}")
+        return None
+
+def display_chat_history_card(session, index):
+    """Display a chat history session card"""
+    with st.container():
+        # Create a card-like container
+        st.markdown(f"""
+        <div style="border: 1px solid #ddd; border-radius: 10px; padding: 15px; margin: 10px 0; 
+                    background: linear-gradient(135deg, #f8f9fa, #e9ecef);">
+        """, unsafe_allow_html=True)
+        
+        col1, col2, col3 = st.columns([3, 1, 1])
+        
+        with col1:
+            # Session info
+            timestamp = datetime.fromisoformat(session['timestamp'])
+            st.markdown(f"**Session:** {session['session_id']}")
+            st.markdown(f"**Date:** {timestamp.strftime('%Y-%m-%d %H:%M')}")
+            st.markdown(f"**Messages:** {session['message_count']}")
+            
+            # Show first user message as preview
+            if session['messages']:
+                first_message = session['messages'][0]
+                if first_message.get('role') == 'user':
+                    preview = first_message['content'][:100]
+                    if len(first_message['content']) > 100:
+                        preview += "..."
+                    st.markdown(f"**Preview:** {preview}")
+        
+        with col2:
+            if st.button("View", key=f"view_session_{index}"):
+                st.session_state.selected_chat_session = session
+                st.session_state.app_stage = "view_chat_session"
+                st.rerun()
+        
+        with col3:
+            if st.button("Delete", key=f"delete_session_{index}"):
+                if delete_chat_session(session['session_id']):
+                    st.success("Chat session deleted!")
+                    st.rerun()
+                else:
+                    st.error("Failed to delete session")
+        
+        st.markdown("</div>", unsafe_allow_html=True)
+
+def auto_save_current_session():
+    """Auto-save current chat session"""
+    if hasattr(st.session_state, 'messages') and len(st.session_state.messages) > 1:
+        username = getattr(st.session_state, 'username', 'anonymous')
+        session_id = getattr(st.session_state, 'current_session_id', 
+                           f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
+        
+        if not hasattr(st.session_state, 'current_session_id'):
+            st.session_state.current_session_id = session_id
+            
+        save_chat_session(username, st.session_state.messages, session_id)

@@ -64,7 +64,7 @@ def get_user_chat_history_by_date(username):
     """Get all chat sessions for a user organized by date"""
     try:
         db = get_mongodb_connection()
-        if not db:
+        if db is None:
             return {}
             
         chat_collection = db["chat_history"]
@@ -104,7 +104,7 @@ def get_user_chat_history(username):
     """Get all chat sessions for a user (legacy function for backward compatibility)"""
     try:
         db = get_mongodb_connection()
-        if not db:
+        if db is None:
             return []
             
         chat_collection = db["chat_history"]
@@ -123,7 +123,7 @@ def delete_chat_session(session_id):
     """Delete a specific chat session"""
     try:
         db = get_mongodb_connection()
-        if not db:
+        if db is None:
             return False
             
         chat_collection = db["chat_history"]
@@ -138,7 +138,7 @@ def delete_all_chats_for_date(username, date_str):
     """Delete all chat sessions for a user on a specific date"""
     try:
         db = get_mongodb_connection()
-        if not db:
+        if db is None:
             return False
             
         chat_collection = db["chat_history"]
@@ -176,7 +176,7 @@ def load_chat_session(session_id):
     """Load a specific chat session"""
     try:
         db = get_mongodb_connection()
-        if not db:
+        if db is None:
             return None
             
         chat_collection = db["chat_history"]

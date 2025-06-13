@@ -20,7 +20,6 @@ from Helper_Functions import *
 import calendar
 from Discussion_Function import *
 from Video_Summary import *
-from Region_Library import *
 
 # --- EMBEDDED API KEYS ---
 HYPERCLOVA_API_KEY = "nv-270db94eb8bf42108110b22f551e655axCwf"

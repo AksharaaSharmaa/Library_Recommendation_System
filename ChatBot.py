@@ -20,6 +20,7 @@ from Helper_Functions import *
 import calendar
 from Discussion_Function import *
 from Video_Summary import *
+from Region_Library import *
 
 # --- EMBEDDED API KEYS ---
 HYPERCLOVA_API_KEY = "nv-270db94eb8bf42108110b22f551e655axCwf"
@@ -179,6 +180,12 @@ def main():
             st.session_state.app_stage = "awaiting_user_input"
         
         st.rerun()
+
+    elif st.session_state.app_stage == "regional_search":
+        display_regional_search_interface()
+    
+    elif st.session_state.app_stage == "check_availability":
+        display_my_library_availability()
 
     elif st.session_state.app_stage == "show_recommendations":
         add_vertical_space(2)

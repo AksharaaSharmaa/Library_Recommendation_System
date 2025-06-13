@@ -1,3 +1,24 @@
+import json
+from datetime import datetime, date
+from difflib import SequenceMatcher
+from streamlit_extras.add_vertical_space import add_vertical_space
+import requests
+import os
+from PIL import Image, ImageDraw, ImageFont
+import io
+import hashlib
+import random
+from Helper_Functions import *
+import calendar
+from Discussion_Function import *
+from Video_Summary import *
+
+# --- EMBEDDED API KEYS ---
+HYPERCLOVA_API_KEY = "nv-270db94eb8bf42108110b22f551e655axCwf"
+LIBRARY_API_KEY = "70b5336f9e785c681d5ff58906e6416124f80f59faa834164d297dcd8db63036"
+
+add_custom_css()
+
 def main():
     # --- Initialize all session state variables before use ---
     if "api_key" not in st.session_state:

@@ -64,6 +64,7 @@ def main():
         st.session_state.selected_category_filter = "All"
     if "show_discussion" not in st.session_state:
         st.session_state.show_discussion = False
+    # MongoDB-specific session variables from first file
     if "current_session_id" not in st.session_state:
         st.session_state.current_session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     if "last_save_count" not in st.session_state:
@@ -86,6 +87,7 @@ def main():
             "role": "assistant",
             "content": "Hello! Tell me about your favourite books, author, genre, or age group. You can describe what you're looking for in natural language.\n\n한국어 답변: 안녕하세요! 좋아하는 책, 작가, 장르 또는 연령대에 대해 말씀해 주세요. 자연스러운 언어로 원하는 것을 설명해 주시면 됩니다."
         })
+        # Keep MongoDB periodic save from first file
         periodic_auto_save()
         st.session_state.app_stage = "awaiting_user_input"
         st.rerun()
@@ -99,10 +101,12 @@ def main():
             if st.button("보내다 ᯓ➤", key="send_open_input"):
                 if user_input:
                     st.session_state.messages.append({"role": "user", "content": user_input})
+                    # Keep MongoDB periodic save from first file
                     periodic_auto_save()
                     st.session_state.app_stage = "process_user_input"
                     st.rerun()
 
+    # Add MongoDB-specific stages from first file
     elif st.session_state.app_stage == "chat_history":
         display_chat_history_page()
     
@@ -133,12 +137,14 @@ def main():
                         
                         if ai_response:
                             st.session_state.messages.append({"role": "assistant", "content": ai_response})
+                            # Keep MongoDB periodic save from first file
                             periodic_auto_save()
                         else:
                             st.session_state.messages.append({
                                 "role": "assistant", 
                                 "content": f"Excellent! I found {len(books)} books by {author_name}. This author has created diverse works that showcase their unique writing style and perspective. Take a look at their collection below!\n\n한국어 답변: 훌륭합니다! {author_name}의 책 {len(books)}권을 찾았습니다. 이 작가는 독특한 글쓰기 스타일과 관점을 보여주는 다양한 작품을 창작했습니다. 아래에서 그들의 컬렉션을 살펴보세요!"
                             })
+                            # Keep MongoDB periodic save from first file
                             periodic_auto_save()
                     
                     st.session_state.app_stage = "show_recommendations"
@@ -164,6 +170,7 @@ def main():
                         
                         if ai_response:
                             st.session_state.messages.append({"role": "assistant", "content": ai_response})
+                            # Keep MongoDB periodic save from first file
                             periodic_auto_save()
                         else:
                             st.session_state.messages.append({
@@ -393,6 +400,7 @@ def main():
                         
                         assistant_msg = {"role": "assistant", "content": ai_response}
                         st.session_state.book_discussion_messages.append(assistant_msg)
+                        # Keep MongoDB periodic save from first file
                         periodic_auto_save()
                         st.rerun()
             

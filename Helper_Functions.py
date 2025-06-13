@@ -887,38 +887,19 @@ def get_books_by_dtl_kdc(dtl_kdc_code, auth_key, page_no=1, page_size=10):
     return []
 
 # --- Sidebar (as provided) ---
-import streamlit as st
-
 def setup_sidebar():
     with st.sidebar:
-        # Book Library Button
-        if st.markdown("""
-            <button style="width: 100%; padding: 0.75rem 1rem; margin-bottom: 10px; font-size: 1rem; line-height: 1.2; text-align: center;">
-                <div>좋아하는 책들</div>
-                <div style="font-size: 0.85rem;">MY LIBRARY</div>
-            </button>
-            """, unsafe_allow_html=True):
+        if st.button("좋아하는 책들\nMY LIBRARY"):
             st.session_state.app_stage = "show_liked_books"
             st.rerun()
-
-        # Discussion Page Button
-        if st.markdown("""
-            <button style="width: 100%; padding: 0.75rem 1rem; margin-bottom: 10px; font-size: 1rem; line-height: 1.2; text-align: center;">
-                <div>토론 페이지</div>
-                <div style="font-size: 0.85rem;">Discussion Page</div>
-            </button>
-            """, unsafe_allow_html=True):
+        
+        if st.button("토론 페이지\nDiscussion Page", key="open_discussion"):
             st.session_state.show_discussion = True
             st.session_state.app_stage = "discussion_page"
             st.rerun()
-
-        # Refresh Page Button
-        if st.markdown("""
-            <button style="width: 100%; padding: 0.75rem 1rem; margin-bottom: 10px; font-size: 1rem; line-height: 1.2; text-align: center;">
-                <div>다시 시작하기</div>
-                <div style="font-size: 0.85rem;">REFRESH PAGE</div>
-            </button>
-            """, unsafe_allow_html=True):
+        
+        # Reset button
+        if st.button("다시 시작하기\nREFRESH PAGE"):
             st.session_state.messages = [
                 {"role": "system", "content": "You are a helpful AI assistant specializing in book recommendations. For EVERY response, you must answer in BOTH English and Korean. First provide the complete answer in English, then provide '한국어 답변:' followed by the complete Korean translation of your answer."}
             ]
@@ -928,8 +909,7 @@ def setup_sidebar():
             st.session_state.selected_book = None
             st.session_state.showing_books = False
             st.rerun()
-
-        # Footer Info
+        
         st.markdown("""
         <div style="text-align: center; margin-top: 30px; padding: 10px;">
             <p style="color: #b3b3cc; font-size: 0.8rem;">

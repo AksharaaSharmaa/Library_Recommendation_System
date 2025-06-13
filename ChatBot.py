@@ -70,6 +70,7 @@ def main():
         st.session_state.last_save_count = 0
 
     setup_sidebar()
+    setup_chat_history_sidebar()
 
     st.markdown("<h1 style='text-align:center;'>📚 Book Wanderer / 책방랑자</h1>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:center;'>Discover your next favorite read with AI assistance in English and Korean</div>", unsafe_allow_html=True)
@@ -102,6 +103,12 @@ def main():
                     periodic_auto_save()
                     st.session_state.app_stage = "process_user_input"
                     st.rerun()
+
+    elif st.session_state.app_stage == "chat_history":
+        display_chat_history_page()
+    
+    elif st.session_state.app_stage == "view_chat_session":
+        display_chat_session_viewer()
 
     elif st.session_state.app_stage == "process_user_input":
         user_input = st.session_state.messages[-1]["content"]

@@ -16,10 +16,10 @@ from PIL import Image, ImageDraw, ImageFont
 import io
 import hashlib
 import random
-from Helper_Functions import *
+from helper_func import *
 import calendar
-from Discussion_Function import *
-from Video_Summary import *
+from disc_func import *
+from video_summary import *
 
 # --- EMBEDDED API KEYS ---
 HYPERCLOVA_API_KEY = "nv-270db94eb8bf42108110b22f551e655axCwf"
@@ -63,6 +63,11 @@ def main():
         st.session_state.selected_category_filter = "All"
     if "show_discussion" not in st.session_state:
         st.session_state.show_discussion = False
+    # Add location-related session state variables
+    if "selected_location_code" not in st.session_state:
+        st.session_state.selected_location_code = None
+    if "selected_location_name" not in st.session_state:
+        st.session_state.selected_location_name = "전체 지역"
 
     setup_sidebar()
 
@@ -98,13 +103,13 @@ def main():
 
     elif st.session_state.app_stage == "process_user_input":
         user_input = st.session_state.messages[-1]["content"]
-    
+
         # Detect if it's author or genre request
         dtl_code, dtl_label = get_dtl_kdc_code(user_input, HYPERCLOVA_API_KEY)
         
         if dtl_code and LIBRARY_API_KEY:
             if dtl_code == "AUTHOR":
-                # Author-based search
+                # For author search, still use the original function
                 author_name = dtl_label
                 books = get_books_by_author(author_name, LIBRARY_API_KEY, page_no=1, page_size=20)
                 
@@ -134,17 +139,27 @@ def main():
                     })
                     st.session_state.app_stage = "awaiting_user_input"
             else:
-                # Genre-based search (existing functionality)
-                books = get_books_by_dtl_kdc(dtl_code, LIBRARY_API_KEY, page_no=1, page_size=20)
+                # For genre search, use location-based if available WITH genre filtering
+                if hasattr(st.session_state, 'selected_location_code') and st.session_state.selected_location_code:
+                    books = get_popular_books_by_location(
+                        st.session_state.selected_location_code, 
+                        LIBRARY_API_KEY, 
+                        page_no=1, 
+                        page_size=20,
+                        dtl_kdc_code=dtl_code  # Pass the genre code here
+                    )
+                    location_msg = f" in {st.session_state.selected_location_name} for {dtl_label}"
+                else:
+                    books = get_books_by_dtl_kdc(dtl_code, LIBRARY_API_KEY, page_no=1, page_size=20)
+                    location_msg = f" for {dtl_label}"
                 
                 if books:
                     st.session_state.books_data = books
                     
-                    # Generate AI response about the recommendations using HyperCLOVA
                     if HYPERCLOVA_API_KEY:
                         ai_response = call_hyperclova_api([
                             {"role": "system", "content": "You are a helpful book recommendation assistant. For EVERY response, answer in BOTH English and Korean. First provide complete English answer, then '한국어 답변:' with Korean translation."},
-                            {"role": "user", "content": f"I found {len(books)} books in the {dtl_label} category. Tell me about this category and encourage me to explore these recommendations."}
+                            {"role": "user", "content": f"I found {len(books)} books{location_msg}. Tell me about these recommendations."}
                         ], HYPERCLOVA_API_KEY)
                         
                         if ai_response:
@@ -152,7 +167,7 @@ def main():
                         else:
                             st.session_state.messages.append({
                                 "role": "assistant", 
-                                "content": f"Great! I found {len(books)} excellent books in the {dtl_label} category. These recommendations are based on popularity and should match your interests perfectly. Take a look at the books below!\n\n한국어 답변: 좋습니다! {dtl_label} 카테고리에서 {len(books)}권의 훌륭한 책을 찾았습니다. 이 추천은 인기도를 바탕으로 하며 당신의 관심사와 완벽하게 일치할 것입니다. 아래 책들을 살펴보세요!"
+                                "content": f"Great! I found {len(books)} excellent books{location_msg}. These recommendations are based on popularity and should match your interests perfectly. Take a look at the books below!\n\n한국어 답변: 좋습니다! {location_msg}에서 {len(books)}권의 훌륭한 책을 찾았습니다. 이 추천은 인기도를 바탕으로 하며 당신의 관심사와 완벽하게 일치할 것입니다. 아래 책들을 살펴보세요!"
                             })
                     
                     st.session_state.app_stage = "show_recommendations"
@@ -187,7 +202,7 @@ def main():
         for i, book in enumerate(st.session_state.books_data[:10]):  # Show top 10 books
             display_book_card(book, i)
         
-        # ADD THIS: Book Video Generation Section
+        # Book Video Generation Section
         st.header("🎬 Book Summary Videos")
         
         with st.expander("Generate Book Summary Videos", expanded=False):
@@ -202,7 +217,7 @@ def main():
             
             # Let user select which book to create video for
             book_options = []
-            for i, book in enumerate(st.session_state.books_data[:10]):  # Limit to first 5 books
+            for i, book in enumerate(st.session_state.books_data[:10]):  # Limit to first 10 books
                 title = book.get('bookname') or book.get('bookName', 'Unknown Title')
                 author = book.get('authors') or book.get('author', 'Unknown Author')
                 book_options.append(f"{title} by {author}")
@@ -451,6 +466,50 @@ def main():
         else:
             st.warning("Please log in to view your library.")
 
+    elif st.session_state.app_stage == "check_regional_books":
+        add_vertical_space(2)
+        st.markdown("<h3 style='text-align:center;'>📍 Regional Book Availability</h3>", unsafe_allow_html=True)
+        
+        if hasattr(st.session_state, 'username') and st.session_state.username:
+            if hasattr(st.session_state, 'selected_location_code') and st.session_state.selected_location_code:
+                st.markdown(f"**Checking availability in:** {st.session_state.selected_location_name}")
+                
+                liked_books = get_liked_books(st.session_state.username)
+                
+                if liked_books:
+                    st.markdown(f"**Checking {len(liked_books)} books from your library...**")
+                    
+                    for i, book in enumerate(liked_books):
+                        isbn = book.get('isbn13') or book.get('isbn', '')
+                        title = book.get('bookname', 'Unknown Title')
+                        
+                        if isbn:
+                            is_available, message = check_book_availability_in_region(
+                                isbn, st.session_state.selected_location_code, LIBRARY_API_KEY
+                            )
+                            
+                            status_color = "green" if is_available else "red"
+                            status_icon = "✅" if is_available else "❌"
+                            
+                            st.markdown(f"""
+                            <div style="padding: 10px; border-left: 4px solid {status_color}; margin: 10px 0;">
+                                <strong>{status_icon} {title}</strong><br>
+                                <small style="color: {status_color};">{message}</small>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        else:
+                            st.markdown(f"⚠️ **{title}** - No ISBN available for checking")
+                else:
+                    st.info("You haven't liked any books yet. Add some books to your library first!")
+            else:
+                st.warning("Please select a location in the sidebar to check book availability.")
+        else:
+            st.warning("Please log in to check your book availability.")
+        
+        if st.button("← Back to Library", key="back_to_library"):
+            st.session_state.app_stage = "show_liked_books"
+            st.rerun()
+
     elif st.session_state.app_stage == "discussion_page":
         add_vertical_space(2)
         st.markdown("<h1 style='text-align:center;'>💬 Community Discussion</h1>", unsafe_allow_html=True)
@@ -523,7 +582,7 @@ def main():
                 st.info("No discussions yet.")
         
         # Back to recommendations button
-        if st.button("← Back to Recommendations", key="back_to_recs_from_library"):
+        if st.button("← Back to Recommendations", key="back_to_recs_from_discussion"):
             st.session_state.app_stage = "show_recommendations" if st.session_state.books_data else "welcome"
             st.rerun()
 

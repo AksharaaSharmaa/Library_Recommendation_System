@@ -889,17 +889,31 @@ def get_books_by_dtl_kdc(dtl_kdc_code, auth_key, page_no=1, page_size=10):
 # --- Sidebar (as provided) ---
 def setup_sidebar():
     with st.sidebar:
-        if st.button("좋아하는 책들 | MY LIBRARY"):
+        # Add custom CSS for multi-line buttons with equal width
+        st.markdown("""
+        <style>
+        .stButton > button {
+            white-space: pre-line !important;
+            height: auto !important;
+            padding: 12px 16px !important;
+            line-height: 1.3 !important;
+            width: 100% !important;
+            min-width: 200px !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        if st.button("좋아하는 책들\nMY LIBRARY"):
             st.session_state.app_stage = "show_liked_books"
             st.rerun()
-
-        if st.button("Discussion Page | 토론 페이지", key="open_discussion"):
+        
+        if st.button("토론 페이지\nDiscussion Page", key="open_discussion"):
             st.session_state.show_discussion = True
             st.session_state.app_stage = "discussion_page"
             st.rerun()
         
         # Reset button
-        if st.button("다시 시작하기 | REFRESH PAGE"):
+        if st.button("다시 시작하기\nREFRESH PAGE"):
             st.session_state.messages = [
                 {"role": "system", "content": "You are a helpful AI assistant specializing in book recommendations. For EVERY response, you must answer in BOTH English and Korean. First provide the complete answer in English, then provide '한국어 답변:' followed by the complete Korean translation of your answer."}
             ]
@@ -917,7 +931,7 @@ def setup_sidebar():
             </p>
         </div>
         """, unsafe_allow_html=True)
-
+        
 # --- Process follow-up questions with HyperCLOVA ---
 def process_followup_with_hyperclova(user_input, api_key):
     """Process follow-up questions using HyperCLOVA API"""

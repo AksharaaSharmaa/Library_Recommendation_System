@@ -821,7 +821,7 @@ def handle_fallback_classification(user_query):
             
 # --- Query library API for books by DTL KDC code ---
 def get_books_by_dtl_kdc(dtl_kdc_code, auth_key, page_no=1, page_size=10):
-    """Get books using DTL KDC code with debugging"""
+    """Get books using DTL KDC code"""
     url = "http://data4library.kr/api/loanItemSrch"
     params = {
         "authKey": auth_key,
@@ -830,37 +830,8 @@ def get_books_by_dtl_kdc(dtl_kdc_code, auth_key, page_no=1, page_size=10):
         "format": "json",
         "pageNo": page_no,
         "pageSize": page_size,
-        "dtl_kdc": dtl_kdc_code
+        "dtl_kdc": dtl_kdc_code  # Use dtl_kdc parameter
     }
-    
-    try:
-        print(f"DEBUG: Requesting URL: {url}")
-        print(f"DEBUG: Parameters: {params}")
-        
-        r = requests.get(url, params=params)
-        print(f"DEBUG: Response status: {r.status_code}")
-        print(f"DEBUG: Response content: {r.text[:500]}...")  # First 500 chars
-        
-        if r.status_code == 200:
-            response_data = r.json()
-            print(f"DEBUG: Full response structure: {list(response_data.keys())}")
-            
-            # Check different possible response structures
-            if "response" in response_data:
-                print(f"DEBUG: Response keys: {list(response_data['response'].keys())}")
-                
-                # Try different possible keys
-                docs = None
-                if "docs" in response_data["response"]:
-                    docs = response_data["response"]["docs"]
-                elif "doc" in response_data["response"]:
-                    docs = response_data["response"]["doc"]
-                elif "items" in response_data["response"]:
-                    docs = response_data["response"]["items"]
-                
-                print(f"DEBUG: Found docs: {type(docs)}, length: {len(docs) if docs else 0}")
-                
-
     
     try:
         r = requests.get(url, params=params)
@@ -938,11 +909,6 @@ def setup_sidebar():
         if st.button("토론 페이지\nDISCUSSION PAGE", key="open_discussion", use_container_width=True):
             st.session_state.show_discussion = True
             st.session_state.app_stage = "discussion_page"
-            st.rerun()
-        
-        # NEW: Chat History Button
-        if st.button("채팅 기록\nCHAT HISTORY", key="chat_history", use_container_width=True):
-            st.session_state.app_stage = "chat_history"
             st.rerun()
             
         # Reset button

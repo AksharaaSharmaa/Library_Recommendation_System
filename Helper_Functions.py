@@ -889,7 +889,7 @@ def get_books_by_dtl_kdc(dtl_kdc_code, auth_key, page_no=1, page_size=10):
 # --- Sidebar (as provided) ---
 def setup_sidebar():
     with st.sidebar:
-        # Add custom CSS for multi-line buttons
+        # Add custom CSS for multi-line buttons with equal width
         st.markdown("""
         <style>
         .stButton > button {
@@ -897,6 +897,8 @@ def setup_sidebar():
             height: auto !important;
             padding: 12px 16px !important;
             line-height: 1.3 !important;
+            width: 100% !important;
+            min-width: 200px !important;
         }
         </style>
         """, unsafe_allow_html=True)

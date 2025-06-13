@@ -22,14 +22,11 @@ from Helper_Functions import *
 HYPERCLOVA_API_KEY = "nv-270db94eb8bf42108110b22f551e655axCwf"
 LIBRARY_API_KEY = "70b5336f9e785c681d5ff58906e6416124f80f59faa834164d297dcd8db63036"
 
-@st.cache_resource
 def load_dtl_region_json():
     """Load the detailed region JSON file"""
     with open("dtl_region.json", encoding="utf-8") as f:
         dtl_region_dict = json.load(f)
     return dtl_region_dict
-
-# Load the regional data
 dtl_region_dict = load_dtl_region_json()
 
 def extract_location_with_hyperclova(user_input, api_key, dtl_region_dict):
@@ -452,3 +449,122 @@ def display_my_library_availability():
                 st.write(f"📚 **{title}** - {authors}")
     else:
         st.info("내 서재에 저장된 도서가 없습니다.")
+
+def get_books_by_author_regional(author_name, auth_key, region_code=None, page_no=1, page_size=10):
+    """Get books by specific author, optionally filtered by region availability"""
+    # First get books by author
+    books = get_books_by_author(author_name, auth_key, page_no, page_size)
+    
+    # If region is specified, filter by regional availability
+    if region_code and books:
+        regional_books = []
+        for book in books:
+            isbn = book.get('isbn13')
+            if isbn:
+                # Check if book is available in the region
+                libraries = get_libraries_with_book_availability(isbn, region_code, auth_key)
+                if libraries:
+                    book['available_libraries'] = len(libraries)
+                    book['regional_availability'] = True
+                    regional_books.append(book)
+        
+        if regional_books:
+            st.success(f"Found {len(regional_books)} books by {author_name} available in your region!")
+            return regional_books
+        else:
+            st.warning(f"No books by {author_name} found in your region. Showing all books by this author.")
+            return books
+    
+    return books
+
+# Updated function to get books by genre WITH regional filtering  
+def get_books_by_dtl_kdc_regional(dtl_kdc_code, auth_key, region_code=None, page_no=1, page_size=10):
+    """Get books using DTL KDC code, optionally filtered by region"""
+    if region_code:
+        # Use regional API endpoint for better results
+        url = "http://data4library.kr/api/loanItemSrchByLib"
+        params = {
+            "authKey": auth_key,
+            "dtl_region": region_code,
+            "dtl_kdc": dtl_kdc_code,
+            "pageNo": page_no,
+            "pageSize": page_size,
+            "format": "json"
+        }
+    else:
+        # Use general API endpoint
+        url = "http://data4library.kr/api/loanItemSrch"
+        params = {
+            "authKey": auth_key,
+            "startDt": "2000-01-01",
+            "endDt": datetime.now().strftime("%Y-%m-%d"),
+            "format": "json",
+            "pageNo": page_no,
+            "pageSize": page_size,
+            "dtl_kdc": dtl_kdc_code
+        }
+    
+    try:
+        r = requests.get(url, params=params)
+        if r.status_code == 200:
+            response_data = r.json()
+            
+            if "response" in response_data:
+                docs = response_data["response"].get("docs", [])
+                
+                if isinstance(docs, dict):
+                    docs = [docs]
+                elif not isinstance(docs, list):
+                    return []
+                
+                books = []
+                for doc in docs:
+                    if "doc" in doc:
+                        book_data = doc["doc"]
+                    else:
+                        book_data = doc
+                    
+                    book_info = {
+                        "bookname": book_data.get("bookname", "Unknown Title"),
+                        "authors": book_data.get("authors", "Unknown Author"),
+                        "publisher": book_data.get("publisher", "Unknown Publisher"),
+                        "publication_year": book_data.get("publication_year", "Unknown Year"),
+                        "isbn13": book_data.get("isbn13", ""),
+                        "loan_count": int(book_data.get("loan_count", 0)),
+                        "bookImageURL": book_data.get("bookImageURL", ""),
+                        "regional_context": bool(region_code)
+                    }
+                    books.append(book_info)
+                
+                books = sorted(books, key=lambda x: x["loan_count"], reverse=True)
+                return books
+            else:
+                return []
+    except Exception as e:
+        st.error(f"Error processing API response: {e}")
+        return []
+    
+    return []
+
+# Updated main search function that handles BOTH classification AND regional context
+def enhanced_search_with_classification_and_region(user_query, api_key, region_code=None):
+    """Main search function that handles author/genre detection AND regional filtering"""
+    
+    # Get classification result with regional context
+    result = get_dtl_kdc_code(user_query, api_key, region_code)
+    
+    if result[0] == "AUTHOR":
+        author_name = result[1]
+        # Get books by author with regional filtering
+        books = get_books_by_author_regional(author_name, LIBRARY_API_KEY, region_code)
+        return books, "author", author_name
+        
+    elif result[0] and result[0] != "AUTHOR":
+        dtl_kdc_code = result[0]
+        category_name = result[1]
+        # Get books by genre with regional filtering
+        books = get_books_by_dtl_kdc_regional(dtl_kdc_code, LIBRARY_API_KEY, region_code)
+        return books, "genre", category_name
+    
+    else:
+        return [], "none", None

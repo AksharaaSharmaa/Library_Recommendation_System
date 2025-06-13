@@ -18,7 +18,7 @@
 
 ## 🌟 Overview
 
-**Book Wanderer** is an intelligent, bilingual book recommendation system that bridges the gap between Korean and English literature. Powered by AI and integrated with comprehensive library databases, it offers personalized book discoveries, community discussions, reading management tools, and now features an innovative **AI-powered video summary generator** that brings books to life through engaging visual content.
+**Book Wanderer** is an intelligent, bilingual book recommendation system that bridges the gap between Korean and English literature. Powered by AI and integrated with comprehensive library databases, it offers personalized book discoveries, community discussions, reading management tools, and now features an innovative **AI-powered video summary generator with voice narration** that brings books to life through engaging audiovisual content.
 
 <div align="center">
 
@@ -26,7 +26,7 @@
 
 🤖 **AI-Powered Recommendations** • 🌐 **Bilingual Support** • 📚 **Library Integration**
 
-👥 **Community Features** • 📱 **Personal Library** • 🎥 **Video Summaries** • 🎨 **Beautiful UI**
+👥 **Community Features** • 📱 **Personal Library** • 🎥 **Video Summaries** • 🎙️ **Voice Narration** • 🎨 **Beautiful UI**
 
 </div>
 
@@ -48,27 +48,33 @@
 
 <div align="center">
 
-### 🎥 **AI Video Summary Generator** ⭐ NEW!
+### 🎥 **AI Video Summary Generator with Voice** ⭐ ENHANCED!
 
 ![Video Creation GIF](https://media.giphy.com/media/xT9IgzoKnwFNmISR8I/giphy.gif)
 
 </div>
 
-Transform your book recommendations into engaging visual stories! Our latest feature automatically generates professional 1080x1080 summary videos using:
+Transform your book recommendations into captivating audiovisual experiences! Our enhanced feature now includes professional voice narration alongside stunning visuals:
 
 | Component | Technology | Purpose |
 |-----------|------------|---------|
 | 🧠 **AI Content** | HyperCLOVA API | Intelligent summary generation |
+| 🎙️ **Voice Synthesis** | Text-to-Speech Engine | Natural voice narration |
 | 🖼️ **Image Processing** | PIL (Python Imaging Library) | Dynamic visual composition |
-| 🎬 **Video Assembly** | MoviePy | Professional video rendering |
+| 🎬 **Video Assembly** | MoviePy | Professional audiovisual rendering |
+| 🔊 **Audio Processing** | Advanced audio mixing | Crystal-clear voice output |
 | 📊 **Progress Tracking** | Real-time UI Updates | Live rendering feedback |
 
 **Key Capabilities:**
-- End-to-end automation from text to video
-- Intelligent text overlay system for clear, professional visuals
+- **Full audiovisual experience** with synchronized voice narration
+- **Bilingual voice support** for Korean and English content
+- **Professional audio quality** with clear, engaging narration
+- **Intelligent text-to-speech** that adapts to book content and tone
+- End-to-end automation from text to complete audiovisual content
+- Intelligent text overlay system for visual reinforcement
 - Real-time progress tracking and instant video preview
 - Robust error handling and optimized resource management
-- Shareable 1080x1080 format perfect for social media
+- Shareable 1080x1080 format perfect for social media platforms
 
 <div align="center">
 
@@ -78,7 +84,7 @@ Transform your book recommendations into engaging visual stories! Our latest fea
 
 </div>
 
-Experience the power of **HyperCLOVA API** with advanced Korean language processing, bilingual responses that adapt to your preferences, context-aware conversations that understand your reading journey, deep book analysis with insights into themes and plots, and now **automated video summary creation** that brings recommendations to life.
+Experience the power of **HyperCLOVA API** with advanced Korean language processing, bilingual responses that adapt to your preferences, context-aware conversations that understand your reading journey, deep book analysis with insights into themes and plots, and now **automated audiovisual summary creation** that brings recommendations to life with both voice and visuals.
 
 <div align="center">
 
@@ -92,9 +98,10 @@ Experience the power of **HyperCLOVA API** with advanced Korean language process
 |---------|-------------|
 | 📖 **Reading Status** | Track books as "To Read", "Currently Reading", "Finished" |
 | ❤️ **Favorites** | Save and organize your beloved books |
-| 🎥 **Video Collection** | Generate and save book summary videos |
+| 🎥 **Video Collection** | Generate and save book summary videos with voice |
 | 📊 **Reading Stats** | Visualize your reading journey |
 | 🏷️ **Smart Categories** | Auto-organize by genre and preferences |
+| 🎙️ **Audio Library** | Collection of narrated book summaries |
 
 <div align="center">
 
@@ -104,7 +111,7 @@ Experience the power of **HyperCLOVA API** with advanced Korean language process
 
 </div>
 
-Connect with fellow book lovers through discussion forums where you can share thoughts and reviews, join book clubs to connect with like-minded readers, communicate in your preferred language with multilingual post support, **share AI-generated book videos** to spark discussions, and stay connected with real-time community updates.
+Connect with fellow book lovers through discussion forums where you can share thoughts and reviews, join book clubs to connect with like-minded readers, communicate in your preferred language with multilingual post support, **share AI-generated audiovisual book content** to spark discussions, and stay connected with real-time community updates.
 
 <div align="center">
 
@@ -116,7 +123,8 @@ Connect with fellow book lovers through discussion forums where you can share th
 ✨ Modern Design          🌙 Dark/Light Modes
 📱 Responsive Layout      🚀 Fast Performance
 🎭 Custom Animations      🔍 Intuitive Search
-🎥 Video Integration      📊 Progress Indicators
+🎥 Video Integration      🎙️ Voice Controls
+📊 Progress Indicators    🔊 Audio Preview
 ```
 
 ---
@@ -134,6 +142,7 @@ Python 3.8+
 pip package manager
 MongoDB (for user data)
 FFmpeg (for video processing)
+Audio drivers (for voice synthesis)
 ```
 
 <div align="center">
@@ -159,6 +168,9 @@ pip install -r requirements.txt
 # macOS: brew install ffmpeg
 # Windows: Download from https://ffmpeg.org/
 
+# Install additional audio dependencies
+pip install pydub gTTS pygame
+
 # Set up environment variables
 cp .env.example .env
 # Edit .env with your API keys
@@ -179,10 +191,14 @@ HYPERCLOVA_API_KEY=your_hyperclova_key
 LIBRARY_API_KEY=your_korean_library_key
 MONGODB_URI=your_mongodb_connection_string
 
-# Video Generation Settings (Optional)
+# Voice & Video Generation Settings
 VIDEO_OUTPUT_PATH=./generated_videos/
+AUDIO_OUTPUT_PATH=./generated_audio/
 MAX_VIDEO_DURATION=60
 VIDEO_QUALITY=high
+VOICE_LANGUAGE=auto  # auto, ko, en
+VOICE_SPEED=1.0
+AUDIO_QUALITY=high
 ```
 
 ---
@@ -200,7 +216,7 @@ VIDEO_QUALITY=high
 streamlit run main.py
 
 # Navigate to http://localhost:8501
-# Start exploring books and creating videos in your preferred language!
+# Start exploring books and creating audiovisual content in your preferred language!
 ```
 
 <div align="center">
@@ -215,9 +231,10 @@ graph LR
     B --> C[AI Analysis]
     C --> D[Book Recommendations]
     D --> E[Book Details]
-    E --> F[Generate Video Summary]
-    F --> G[Add to Library]
-    G --> H[Share in Community]
+    E --> F[Generate Audiovisual Summary]
+    F --> G[Voice Narration + Visuals]
+    G --> H[Add to Library]
+    H --> I[Share in Community]
 ```
 
 <div align="center">
@@ -231,7 +248,8 @@ graph LR
 | Search | "Find mystery novels" | "추리소설 찾아줘" |
 | Author | "Books by Haruki Murakami" | "무라카미 하루키 책들" |
 | Genre | "Romance books" | "로맨스 소설" |
-| Video | "Create video summary" | "비디오 요약 만들어줘" |
+| Video | "Create video with voice summary" | "음성 요약 비디오 만들어줘" |
+| Audio | "Generate narrated summary" | "나레이션 요약 생성해줘" |
 | Discussion | "What do you think about..." | "이 책에 대해 어떻게 생각해?" |
 
 ---
@@ -244,15 +262,18 @@ book-wanderer/
 ├── 🎨 Frontend.py             # UI components and styling  
 ├── 🛠️ Helper_Functions.py     # Core utility functions
 ├── 💬 Discussion_Function.py  # Community features
-├── 🎥 Video_Generator.py      # AI video summary system
+├── 🎥 Video_Generator.py      # AI audiovisual summary system
+├── 🎙️ Voice_Processor.py     # Voice synthesis and audio processing
 ├── 📚 requirements.txt        # Python dependencies
 ├── 🔧 .env.example           # Environment template
 ├── 📖 README.md              # This file
 ├── 📁 assets/                # Static resources
 │   ├── 🖼️ images/
 │   ├── 🎨 styles/
-│   └── 🎬 video_templates/
-└── 📁 generated_videos/      # AI-generated video outputs
+│   ├── 🎬 video_templates/
+│   └── 🎙️ voice_profiles/
+├── 📁 generated_videos/      # AI-generated video outputs
+└── 📁 generated_audio/       # Voice narration files
 ```
 
 <div align="center">
@@ -265,18 +286,20 @@ book-wanderer/
 
 ```python
 # AI Integration
-HyperCLOVA API → Natural Language Processing + Video Content
+HyperCLOVA API → Natural Language Processing + Content Generation
+Text-to-Speech Engine → Voice Synthesis + Audio Processing
 Library API → Book Data Retrieval
 MongoDB → User Data Management
 
-# Video Processing Pipeline
+# Audiovisual Processing Pipeline
 PIL → Image Processing + Text Overlays
-MoviePy → Video Assembly + Rendering
-FFmpeg → Video Optimization
+MoviePy → Video Assembly + Audio Sync
+pydub → Audio Processing + Voice Enhancement
+FFmpeg → Video Optimization + Audio Mixing
 
 # Frontend Stack
-Streamlit → Web Interface + Video Preview
-CSS/HTML → Custom Styling
+Streamlit → Web Interface + Media Preview
+CSS/HTML → Custom Styling + Audio Controls
 JavaScript → Interactive Elements + Progress Tracking
 ```
 
@@ -289,18 +312,20 @@ JavaScript → Interactive Elements + Progress Tracking
 ```
 User Input → AI Processing → API Calls → Data Processing → UI Rendering
      ↓                                        ↓
-Video Generation ← HyperCLOVA ← Book Analysis ← Content Processing
+Audiovisual Generation ← Voice Synthesis ← HyperCLOVA ← Book Analysis
+     ↓                        ↓
+Video Assembly ← Audio Processing ← Content Processing
      ↓
 Community Sharing ← MongoDB ← User Management
 ```
 
 ---
 
-## 🎬 Video Generation Workflow
+## 🎬 Audiovisual Generation Workflow
 
 <div align="center">
 
-### **AI-Powered Video Pipeline**
+### **AI-Powered Audiovisual Pipeline**
 
 </div>
 
@@ -308,26 +333,35 @@ Community Sharing ← MongoDB ← User Management
 # Step 1: Content Generation
 Book Data → HyperCLOVA API → AI Summary
 
-# Step 2: Visual Processing  
+# Step 2: Voice Synthesis
+Summary Text → Text-to-Speech → Natural Voice Narration
+
+# Step 3: Visual Processing  
 Summary Text → PIL → Dynamic Image Composition
 
-# Step 3: Video Assembly
-Images + Text → MoviePy → Professional Video
+# Step 4: Audio Processing
+Voice Audio → pydub → Enhanced Audio Quality
 
-# Step 4: Optimization
-Raw Video → FFmpeg → Optimized 1080x1080 Output
+# Step 5: Audiovisual Assembly
+Images + Enhanced Audio → MoviePy → Professional Audiovisual Content
+
+# Step 6: Optimization
+Raw Video → FFmpeg → Optimized 1080x1080 Output with Crystal Audio
 ```
 
 <div align="center">
 
-### **Video Features**
+### **Audiovisual Features**
 
 </div>
 
 | Feature | Implementation | Benefit |
 |---------|----------------|---------|
+| 🎙️ **Natural Voice** | Advanced TTS engine | Engaging audio narration |
+| 🌐 **Bilingual Audio** | Korean + English synthesis | Localized experience |
 | 🎯 **Smart Layouts** | Dynamic text positioning | Clear, readable content |
-| 🎨 **Visual Themes** | Genre-based styling | Engaging, themed videos |
+| 🎨 **Visual Themes** | Genre-based styling | Cohesive audiovisual themes |
+| 🔊 **Audio Sync** | Precise timing alignment | Perfect voice-visual sync |
 | ⚡ **Real-time Preview** | Progressive rendering | Instant user feedback |
 | 📱 **Social Ready** | 1080x1080 format | Perfect for sharing |
 | 🔄 **Batch Processing** | Queue management | Efficient resource usage |
@@ -342,7 +376,7 @@ Raw Video → FFmpeg → Optimized 1080x1080 Output
 
 </div>
 
-Access to extensive Korean book database with search capabilities by genre, author, title, and ISBN. Get comprehensive book metadata, cover images, popularity metrics, and **rich content for video generation** to enhance your reading experience.
+Access to extensive Korean book database with search capabilities by genre, author, title, and ISBN. Get comprehensive book metadata, cover images, popularity metrics, and **rich content for audiovisual generation** to enhance your reading experience.
 
 <div align="center">
 
@@ -350,7 +384,15 @@ Access to extensive Korean book database with search capabilities by genre, auth
 
 </div>
 
-Advanced Korean language AI processing with natural language understanding and bilingual responses. Enjoy sophisticated book analysis, intelligent recommendation generation, and **automated video script creation** tailored to your preferences.
+Advanced Korean language AI processing with natural language understanding and bilingual responses. Enjoy sophisticated book analysis, intelligent recommendation generation, and **automated audiovisual script creation** with voice-optimized content tailored to your preferences.
+
+<div align="center">
+
+### **Text-to-Speech Integration**
+
+</div>
+
+Professional voice synthesis with natural-sounding Korean and English narration, adjustable speech parameters for optimal listening experience, context-aware pronunciation for book titles and author names, and **emotion-aware delivery** that matches book genres and themes.
 
 <div align="center">
 
@@ -358,7 +400,7 @@ Advanced Korean language AI processing with natural language understanding and b
 
 </div>
 
-Secure user management with authentication and profiles, personal library storage for your book collections, community data management for discussion posts and interactions, and **video metadata storage** for generated content.
+Secure user management with authentication and profiles, personal library storage for your book collections, community data management for discussion posts and interactions, **audiovisual content metadata storage** for generated videos and audio files, and **voice preference tracking** for personalized narration settings.
 
 ---
 
@@ -366,21 +408,30 @@ Secure user management with authentication and profiles, personal library storag
 
 <div align="center">
 
-### **🎥 AI Video Summary Generator** - *Latest Release*
+### **🎙️ Voice-Enhanced Video Summaries** - *Latest Release*
 
 </div>
 
-This week's major feature addition brings book recommendations to life through AI-generated videos:
+This week's major enhancement brings professional voice narration to our AI-generated video summaries:
 
 **✨ Key Highlights:**
-- **End-to-end automation**: From book selection to final video output
-- **Intelligent processing**: HyperCLOVA-powered content generation  
-- **Professional visuals**: Dynamic image handling with PIL
-- **Seamless integration**: Real-time progress tracking within the UI
-- **Robust performance**: Advanced error handling and resource optimization
+- **Full audiovisual experience**: Synchronized voice narration with dynamic visuals
+- **Bilingual voice support**: Native Korean and English text-to-speech capabilities
+- **Intelligent audio processing**: Enhanced voice quality with pydub integration
+- **Perfect synchronization**: Precise timing alignment between voice and visuals
+- **Professional audio quality**: Crystal-clear narration optimized for engagement
+- **Seamless integration**: Voice controls and audio preview within the existing UI
+- **Advanced customization**: Adjustable voice parameters for personalized experience
 
 **🎯 Impact:**
-Enhanced user engagement through visually rich, shareable content that transforms static book recommendations into dynamic, social-media-ready videos.
+Revolutionary enhancement in user engagement through immersive audiovisual content that transforms static book recommendations into compelling, podcast-like experiences perfect for modern content consumption and social sharing.
+
+**🔧 Technical Improvements:**
+- Enhanced MoviePy integration for seamless audio-video synchronization
+- Optimized audio processing pipeline for consistent quality
+- Real-time audio preview functionality
+- Robust error handling for voice synthesis failures
+- Memory-efficient audio processing for large-scale generation
 
 ---
 
@@ -397,8 +448,11 @@ git fork https://github.com/yourusername/book-wanderer
 # Create feature branch
 git checkout -b feature/amazing-feature
 
+# Install audio development dependencies
+pip install pydub gTTS pygame librosa
+
 # Make changes and commit
-git commit -m "Add amazing feature"
+git commit -m "Add amazing audiovisual feature"
 
 # Push and create pull request
 git push origin feature/amazing-feature

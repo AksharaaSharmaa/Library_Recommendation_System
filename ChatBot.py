@@ -465,6 +465,7 @@ def main():
                 if liked_books:
                     st.markdown(f"**Checking {len(liked_books)} books from your library...**")
                     
+                    dns_issues = 0
                     for i, book in enumerate(liked_books):
                         isbn = book.get('isbn13') or book.get('isbn', '')
                         title = book.get('bookname', 'Unknown Title')
@@ -474,17 +475,30 @@ def main():
                                 isbn, st.session_state.selected_location_code, LIBRARY_API_KEY
                             )
                             
-                            status_color = "green" if is_available else "red"
-                            status_icon = "✅" if is_available else "❌"
-                            
-                            st.markdown(f"""
-                            <div style="padding: 10px; border-left: 4px solid {status_color}; margin: 10px 0;">
-                                <strong>{status_icon} {title}</strong><br>
-                                <small style="color: {status_color};">{message}</small>
-                            </div>
-                            """, unsafe_allow_html=True)
+                            if is_available is None:  # DNS issue
+                                dns_issues += 1
+                                st.markdown(f"""
+                                <div style="padding: 10px; border-left: 4px solid orange; margin: 10px 0;">
+                                    <strong>⚠️ {title}</strong><br>
+                                    <small style="color: orange;">{message}</small>
+                                </div>
+                                """, unsafe_allow_html=True)
+                            else:
+                                status_color = "green" if is_available else "red"
+                                status_icon = "✅" if is_available else "❌"
+                                
+                                st.markdown(f"""
+                                <div style="padding: 10px; border-left: 4px solid {status_color}; margin: 10px 0;">
+                                    <strong>{status_icon} {title}</strong><br>
+                                    <small style="color: {status_color};">{message}</small>
+                                </div>
+                                """, unsafe_allow_html=True)
                         else:
                             st.markdown(f"⚠️ **{title}** - No ISBN available for checking")
+                    
+                    if dns_issues > 0:
+                        st.info(f"⚠️ Could not check availability for {dns_issues} books due to temporary network issues. This is a known issue with Streamlit Cloud. Please try again later.")
+                            
                 else:
                     st.info("You haven't liked any books yet. Add some books to your library first!")
             else:
@@ -495,6 +509,7 @@ def main():
         if st.button("← Back to Library", key="back_to_library"):
             st.session_state.app_stage = "show_liked_books"
             st.rerun()
+
 
     elif st.session_state.app_stage == "discussion_page":
         add_vertical_space(2)

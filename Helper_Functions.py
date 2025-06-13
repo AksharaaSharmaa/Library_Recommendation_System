@@ -16,7 +16,6 @@ from PIL import Image, ImageDraw, ImageFont
 import io
 import hashlib
 import random
-from Region_Library import *
 
 # --- EMBEDDED API KEYS ---
 HYPERCLOVA_API_KEY = "nv-270db94eb8bf42108110b22f551e655axCwf"

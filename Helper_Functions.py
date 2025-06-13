@@ -658,7 +658,7 @@ def extract_genre_keywords(user_input, api_key, dtl_kdc_dict, headers):
 # --- New function to get books by author ---
 def get_books_by_author(author_name, auth_key, page_no=1, page_size=10):
     """Get books by specific author using Library API"""
-    url = "http://data4library.kr/api/srchBooks"
+    url = "https://data4library.kr/api/srchBooks"
     params = {
         "authKey": auth_key,
         "author": author_name,
@@ -832,7 +832,7 @@ def handle_fallback_classification(user_query, region_code=None):
 # --- Query library API for books by DTL KDC code ---
 def get_books_by_dtl_kdc(dtl_kdc_code, auth_key, page_no=1, page_size=10):
     """Get books using DTL KDC code"""
-    url = "http://data4library.kr/api/loanItemSrch"
+    url = "https://data4library.kr/api/loanItemSrch"
     params = {
         "authKey": auth_key,
         "startDt": "2000-01-01",
@@ -1245,7 +1245,7 @@ def find_location_fallback(user_input, dtl_region_dict):
 
 def get_regional_popular_books(region_code, auth_key, page_no=1, page_size=20):
     """Get popular books by region using the Library API"""
-    url = "http://data4library.kr/api/loanItemSrchByLib"
+    url = "https://data4library.kr/api/loanItemSrchByLib"
     params = {
         "authKey": auth_key,
         "dtl_region": region_code,
@@ -1286,7 +1286,7 @@ def get_regional_popular_books(region_code, auth_key, page_no=1, page_size=20):
 
 def get_libraries_with_book_availability(isbn, region_code, auth_key):
     """Get libraries in a region that have a specific book"""
-    url = "http://data4library.kr/api/libSrchByBook"
+    url = "https://data4library.kr/api/libSrchByBook"
     params = {
         "authKey": auth_key,
         "isbn": isbn,
@@ -1573,7 +1573,7 @@ def get_books_by_dtl_kdc_regional(dtl_kdc_code, auth_key, region_code=None, page
     """Get books using DTL KDC code, optionally filtered by region"""
     if region_code:
         # Use regional API endpoint for better results
-        url = "http://data4library.kr/api/loanItemSrchByLib"
+        url = "https://data4library.kr/api/loanItemSrchByLib"
         params = {
             "authKey": auth_key,
             "dtl_region": region_code,
@@ -1584,7 +1584,7 @@ def get_books_by_dtl_kdc_regional(dtl_kdc_code, auth_key, region_code=None, page
         }
     else:
         # Use general API endpoint
-        url = "http://data4library.kr/api/loanItemSrch"
+        url = "https://data4library.kr/api/loanItemSrch"
         params = {
             "authKey": auth_key,
             "startDt": "2000-01-01",

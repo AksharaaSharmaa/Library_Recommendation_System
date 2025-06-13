@@ -70,7 +70,6 @@ def main():
         st.session_state.last_save_count = 0
 
     setup_sidebar()
-    setup_chat_history_sidebar()
 
     st.markdown("<h1 style='text-align:center;'>📚 Book Wanderer / 책방랑자</h1>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:center;'>Discover your next favorite read with AI assistance in English and Korean</div>", unsafe_allow_html=True)

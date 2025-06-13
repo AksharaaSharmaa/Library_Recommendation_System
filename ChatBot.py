@@ -209,7 +209,7 @@ def main():
             
             if book_options:
                 selected_book_index = st.selectbox(
-                    "Select a book to create a summary video:",
+                    "જ⁀➴ Select a book to create a summary video:",
                     range(len(book_options)),
                     format_func=lambda x: book_options[x],
                     key="book_video_selector"

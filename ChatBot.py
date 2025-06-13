@@ -16,10 +16,10 @@ from PIL import Image, ImageDraw, ImageFont
 import io
 import hashlib
 import random
-from Helper_Functions import *
+from helper_func import *
 import calendar
-from Discussion_Function import *
-from Video_Summary import *
+from disc_func import *
+from video_summary import *
 
 # --- EMBEDDED API KEYS ---
 HYPERCLOVA_API_KEY = "nv-270db94eb8bf42108110b22f551e655axCwf"
@@ -209,7 +209,7 @@ def main():
             
             if book_options:
                 selected_book_index = st.selectbox(
-                    "Select a book to create a summary video:",
+                    "જ⁀➴ Select a book to create a summary video:",
                     range(len(book_options)),
                     format_func=lambda x: book_options[x],
                     key="book_video_selector"

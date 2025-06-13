@@ -26,7 +26,7 @@ def save_chat_session(username, messages, session_id=None):
     """Save current chat session to MongoDB with day-wise organization"""
     try:
         db = get_mongodb_connection()
-        if not db:
+        if db is None:
             return False
             
         chat_collection = db["chat_history"]

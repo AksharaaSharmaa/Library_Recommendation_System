@@ -658,7 +658,7 @@ def extract_genre_keywords(user_input, api_key, dtl_kdc_dict, headers):
 # --- New function to get books by author ---
 def get_books_by_author(author_name, auth_key, page_no=1, page_size=10):
     """Get books by specific author using Library API"""
-    url = "http://data4library.kr/api/srchBooks"
+    url = "https://data4library.kr/api/srchBooks"
     params = {
         "authKey": auth_key,
         "author": author_name,
@@ -821,7 +821,7 @@ def handle_fallback_classification(user_query):
 # --- Query library API for books by DTL KDC code ---
 def get_books_by_dtl_kdc(dtl_kdc_code, auth_key, page_no=1, page_size=10):
     """Get books using DTL KDC code"""
-    url = "http://data4library.kr/api/loanItemSrch"
+    url = "https://data4library.kr/api/loanItemSrch"
     params = {
         "authKey": auth_key,
         "startDt": "2000-01-01",
@@ -1111,7 +1111,7 @@ location_data = load_location_data()
 
 def get_popular_books_by_location(location_code, auth_key, page_no=1, page_size=20):
     """Get popular books by location using Library API"""
-    url = "http://data4library.kr/api/loanItemSrchByLib"
+    url = "https://data4library.kr/api/loanItemSrchByLib"
     
     if location_code:
         params = {
@@ -1123,7 +1123,7 @@ def get_popular_books_by_location(location_code, auth_key, page_no=1, page_size=
         }
     else:
         # If no location, get overall popular books
-        url = "http://data4library.kr/api/loanItemSrch"
+        url = "https://data4library.kr/api/loanItemSrch"
         params = {
             "authKey": auth_key,
             "startDt": "2023-01-01",
@@ -1172,15 +1172,18 @@ def get_popular_books_by_location(location_code, auth_key, page_no=1, page_size=
         return []
     
     return []
+import time
+import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+import warnings
 
 def check_book_availability_in_region(isbn, location_code, auth_key, max_retries=3):
     """Check if a book is available in libraries in a specific region with retry logic"""
     if not location_code:
         return False, "No location specified"
     
-    url = "http://data4library.kr/api/libSrchByBook"
+    url = "https://data4library.kr/api/libSrchByBook"
     params = {
         "authKey": auth_key,
         "isbn": isbn,
@@ -1188,16 +1191,27 @@ def check_book_availability_in_region(isbn, location_code, auth_key, max_retries
         "format": "json"
     }
     
-    # Create session with retry strategy
+    # Create session with version-compatible retry strategy
     session = requests.Session()
-    retry_strategy = Retry(
-        total=max_retries,
-        status_forcelist=[429, 500, 502, 503, 504],
-        method_whitelist=["HEAD", "GET", "OPTIONS"],
-        backoff_factor=1
-    )
+    
+    # Determine which parameter to use based on urllib3 version
+    retry_kwargs = {
+        "total": max_retries,
+        "status_forcelist": [429, 500, 502, 503, 504],
+        "backoff_factor": 1
+    }
+    
+    # Try new parameter first, fall back to old one
+    try:
+        retry_strategy = Retry(allowed_methods=["HEAD", "GET", "OPTIONS"], **retry_kwargs)
+    except TypeError:
+        # Fall back to deprecated parameter for older urllib3 versions
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            retry_strategy = Retry(method_whitelist=["HEAD", "GET", "OPTIONS"], **retry_kwargs)
+    
     adapter = HTTPAdapter(max_retries=retry_strategy)
-    session.mount("http://", adapter)
+    session.mount("https://", adapter)
     session.mount("https://", adapter)
     
     for attempt in range(max_retries):
@@ -1229,4 +1243,5 @@ def check_book_availability_in_region(isbn, location_code, auth_key, max_retries
             return False, f"Unexpected error: {e}"
     
     return False, "Service temporarily unavailable"
+
 

@@ -9,3 +9,4 @@ pandas
 moviepy
 translate
 gtts
+urllib3

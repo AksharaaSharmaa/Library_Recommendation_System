@@ -180,12 +180,6 @@ def main():
         
         st.rerun()
 
-    elif st.session_state.app_stage == "regional_search":
-        display_regional_search_interface()
-    
-    elif st.session_state.app_stage == "check_availability":
-        display_my_library_availability()
-
     elif st.session_state.app_stage == "show_recommendations":
         add_vertical_space(2)
         

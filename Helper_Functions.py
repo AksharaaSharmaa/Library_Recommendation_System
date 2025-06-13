@@ -1172,8 +1172,11 @@ def get_popular_books_by_location(location_code, auth_key, page_no=1, page_size=
         return []
     
     return []
-def check_book_availability_in_region(isbn, location_code, auth_key):
-    """Check if a book is available in libraries in a specific region"""
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
+def check_book_availability_in_region(isbn, location_code, auth_key, max_retries=3):
+    """Check if a book is available in libraries in a specific region with retry logic"""
     if not location_code:
         return False, "No location specified"
     
@@ -1185,21 +1188,45 @@ def check_book_availability_in_region(isbn, location_code, auth_key):
         "format": "json"
     }
     
-    try:
-        r = requests.get(url, params=params)
-        if r.status_code == 200:
-            response_data = r.json()
-            
-            if "response" in response_data:
-                libs = response_data["response"].get("libs", [])
-                if isinstance(libs, dict):
-                    libs = [libs]
-                
-                return len(libs) > 0, f"Available in {len(libs)} libraries"
-            else:
-                return False, "No libraries found"
-    except Exception as e:
-        return False, f"Error checking availability: {e}"
+    # Create session with retry strategy
+    session = requests.Session()
+    retry_strategy = Retry(
+        total=max_retries,
+        status_forcelist=[429, 500, 502, 503, 504],
+        method_whitelist=["HEAD", "GET", "OPTIONS"],
+        backoff_factor=1
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
     
-    return False, "Unknown error"
+    for attempt in range(max_retries):
+        try:
+            r = session.get(url, params=params, timeout=10)
+            if r.status_code == 200:
+                response_data = r.json()
+                
+                if "response" in response_data:
+                    libs = response_data["response"].get("libs", [])
+                    if isinstance(libs, dict):
+                        libs = [libs]
+                    
+                    return len(libs) > 0, f"Available in {len(libs)} libraries"
+                else:
+                    return False, "No libraries found"
+                    
+        except requests.exceptions.RequestException as e:
+            if "name resolution" in str(e).lower() or "dns" in str(e).lower():
+                if attempt < max_retries - 1:
+                    st.warning(f"DNS resolution failed, retrying... (attempt {attempt + 1}/{max_retries})")
+                    time.sleep(2 ** attempt)  # Exponential backoff
+                    continue
+                else:
+                    return False, "Service temporarily unavailable (DNS issue)"
+            else:
+                return False, f"Error checking availability: {e}"
+        except Exception as e:
+            return False, f"Unexpected error: {e}"
+    
+    return False, "Service temporarily unavailable"
 

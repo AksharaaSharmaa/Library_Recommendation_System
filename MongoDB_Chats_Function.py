@@ -277,7 +277,7 @@ def get_chat_statistics(username):
     """Get chat statistics for a user"""
     try:
         db = get_mongodb_connection()
-        if not db:
+        if db is None:
             return {}
             
         chat_collection = db["chat_history"]
@@ -320,7 +320,7 @@ def get_chat_statistics(username):
     except Exception as e:
         st.error(f"Failed to get chat statistics: {str(e)}")
         return {}
-
+        
 def auto_save_current_session():
     """Auto-save current chat session"""
     if hasattr(st.session_state, 'messages') and len(st.session_state.messages) > 1:

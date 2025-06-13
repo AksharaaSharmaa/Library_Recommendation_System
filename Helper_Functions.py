@@ -752,8 +752,8 @@ def find_best_dtl_code_fallback(user_query, dtl_kdc_dict, ai_suggested_code=None
     
     return best_code, best_label if best_score > 0.2 else (None, None)
 
-def get_dtl_kdc_code(user_query, api_key=None):
-    """Enhanced DTL KDC code detection with better author/genre classification"""
+def get_dtl_kdc_code(user_query, api_key=None, region_code=None):
+    """Enhanced DTL KDC code detection with author/genre classification AND regional handling"""
     if api_key:
         try:
             # Use HyperCLOVA for classification
@@ -762,13 +762,19 @@ def get_dtl_kdc_code(user_query, api_key=None):
             # Handle author requests
             if isinstance(result, tuple) and len(result) == 2 and result[0] == "AUTHOR":
                 author_name = result[1]
-                st.info(f"🔍 Searching for books by author: **{author_name}**")
+                if region_code:
+                    st.info(f"🔍 Searching for books by author: **{author_name}** in your region")
+                else:
+                    st.info(f"🔍 Searching for books by author: **{author_name}**")
                 return "AUTHOR", author_name
             
-            # Handle genre requests
+            # Handle genre requests with regional context
             elif isinstance(result, tuple) and len(result) == 2 and result[0] == "GENRE":
                 user_input = result[1]
-                st.info(f"📚 Searching for books in genre/topic: **{user_input}**")
+                if region_code:
+                    st.info(f"📚 Searching for books in genre/topic: **{user_input}** in your region")
+                else:
+                    st.info(f"📚 Searching for books in genre/topic: **{user_input}**")
                 
                 # Use the existing genre extraction logic
                 code, label = extract_genre_keywords(user_input, api_key, dtl_kdc_dict, {
@@ -786,37 +792,42 @@ def get_dtl_kdc_code(user_query, api_key=None):
             # Fallback if HyperCLOVA result is unexpected
             else:
                 st.info("🔄 HyperCLOVA response unclear, using fallback analysis...")
-                return handle_fallback_classification(user_query)
+                return handle_fallback_classification(user_query, region_code)
                 
         except Exception as e:
             st.warning(f"❌ HyperCLOVA processing failed: {e}. Using fallback search...")
-            return handle_fallback_classification(user_query)
+            return handle_fallback_classification(user_query, region_code)
     
     # No API key available
     else:
         st.info("🔍 Using fallback search without AI assistance...")
-        return handle_fallback_classification(user_query)
+        return handle_fallback_classification(user_query, region_code)
 
-def handle_fallback_classification(user_query):
-    """Handle classification when HyperCLOVA is not available or fails"""
+def handle_fallback_classification(user_query, region_code=None):
+    """Handle classification when HyperCLOVA is not available or fails - WITH regional context"""
     fallback_result = detect_author_or_genre_fallback(user_query)
     
     if fallback_result[0] == "AUTHOR":
         author_name = fallback_result[1]
-        st.info(f"👤 Detected author search: **{author_name}**")
+        if region_code:
+            st.info(f"👤 Detected author search: **{author_name}** in your region")
+        else:
+            st.info(f"👤 Detected author search: **{author_name}**")
         return "AUTHOR", author_name
     else:
         # Try genre matching with dtl_kdc_dict
         code, label = find_best_dtl_code_fallback(user_query, dtl_kdc_dict)
         if code and label:
-            st.success(f"📖 Found category: **{label}** (Code: {code})")
+            if region_code:
+                st.success(f"📖 Found category: **{label}** (Code: {code}) in your region")
+            else:
+                st.success(f"📖 Found category: **{label}** (Code: {code})")
             return code, label
         else:
             st.warning("⚠️ Could not find a matching category. Please try being more specific with:\n"
                       "- **Author names**: 'Stephen King', '무라카미 하루키', 'J.K. Rowling'\n"
                       "- **Genres**: 'romance novels', 'mystery books', 'philosophy', 'history'")
             return None, None
-
             
 # --- Query library API for books by DTL KDC code ---
 def get_books_by_dtl_kdc(dtl_kdc_code, auth_key, page_no=1, page_size=10):

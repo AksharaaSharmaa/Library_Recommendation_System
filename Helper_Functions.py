@@ -889,6 +889,8 @@ def get_books_by_dtl_kdc(dtl_kdc_code, auth_key, page_no=1, page_size=10):
 
 # --- Sidebar (as provided) ---
 def setup_sidebar():
+    st.sidebar.title("📚 Navigation")
+    
     with st.sidebar:
         # Custom CSS for button styling
         st.markdown("""
@@ -927,6 +929,25 @@ def setup_sidebar():
             st.session_state.selected_book = None
             st.session_state.showing_books = False
             st.rerun()
+        
+        # Add chat history section
+        if hasattr(st.session_state, 'username') and st.session_state.username:
+            st.markdown("---")
+            st.markdown("### 💬 Chat Management")
+            
+            if st.button("View Chat History"):
+                st.session_state.app_stage = "chat_history"
+                st.rerun()
+            
+            # Quick stats
+            stats = get_chat_statistics(st.session_state.username)
+            if stats:
+                st.markdown("#### 📊 Quick Stats")
+                st.markdown(f"💬 {stats['total_sessions']} total chats")
+                st.markdown(f"📝 {stats['total_messages']} messages")
+                if stats['latest_activity']:
+                    last_active = stats['latest_activity'].strftime('%m/%d')
+                    st.markdown(f"🕐 Last active: {last_active}")
         
         st.markdown("""
         <div style="text-align: center; margin-top: 30px; padding: 10px;">

@@ -889,35 +889,17 @@ def get_books_by_dtl_kdc(dtl_kdc_code, auth_key, page_no=1, page_size=10):
 # --- Sidebar (as provided) ---
 def setup_sidebar():
     with st.sidebar:
-        # Custom CSS for button styling
-        st.markdown("""
-        <style>
-        .stButton > button {
-            white-space: pre-line !important;
-            line-height: 1.2 !important;
-            padding: 10px !important;
-            text-align: center !important;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-        
-        if st.button("좋아하는 책들을\nMY LIBRARY", use_container_width=True):
+        if st.button("좋아하는 책들 | MY LIBRARY"):
             st.session_state.app_stage = "show_liked_books"
             st.rerun()
-        if st.button("토론 페이지\nDISCUSSION PAGE", key="open_discussion", use_container_width=True):
+
+        if st.button("Discussion Page | 토론 페이지", key="open_discussion"):
             st.session_state.show_discussion = True
             st.session_state.app_stage = "discussion_page"
             st.rerun()
-            # Add this to your main code for testing
-        if st.button("Test TTS System"):
-            temp_dir = tempfile.mkdtemp()
-            if test_tts(temp_dir):
-                st.success("TTS system is working!")
-            else:
-                st.error("TTS system is not working properly")
         
         # Reset button
-        if st.button("다시 시작하기\nREFRESH PAGE", use_container_width=True):
+        if st.button("다시 시작하기 | REFRESH PAGE"):
             st.session_state.messages = [
                 {"role": "system", "content": "You are a helpful AI assistant specializing in book recommendations. For EVERY response, you must answer in BOTH English and Korean. First provide the complete answer in English, then provide '한국어 답변:' followed by the complete Korean translation of your answer."}
             ]
@@ -935,7 +917,7 @@ def setup_sidebar():
             </p>
         </div>
         """, unsafe_allow_html=True)
-        
+
 # --- Process follow-up questions with HyperCLOVA ---
 def process_followup_with_hyperclova(user_input, api_key):
     """Process follow-up questions using HyperCLOVA API"""

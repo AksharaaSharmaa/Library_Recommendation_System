@@ -889,6 +889,30 @@ def get_books_by_dtl_kdc(dtl_kdc_code, auth_key, page_no=1, page_size=10):
 # --- Sidebar (as provided) ---
 def setup_sidebar():
     with st.sidebar:
+        # Location selection at the top
+        st.markdown("### 📍 Location (Optional)")
+        location_options = ["전체 지역 (All Regions)"] + [f"{loc['city']} {loc['district']}" for loc in location_data]
+        
+        selected_location = st.selectbox(
+            "જ⁀➴ Select your location:",
+            location_options,
+            key="location_selector"
+        )
+        
+        # Store selected location code in session state
+        if selected_location == "전체 지역 (All Regions)":
+            st.session_state.selected_location_code = None
+            st.session_state.selected_location_name = "전체 지역"
+        else:
+            # Find the matching location code
+            for loc in location_data:
+                if f"{loc['city']} {loc['district']}" == selected_location:
+                    st.session_state.selected_location_code = loc['code']
+                    st.session_state.selected_location_name = selected_location
+                    break
+        
+        st.markdown("---")
+        
         # Add custom CSS for multi-line buttons with equal width
         st.markdown("""
         <style>
@@ -912,6 +936,11 @@ def setup_sidebar():
             st.session_state.app_stage = "discussion_page"
             st.rerun()
         
+        # New button for checking book availability in region
+        if st.button("도서 이용 가능 여부\nCheck Book Availability"):
+            st.session_state.app_stage = "check_regional_books"
+            st.rerun()
+        
         # Reset button
         if st.button("다시 시작하기\nREFRESH PAGE"):
             st.session_state.messages = [
@@ -931,6 +960,7 @@ def setup_sidebar():
             </p>
         </div>
         """, unsafe_allow_html=True)
+
         
 # --- Process follow-up questions with HyperCLOVA ---
 def process_followup_with_hyperclova(user_input, api_key):
@@ -1065,3 +1095,122 @@ def process_book_question(book, question, api_key, conversation_history):
     except Exception as e:
         st.error(f"Error processing question: {e}")
         return f"I encountered an error while processing your question about '{title}'. Please try rephrasing your question or check your API connection.\n\n한국어 답변: '{title}'에 대한 질문을 처리하는 중 오류가 발생했습니다. 질문을 다시 표현하거나 API 연결을 확인해 주세요."
+    
+@st.cache_resource
+def load_location_data():
+    """Load location data from dtl_region.json"""
+    try:
+        with open("dtl_region.json", encoding="utf-8") as f:
+            location_data = json.load(f)
+        return location_data
+    except FileNotFoundError:
+        st.error("dtl_region.json file not found")
+        return []
+
+# Add this after loading dtl_kdc_dict
+location_data = load_location_data()
+
+def get_popular_books_by_location(location_code, auth_key, page_no=1, page_size=20, dtl_kdc_code=None):
+    """Get popular books by location with optional genre filtering using Library API"""
+    url = "http://data4library.kr/api/loanItemSrchByLib"
+    
+    if location_code:
+        params = {
+            "authKey": auth_key,
+            "dtl_region": location_code,
+            "pageNo": page_no,
+            "pageSize": page_size,
+            "format": "json"
+        }
+        
+        # Add genre filter if provided
+        if dtl_kdc_code:
+            params["dtl_kdc"] = dtl_kdc_code
+            
+    else:
+        # If no location, get overall popular books
+        url = "http://data4library.kr/api/loanItemSrch"
+        params = {
+            "authKey": auth_key,
+            "startDt": "2023-01-01",
+            "endDt": datetime.now().strftime("%Y-%m-%d"),
+            "pageNo": page_no,
+            "pageSize": page_size,
+            "format": "json"
+        }
+        
+        # Add genre filter if provided
+        if dtl_kdc_code:
+            params["dtl_kdc"] = dtl_kdc_code
+    
+    try:
+        r = requests.get(url, params=params)
+        if r.status_code == 200:
+            response_data = r.json()
+            
+            if "response" in response_data:
+                docs = response_data["response"].get("docs", [])
+                
+                if isinstance(docs, dict):
+                    docs = [docs]
+                elif not isinstance(docs, list):
+                    return []
+                
+                books = []
+                for doc in docs:
+                    if "doc" in doc:
+                        book_data = doc["doc"]
+                    else:
+                        book_data = doc
+                    
+                    book_info = {
+                        "bookname": book_data.get("bookname", "Unknown Title"),
+                        "authors": book_data.get("authors", "Unknown Author"),
+                        "publisher": book_data.get("publisher", "Unknown Publisher"),
+                        "publication_year": book_data.get("publication_year", "Unknown Year"),
+                        "isbn13": book_data.get("isbn13", ""),
+                        "loan_count": int(book_data.get("loan_count", 0)),
+                        "bookImageURL": book_data.get("bookImageURL", "")
+                    }
+                    books.append(book_info)
+                
+                return sorted(books, key=lambda x: x["loan_count"], reverse=True)
+            else:
+                return []
+    except Exception as e:
+        st.error(f"Error fetching books: {e}")
+        return []
+    
+    return []
+
+
+def check_book_availability_in_region(isbn, location_code, auth_key):
+    """Check if a book is available in libraries in a specific region"""
+    if not location_code:
+        return False, "No location specified"
+    
+    url = "http://data4library.kr/api/libSrchByBook"
+    params = {
+        "authKey": auth_key,
+        "isbn": isbn,
+        "region": location_code[:2],  # Use first 2 digits for region
+        "format": "json"
+    }
+    
+    try:
+        r = requests.get(url, params=params)
+        if r.status_code == 200:
+            response_data = r.json()
+            
+            if "response" in response_data:
+                libs = response_data["response"].get("libs", [])
+                if isinstance(libs, dict):
+                    libs = [libs]
+                
+                return len(libs) > 0, f"Available in {len(libs)} libraries"
+            else:
+                return False, "No libraries found"
+    except Exception as e:
+        return False, f"Error checking availability: {e}"
+    
+    return False, "Unknown error"

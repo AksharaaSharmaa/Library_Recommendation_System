@@ -907,6 +907,16 @@ def setup_sidebar():
             st.session_state.app_stage = "show_liked_books"
             st.rerun()
         
+        # New Regional Search Button
+        if st.button("지역별 인기도서\nREGIONAL POPULAR BOOKS"):
+            st.session_state.app_stage = "regional_search"
+            st.rerun()
+        
+        # New My Library Availability Check
+        if st.button("내 서재 도서 확인\nCHECK MY LIBRARY AVAILABILITY"):
+            st.session_state.app_stage = "check_availability"
+            st.rerun()
+        
         if st.button("토론 페이지\nDiscussion Page", key="open_discussion"):
             st.session_state.show_discussion = True
             st.session_state.app_stage = "discussion_page"
@@ -922,7 +932,33 @@ def setup_sidebar():
             st.session_state.user_age = ""
             st.session_state.selected_book = None
             st.session_state.showing_books = False
+            st.session_state.user_region = None
+            st.session_state.user_region_name = None
             st.rerun()
+        
+        # User Region Setting
+        st.markdown("---")
+        st.markdown("**🗺️ 지역 설정 / Region Setting**")
+        
+        if hasattr(st.session_state, 'user_region_name') and st.session_state.user_region_name:
+            st.success(f"📍 {st.session_state.user_region_name}")
+            if st.button("지역 변경 / Change Region"):
+                st.session_state.user_region = None
+                st.session_state.user_region_name = None
+                st.rerun()
+        else:
+            region_input = st.text_input("지역 입력 (예: 강남구, 서울, 부산)")
+            if st.button("지역 설정 / Set Region") and region_input:
+                region_code, region_name = extract_location_with_hyperclova(
+                    region_input, HYPERCLOVA_API_KEY, dtl_region_dict
+                )
+                if region_code:
+                    st.session_state.user_region = region_code
+                    st.session_state.user_region_name = region_name
+                    st.success(f"지역이 설정되었습니다: {region_name}")
+                    st.rerun()
+                else:
+                    st.error("지역을 찾을 수 없습니다. 다시 시도해주세요.")
         
         st.markdown("""
         <div style="text-align: center; margin-top: 30px; padding: 10px;">

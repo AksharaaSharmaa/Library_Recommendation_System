@@ -36,8 +36,6 @@
 
 ### 📍 **Location-Based Library Services** ⭐ NEW!
 
-![Location Search GIF](https://media.giphy.com/media/3oKIPf3C7HqqoFXcpO/giphy.gif)
-
 </div>
 
 Transform your book discovery experience with intelligent location-based services that connect you to local libraries and regional bestsellers:

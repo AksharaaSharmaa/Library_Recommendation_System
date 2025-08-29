@@ -18,7 +18,7 @@ import hashlib
 import random
 from Helper_Functions import *
 import calendar
-from Discussion_Functions import *
+from Discussion_Function import *
 from video_summary import *
 
 # --- EMBEDDED API KEYS ---
@@ -595,5 +595,6 @@ def main():
         "</div>", 
         unsafe_allow_html=True
     )
+
 
 

@@ -16,9 +16,9 @@ from PIL import Image, ImageDraw, ImageFont
 import io
 import hashlib
 import random
-from helper_func import *
+from Helper_Functions import *
 import calendar
-from disc_func import *
+from Discussion_Functions import *
 from video_summary import *
 
 # --- EMBEDDED API KEYS ---
@@ -595,3 +595,4 @@ def main():
         "</div>", 
         unsafe_allow_html=True
     )
+

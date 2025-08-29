@@ -10,6 +10,7 @@
 [![Korean Support](https://img.shields.io/badge/Language-English%20%2B%20Korean-purple.svg)]()
 [![Location Features](https://img.shields.io/badge/Location-Based%20Search-orange.svg)]()
 
+Live Link: https://library-recommendation-system-akshara.streamlit.app/
 </div>
 
 ---
